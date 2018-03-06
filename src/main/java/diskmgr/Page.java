@@ -13,11 +13,11 @@ public class Page implements GlobalConst {
         this.data = data;
     }
 
-    public byte[] getData() {
+    public byte[] getPage() {
         return data;
     }
 
-    public void setData(byte[] data) {
+    public void setPage(byte[] data) {
         this.data = data;
     }
 }
