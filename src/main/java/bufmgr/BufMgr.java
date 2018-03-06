@@ -259,7 +259,10 @@ public class BufMgr implements GlobalConst {
 
             hashTableInsert = hashTbl.insert(pageId, frameNo);
 
-            if (hashTableInsert)
+            (frameTable[frameNo].pageId).pid = pageId.pid;
+            frameTable[frameNo].dirty = false;
+            
+            if (!hashTableInsert)
                 throw new HashOperationException(null, "BUFMGR: HASH_TABLE_ERROR.");
 
             //This is created for writing down in disk
