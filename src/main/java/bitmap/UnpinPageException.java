@@ -1,10 +1,18 @@
-package bitMap;
+package bitmap;
+
 import chainexception.*;
 
-public class UnpinPageException  extends ChainException 
-{
-  public UnpinPageException() {super();}
-  public UnpinPageException(String s) {super();}
-  public UnpinPageException(Exception e, String s) {super(e,s);}
+public class UnpinPageException extends ChainException {
+    public UnpinPageException() {
+        super();
+    }
+
+    public UnpinPageException(String s) {
+        super();
+    }
+
+    public UnpinPageException(Exception e, String s) {
+        super(e, s);
+    }
 
 }
