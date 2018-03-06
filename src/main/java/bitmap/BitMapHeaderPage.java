@@ -1,4 +1,5 @@
-package bitmap;
+package bitMap;
+import global.PageId;
 import heap.*;
 
 //The commented code is because of dependency on BMPage
@@ -6,19 +7,24 @@ import heap.*;
 public class BitMapHeaderPage extends HFPage{
 
     private int columnIndex;
-    /*
-    private BMPage startPage;
-
-    public BitMapHeaderPage() {
-    }
-
+    
+   
     public BitMapHeaderPage(int columnIndex, BMPage startPage) {
         this.columnIndex = columnIndex;
-        this.startPage = startPage;
-    }*/
+        
+    }
 
 
-    public int getColumnIndex() {
+    public BitMapHeaderPage(PageId headerPageId) {
+		// TODO Auto-generated constructor stub
+	}
+
+	public BitMapHeaderPage() {
+		// TODO Auto-generated constructor stub
+	}
+
+
+	public int getColumnIndex() {
         return columnIndex;
     }
 
@@ -26,13 +32,15 @@ public class BitMapHeaderPage extends HFPage{
         this.columnIndex = columnIndex;
     }
 
-    /*
-    public BMPage getStartPage() {
-        return startPage;
-    }
+	public PageId getPageId() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
-    public void setStartPage(BMPage startPage) {
-        this.startPage = startPage;
-    }*/
+	public void setValue(ValueClass value) {
+		// TODO Auto-generated method stub
+		
+	}
+
 
 }
