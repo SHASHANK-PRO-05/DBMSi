@@ -341,7 +341,7 @@ public class ColumnDB implements GlobalConst {
                 slot = entry;
                 found = true;
             }
-
+            unpinPage(headerPid, false);
         } while (nextHeaderPageId.pid != INVALID_PAGE && (!found));
 
         if (!found) return null;

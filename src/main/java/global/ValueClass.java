@@ -14,7 +14,7 @@ Constructor Parameter - An index file with given file name should not already ex
 
 
 public abstract class ValueClass{
-    ValueClass() {
+    public ValueClass() {
 
     }
 
