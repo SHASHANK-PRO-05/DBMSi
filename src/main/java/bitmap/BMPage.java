@@ -81,22 +81,18 @@ public class BMPage extends Page implements GlobalConst {
     public void init(PageId pageNo, Page apage)
             throws IOException {
         data = apage.getPage();
-
         cnt = 0;                // no slots in use
         Convert.setShortValue(cnt, COUNTER, data);
-
         curPage.pid = pageNo.pid;
         Convert.setIntValue(curPage.pid, CUR_PAGE, data);
-
         nextPage.pid = prevPage.pid = INVALID_PAGE;
         Convert.setIntValue(prevPage.pid, PREV_PAGE, data);
         Convert.setIntValue(nextPage.pid, NEXT_PAGE, data);
         freeSpace = (short) (MINIBASE_PAGESIZE - DPFIXED);    // amount of space available
         Convert.setShortValue(freeSpace, FREE_SPACE, data);
-
     }
 
-    public int available_space() throws IOException {
+    public int availableSpace() throws IOException {
         freeSpace = Convert.getShortValue(FREE_SPACE, data);
         return (freeSpace);
     }
@@ -104,7 +100,7 @@ public class BMPage extends Page implements GlobalConst {
     /**
      * @return byte array
      */
-    public byte[] getHFpageArray() {
+    public byte[] getHFPageArray() {
         return data;
 
     }

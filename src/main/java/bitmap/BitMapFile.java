@@ -121,10 +121,10 @@ public class BitMapFile {
         if (headerPageId == null) // file not exist
         {
             headerPage = new BitMapHeaderPage();
-            headerPageId = headerPage.getPageId();
+            //headerPageId = headerPage.getPageId();
             addFileEntry(fileName, headerPageId);
             headerPage.setColumnIndex(columnNo);
-            headerPage.setValue(value);
+            headerPage.setValueType(value);
             this.columnarFile = columnarFile;
         } else {
             headerPage = new BitMapHeaderPage(headerPageId);
