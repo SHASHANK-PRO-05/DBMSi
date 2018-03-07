@@ -866,6 +866,7 @@ public class Heapfile implements Filetype,  GlobalConst {
    * @exception IOException I/O errors
    *
    */
+ /* 
   public Scan openScan() 
     throws InvalidTupleSizeException,
 	   IOException
@@ -873,7 +874,7 @@ public class Heapfile implements Filetype,  GlobalConst {
       Scan newscan = new Scan(this);
       return newscan;
     }
-  
+  */
   
   /** Delete the file from the database.
    *
