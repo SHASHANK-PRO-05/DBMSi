@@ -32,8 +32,13 @@ public class ColumnarFile {
 
 	}
 
-	public void deleteColumnarFile() throws InvalidSlotNumberException, FileAlreadyDeletedException,
-			InvalidTupleSizeException, HFBufMgrException, HFDiskMgrException, IOException {
+	public void deleteColumnarFile() 
+			throws InvalidSlotNumberException, 
+			FileAlreadyDeletedException,
+			InvalidTupleSizeException, 
+			HFBufMgrException, 
+			HFDiskMgrException, 
+			IOException {
 
 		deleteFileEntry(columnarHeader.hdrFile);
 		for (int i = 0; i < numColumns; i++) {
@@ -45,7 +50,8 @@ public class ColumnarFile {
 
 	}
 
-	private void deleteFileEntry(String filename) throws HFDiskMgrException {
+	private void deleteFileEntry(String filename) 
+			throws HFDiskMgrException {
 
 		try {
 			SystemDefs.JavabaseDB.deleteFileEntry(filename);
