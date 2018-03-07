@@ -123,8 +123,8 @@ public class BitMapFile {
             headerPage = new BitMapHeaderPage();
             //headerPageId = headerPage.getPageId();
             addFileEntry(fileName, headerPageId);
-            headerPage.setColumnIndex(columnNo);
-            headerPage.setValueType(value);
+            //headerPage.setColumnIndex(columnNo);
+            //headerPage.setValueType(value);
             this.columnarFile = columnarFile;
         } else {
             headerPage = new BitMapHeaderPage(headerPageId);
