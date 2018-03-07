@@ -10,10 +10,10 @@ import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
 import heap.HFPage;
-import heap.Heapfile;
 
 
 public class ColumnarHeader extends HFPage {
+	String hdrFile;
 
 	public ColumnarHeader(String name, int numColumns, AttrType [] type) 
 			throws HFDiskMgrException, 
@@ -24,7 +24,7 @@ public class ColumnarHeader extends HFPage {
 		//On failing as file is not present yet so created HFPage and inserted the name and inserted back
 		// to DB file
 		
-		String hdrFile = name + ".hdr";
+		hdrFile = name + ".hdr";
 		PageId hdrPageNo = getFileEntry(hdrFile);
 		if(hdrPageNo== null) {
 			Page aPage = new Page();
@@ -58,6 +58,7 @@ public class ColumnarHeader extends HFPage {
 				
 				// TO DO - set constraint on number of fields.. should not exceed 1024 bytes 510 fields max
 			}
+			unpinPage(hdrPageNo, true /*dirty*/ );
 		}
 	}
 	
