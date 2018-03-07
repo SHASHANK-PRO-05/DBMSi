@@ -143,7 +143,6 @@ public class BufMgr implements GlobalConst {
 
     private void readPage(PageId pageId, Page page)
             throws BufMgrException {
-
         try {
             SystemDefs.JavabaseDB.readPage(pageId, page);
         } catch (Exception e) {
@@ -261,7 +260,7 @@ public class BufMgr implements GlobalConst {
 
             (frameTable[frameNo].pageId).pid = pageId.pid;
             frameTable[frameNo].dirty = false;
-            
+
             if (!hashTableInsert)
                 throw new HashOperationException(null, "BUFMGR: HASH_TABLE_ERROR.");
 

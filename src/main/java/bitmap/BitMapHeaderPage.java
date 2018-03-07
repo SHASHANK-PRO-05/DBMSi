@@ -17,15 +17,16 @@ public class BitMapHeaderPage extends Page {
     public static final int VALUE_TYPE = 14; //ValueClass Type
     public static final int BM_FIX = 16; //Bytes reserved
 
-    private PageId prevPage = new PageId();
-    private PageId currPage = new PageId();
-    private PageId nextPage = new PageId();
+    private PageId prevPage = new PageId(-1);
+    private PageId currPage = new PageId(-1);
+    private PageId nextPage = new PageId(-1);
     private short columnIndex = -1;
     private short valueType = -1;
 
     public BitMapHeaderPage() throws ConstructPageException {
         super();
         Page page = new Page();
+
         try {
             PageId pageId = SystemDefs.JavabaseBM.newPage(page, 1);
             if (pageId == null || pageId.pid == INVALID_PAGE)
@@ -37,10 +38,10 @@ public class BitMapHeaderPage extends Page {
     }
 
 
-    public void init(PageId pageNo, Page page)
+    public void init(PageId pageId, Page page)
             throws IOException {
         data = page.getPage();
-
+        currPage.pid = pageId.pid;
         Convert.setIntValue(prevPage.pid, PREV_PAGE, data);
         Convert.setIntValue(currPage.pid, CURRENT_PAGE, data);
         Convert.setIntValue(nextPage.pid, NEXT_PAGE, data);

@@ -13,7 +13,6 @@ public class BMPage extends Page implements GlobalConst {
     //start of my bit map in data file.
     public static final int DPFIXED = 2 * 2 + 3 * 4;
 
-
     //header
     public static final int COUNTER = 0;
     public static final int FREE_SPACE = 2;
@@ -21,13 +20,16 @@ public class BMPage extends Page implements GlobalConst {
     public static final int NEXT_PAGE = 8;
     public static final int CUR_PAGE = 12;
 
-
+    public static final int availableMap = (MINIBASE_PAGESIZE - DPFIXED) * 8;
     /*
      * number of bits set
      */
 
-    private short cnt;
+    private short count;
 
+    public int getStartByte() {
+        return DPFIXED;
+    }
 
     /**
      * number of bytes free in data[]
@@ -43,6 +45,11 @@ public class BMPage extends Page implements GlobalConst {
      * forward pointer to data page
      */
     private PageId nextPage = new PageId();
+
+
+    public int getAvailableMap() {
+        return availableMap;
+    }
 
     /**
      * page number of this page
@@ -81,8 +88,8 @@ public class BMPage extends Page implements GlobalConst {
     public void init(PageId pageNo, Page apage)
             throws IOException {
         data = apage.getPage();
-        cnt = 0;                // no slots in use
-        Convert.setShortValue(cnt, COUNTER, data);
+        count = 0;                // no slots in use
+        Convert.setShortValue(count, COUNTER, data);
         curPage.pid = pageNo.pid;
         Convert.setIntValue(curPage.pid, CUR_PAGE, data);
         nextPage.pid = prevPage.pid = INVALID_PAGE;
@@ -95,6 +102,11 @@ public class BMPage extends Page implements GlobalConst {
     public int availableSpace() throws IOException {
         freeSpace = Convert.getShortValue(FREE_SPACE, data);
         return (freeSpace);
+    }
+
+    public short getCount() throws IOException {
+        count = Convert.getShortValue(COUNTER, data);
+        return count;
     }
 
     /**
@@ -185,8 +197,8 @@ public class BMPage extends Page implements GlobalConst {
      */
     public boolean empty() throws IOException {
         boolean isEmpty = false;
-        cnt = Convert.getShortValue(COUNTER, data);
-        if (cnt == 0) {
+        count = Convert.getShortValue(COUNTER, data);
+        if (count == 0) {
             isEmpty = true;
         }
         return isEmpty;
@@ -203,15 +215,15 @@ public class BMPage extends Page implements GlobalConst {
         curPage.pid = Convert.getIntValue(CUR_PAGE, data);
         nextPage.pid = Convert.getIntValue(NEXT_PAGE, data);
         freeSpace = Convert.getShortValue(FREE_SPACE, data);
-        cnt = Convert.getShortValue(COUNTER, data);
+        count = Convert.getShortValue(COUNTER, data);
 
         System.out.println("dumpPage");
         System.out.println("curPage= " + curPage.pid);
         System.out.println("nextPage= " + nextPage.pid);
         System.out.println("freeSpace= " + freeSpace);
-        System.out.println("slotCnt= " + cnt);
+        System.out.println("slotCnt= " + count);
         int i; //for iteration
-        for (i = 0; i < cnt; i++) {
+        for (i = 0; i < count; i++) {
             // code to traverse through the code
         }
     }
@@ -225,7 +237,7 @@ public class BMPage extends Page implements GlobalConst {
      */
     public void writeToByteArray(byte[] ary) throws IOException {
 
-        Convert.setIntValue(cnt, COUNTER, ary);
+        Convert.setIntValue(count, COUNTER, ary);
         Convert.setIntValue(freeSpace, FREE_SPACE, ary);
         Convert.setIntValue(prevPage.pid, PREV_PAGE, data);
         Convert.setIntValue(nextPage.pid, NEXT_PAGE, data);
