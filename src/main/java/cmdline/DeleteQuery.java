@@ -2,12 +2,12 @@ package cmdline;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.util.Vector;
+import java.util.ArrayList;
 
 public class DeleteQuery {
   private static String columnDBName;
   private static String columnarFileName;
-  private static Vector<String> targetColumnNames;
+  private static ArrayList<String> targetColumnNames;
   private static String valueConstraint;
   private static String numBuf;
   private static String accessType;
