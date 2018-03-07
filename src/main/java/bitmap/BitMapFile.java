@@ -9,9 +9,7 @@ import bufmgr.PageUnpinnedException;
 import bufmgr.ReplacerException;
 import columnar.ColumnarFile;
 import diskmgr.Page;
-import global.PageId;
-import global.SystemDefs;
-import global.ValueClass;
+import global.*;
 
 
 public class BitMapFile {
@@ -121,16 +119,17 @@ public class BitMapFile {
         if (headerPageId == null) // file not exist
         {
             headerPage = new BitMapHeaderPage();
-            //headerPageId = headerPage.getPageId();
+            headerPageId = headerPage.getCurrPage();
             addFileEntry(fileName, headerPageId);
-            //headerPage.setColumnIndex(columnNo);
-            //headerPage.setValueType(value);
+            headerPage.setColumnIndex((short)columnNo);
+            headerPage.setValueType((short)value.getValueType());
             this.columnarFile = columnarFile;
         } else {
             headerPage = new BitMapHeaderPage(headerPageId);
         }
 
-        init();
+
+        init(value);
         this.fileName = fileName;
 
     }
@@ -139,29 +138,94 @@ public class BitMapFile {
     /*
      * Initialize our bitMap
      */
-    private void init() {
+    private boolean compareValues(int a, int b){
+        if (a==b)
+        return true;
+        else
+        return false;
+    }
+    private boolean compareValues(float a, float b){
+        if (a==b)
+            return true;
+        else
+            return false;
+    }
+    private boolean compareValues(String a, String b){
+        if (a.equals(b))
+            return true;
+        else
+            return false;
+    }
+    private boolean compareValues(int c,int a, int b){
+        //a must be smaller than b
+        if (c>= a && c<=b)
+            return true;
+        else
+            return false;
+    }
+    private boolean compareValues(float c,float a, float b){
+        //a must be smaller than b
+        if (c>= a && c<=b)
+            return true;
+        else
+            return false;
+    }
+    private boolean compareValues(String c,String a, String b){
+        //a must be smaller than b
+        if (c.compareTo(a)>=0 && c.compareTo(b)>=0)
+            return true;
+        else
+            return false;
+    }
+    private void init(ValueClass value) {
         //initialize a sequential scan on the
-        //Scan scan = columnarFile.openColumnScan(1);
-        //ValueClass value = headerpage.getValue()
-        /*
-         * get value of 1st tuple
-         * ValueClass value = scan.getnext();
-         *
-         * check if the tuple match the value
-         *
-         * if yes then insert(1);
-         * if no then position ++;		 */
-        /*
-         *
-         */
 
-        /*
-         * while(scan.getNext()){
-         * scan through the tuples
-         *
-         *
-         * }
-         */
+        //Scan scan = columnarFile.openColumnScan(1);
+        //check if scan object is not valid
+
+        int val_type=value.getValueType();
+        boolean flag=false;
+        int position=0;
+
+
+         /*check if the tuple match the value*/
+
+         switch(val_type)
+         {
+             case 1:/*IntegerValue value_new1=scan.getnext();
+                    IntegerValue value_given1=(IntegerValue) value;
+
+                    do {
+                        flag = compareValues(value_new1.getIntValue(), value_given1.getIntValue());
+                        if (flag) {
+                            //set bit at the given position as 1
+                            insert(position);
+                        } else {
+                            position = position + 1;
+                            // access next column value
+                            value_new1 = scan.getnext();
+
+                        }
+                    }while(value_new1!=NULL); *///how the scan will end
+
+             case 2:/*StringValue value_new2=scan.getnext();
+                    StringValue value_given2=(StringValue) value;
+                    flag=compareValues(value_new2.getStringValue(),value_given2.getStringValue());*/
+             case 3:/*FloatValue value_new3=scan.getnext();
+                    FloatValue value_given3=(FloatValue)value;
+                    flag=compareValues(value_new3.getFloatValue(),value_given3.getFloatValue());*/
+             /*
+             Issue : How to know that value_new object is range as it will be a single value
+             case 4:RangeIntValue value_new4=scan.getnext();
+                    flag=compareValues(value_new4.getIntValue(),value.getIntValue1(),value.getIntValue2());
+             case 5:RangeStringValue value_new5=scan.getnext();
+                    flag=compareValues(value_new5.getStringValue(),value.getStringValue1(),value.getStringValue2());
+             case 6:RangeFloatValue value_new6=scan.getnext();
+                    flag=compareValues(value_new6.getFloatValue(),value.getFloatValue1(),value.getFloatValue2());
+            */
+         }
+
+
 
     }
 
