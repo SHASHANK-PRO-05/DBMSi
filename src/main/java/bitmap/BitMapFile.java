@@ -1,47 +1,192 @@
 package bitmap;
-import global.*;
+
+import java.io.IOException;
+
+
+import bufmgr.HashEntryNotFoundException;
+import bufmgr.InvalidFrameNumberException;
+import bufmgr.PageUnpinnedException;
+import bufmgr.ReplacerException;
+import columnar.ColumnarFile;
+import diskmgr.Page;
+import global.PageId;
+import global.SystemDefs;
+import global.ValueClass;
+
 
 public class BitMapFile {
-    BitMapFile(String filename){
+
+
+    private BitMapHeaderPage headerPage;
+    private PageId headerPageId;
+    private String fileName;
+    private ColumnarFile columnarFile;
+
+
+    /**
+     * Access method to data member.
+     *
+     * @return Return a BitMapHeaderPage object that is the header page
+     * of this bitmap file.
+     */
+    public BitMapHeaderPage getHeaderPage() {
+        return headerPage;
+    }
+
+
+    private PageId getFileEntry(String fileName) throws GetFileEntryException {
+        try {
+            return SystemDefs.JavabaseDB.getFileEntry(fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new GetFileEntryException(e, "");
+        }
+    }
+
+    private Page pinPage(PageId pageId) throws PinPageException {
+        try {
+            Page page = new Page();
+            SystemDefs.JavabaseBM.pinPage(pageId, page, false/*Rdisk*/);
+            return page;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new PinPageException(e, "");
+        }
+    }
+
+
+    private void addFileEntry(String fileName, PageId pageId)
+            throws AddFileEntryException {
+        try {
+            SystemDefs.JavabaseDB.addFileEntry(fileName, pageId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new AddFileEntryException(e, "");
+        }
+    }
+
+    private void unpinPage(PageId pageId) throws UnpinPageException {
+        try {
+            SystemDefs.JavabaseBM.unpinPage(pageId, false);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new UnpinPageException(e, "");
+        }
+    }
+
+    private void freePage(PageId pageId) throws FreePageException {
+        try {
+            SystemDefs.JavabaseBM.freePage(pageId);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new FreePageException(e, "");
+        }
 
     }
 
-    /* Commented because of dependency on Columnarfile class
-    BitMapFile(java.lang.String filename, Columnarfile columnfile,
-               int ColumnNo, ValueClass value){
-
-    }
-    */
-
-    //Close the BitMap file
-    void close(){
-
+    private void deleteFileEntry(String fileName)
+            throws DeleteFileEntryException {
+        try {
+            SystemDefs.JavabaseDB.deleteFileEntry(fileName);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new DeleteFileEntryException(e, "");
+        }
     }
 
-    //Destroy the entire BitMap file
-    void destroyBitMapFile(){
+    private void unpinPage(PageId pageId, boolean dirty)
+            throws UnpinPageException {
+        try {
+            SystemDefs.JavabaseBM.unpinPage(pageId, dirty);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new UnpinPageException(e, "");
+        }
+    }
+
+
+    public BitMapFile(String fileName) throws GetFileEntryException,
+            PinPageException, ConstructPageException {
+        headerPageId = getFileEntry(fileName);
+        headerPage = new BitMapHeaderPage(headerPageId);
+        this.fileName = fileName;
+    }
+
+
+    public BitMapFile(String fileName, ColumnarFile columnarFile, int columnNo, ValueClass value)
+            throws GetFileEntryException,
+            ConstructPageException, IOException, AddFileEntryException {
+
+        headerPageId = getFileEntry(fileName);
+        if (headerPageId == null) // file not exist
+        {
+            headerPage = new BitMapHeaderPage();
+            //headerPageId = headerPage.getPageId();
+            addFileEntry(fileName, headerPageId);
+            //headerPage.setColumnIndex(columnNo);
+            //headerPage.setValueType(value);
+            this.columnarFile = columnarFile;
+        } else {
+            headerPage = new BitMapHeaderPage(headerPageId);
+        }
+
+        init();
+        this.fileName = fileName;
 
     }
 
-    //Access method to data member
 
     /*
-    BitMapHeaderPage getHeaderPage(){
+     * Initialize our bitMap
+     */
+    private void init() {
+        //initialize a sequential scan on the
+        //Scan scan = columnarFile.openColumnScan(1);
+        //ValueClass value = headerpage.getValue()
+        /*
+         * get value of 1st tuple
+         * ValueClass value = scan.getnext();
+         *
+         * check if the tuple match the value
+         *
+         * if yes then insert(1);
+         * if no then position ++;		 */
+        /*
+         *
+         */
+
+        /*
+         * while(scan.getNext()){
+         * scan through the tuples
+         *
+         *
+         * }
+         */
 
     }
 
-    //set the entry at the given position to 0.
-    boolean Delete(int position){
+
+    public void close() throws PageUnpinnedException,
+            InvalidFrameNumberException, HashEntryNotFoundException,
+            ReplacerException {
+        if (headerPage != null) {
+            SystemDefs.JavabaseBM.unpinPage(headerPageId, true);
+            headerPage = null;
+        }
+    }
+
+    public void destroyBitMapFile() {
 
     }
 
-    //set the entry at the given position to 1.
-    boolean Insert(int position){
+    public boolean Delete(int position) {
+        return false;
+    }
 
-    }*/
+    public boolean Insert(int position) {
+        return false;
 
-
-
+    }
 
 
 }
