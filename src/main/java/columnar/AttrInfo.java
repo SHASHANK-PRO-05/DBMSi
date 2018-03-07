@@ -1,11 +1,10 @@
 package columnar;
 
-import global.PageId;
 
 public class AttrInfo {
 
 	private int columnId;
-	private PageId pageId;
+	private String fileName;
 	private int attrType;
 	private int attrSize;
 	public int getColumnId() {
@@ -14,11 +13,11 @@ public class AttrInfo {
 	public void setColumnId(int columnId) {
 		this.columnId = columnId;
 	}
-	public PageId getPageId() {
-		return pageId;
+	public String getfileName() {
+		return fileName;
 	}
-	public void setPageId(PageId pageId) {
-		this.pageId = pageId;
+	public void setfileName(String fileName) {
+		this.fileName = fileName;
 	}
 	public int getAttrType() {
 		return attrType;
