@@ -1,8 +1,12 @@
 package columnar;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import bufmgr.BufMgr;
+import diskmgr.DiskMgrException;
 import diskmgr.FileNameTooLongException;
+import diskmgr.Page;
 import global.AttrType;
 import global.GlobalConst;
 import global.PageId;
@@ -17,10 +21,10 @@ import heap.InvalidTupleSizeException;
 
 public class ColumnarFile implements GlobalConst {
 
-    public ColumnarHeader columnarHeader;
-    public Heapfile heapFileNames[];
-    static int numColumns;
-    AttrType[] type;
+    private ColumnarHeader columnarHeader;
+    private Heapfile heapFileNames[];
+    private int numColumns;
+
 
     public ColumnarFile(String fileName, int numColumns, AttrType[] type)
             throws ColumnClassCreationException, HFDiskMgrException,
@@ -28,12 +32,15 @@ public class ColumnarFile implements GlobalConst {
 
         try {
             columnarHeader = new ColumnarHeader(fileName, numColumns, type);
+            heapFileNames = new Heapfile[numColumns];
             for (int i = 0; i < numColumns; i++) {
                 String fileNum = Integer.toString(i);
                 String columnsFileName = fileName + "." + fileNum;
                 heapFileNames[i] = new Heapfile(columnsFileName);
             }
+
         } catch (Exception e) {
+            e.printStackTrace();
             for (int i = 0; i < numColumns; i++) {
                 String fileNum = Integer.toString(i);
                 String columnsFileName = fileName + "." + fileNum;
@@ -49,8 +56,19 @@ public class ColumnarFile implements GlobalConst {
             throw new ColumnClassCreationException(e
                     , "ColumnarFile: not able to create a file");
         }
+    }
 
-
+    public ColumnarFile(String fileName)
+            throws IOException, DiskMgrException
+            , ColumnarFileDoesExistsException
+            , ColumnarFilePinPageException {
+        PageId pageId = getFileEntry(fileName + ".h");
+        if (pageId != null) {
+            columnarHeader = new ColumnarHeader(pageId, fileName);
+        } else {
+            throw new ColumnarFileDoesExistsException(null
+                    , "Columnar File Does not exists");
+        }
     }
 
     public void deleteColumnarFile()
@@ -60,15 +78,28 @@ public class ColumnarFile implements GlobalConst {
             HFBufMgrException,
             HFDiskMgrException,
             IOException {
-
-        deleteFileEntry(columnarHeader.hdrFile);
         for (int i = 0; i < numColumns; i++) {
             heapFileNames[i].deleteFile();
             deleteFileEntry(heapFileNames[i].toString());
         }
 
-        deleteFileEntry(columnarHeader.hdrFile);
+        deleteFileEntry(columnarHeader.getHdrFile());
 
+    }
+
+
+    private void pinPage(PageId pageId, Page page) throws
+            ColumnarFilePinPageException {
+        try {
+            SystemDefs.JavabaseBM.pinPage(pageId, page, false);
+        } catch (Exception e) {
+            throw new ColumnarFilePinPageException(e,
+                    "Columnar: Not able to pin page");
+        }
+    }
+
+    private PageId getFileEntry(String fileName) throws IOException, DiskMgrException {
+        return SystemDefs.JavabaseDB.getFileEntry(fileName);
     }
 
     private void deallocatePage(PageId pageId) throws HFDiskMgrException {
@@ -85,8 +116,32 @@ public class ColumnarFile implements GlobalConst {
         try {
             SystemDefs.JavabaseDB.deleteFileEntry(filename);
         } catch (Exception e) {
-            throw new HFDiskMgrException(e, "Heapfile.java: delete_file_entry() failed");
+            throw new HFDiskMgrException(e, "Heapfile.java: deleteFileEntry() failed");
         }
 
+    }
+
+    public ColumnarHeader getColumnarHeader() {
+        return columnarHeader;
+    }
+
+    public void setColumnarHeader(ColumnarHeader columnarHeader) {
+        this.columnarHeader = columnarHeader;
+    }
+
+    public Heapfile[] getHeapFileNames() {
+        return heapFileNames;
+    }
+
+    public void setHeapFileNames(Heapfile[] heapFileNames) {
+        this.heapFileNames = heapFileNames;
+    }
+
+    public int getNumColumns() {
+        return numColumns;
+    }
+
+    public void setNumColumns(int numColumns) {
+        this.numColumns = numColumns;
     }
 }

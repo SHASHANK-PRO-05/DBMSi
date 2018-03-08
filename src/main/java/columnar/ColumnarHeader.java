@@ -3,21 +3,24 @@ package columnar;
 import java.io.IOException;
 
 import diskmgr.FileNameTooLongException;
+import diskmgr.InvalidPageNumberException;
 import diskmgr.Page;
 import global.*;
-import heap.HFBufMgrException;
-import heap.HFDiskMgrException;
-import heap.HFException;
-import heap.HFPage;
+import heap.*;
 
 
 public class ColumnarHeader extends HFPage {
-    String hdrFile;
-    private int COLUMNMETA_COLUMNID = 0;
-    private int COLUMNMETA_ATTR = 2;
-    private int COLUMNMETA_SIZE = 4;
-    private int COLUMNMETA_NAME = 6;
+    private String hdrFile;
+    private PageId headerPageId;
+    final private int COLUMNMETA_COLUMNID = 0;
+    final private int COLUMNMETA_ATTR = 2;
+    final private int COLUMNMETA_SIZE = 4;
+    final private int COLUMNMETA_NAME = 6;
 
+    public ColumnarHeader(PageId pageId, String tableName) {
+        this.headerPageId = pageId;
+        this.hdrFile = tableName;
+    }
 
     public ColumnarHeader(String name, int numColumns, AttrType[] type)
             throws HFDiskMgrException,
@@ -46,6 +49,7 @@ public class ColumnarHeader extends HFPage {
             setType((short) numColumns);
             init(type);
             unpinPage(hdrPageNo, true /*dirty*/);
+            this.headerPageId = hdrPageNo;
         } else {
             throw new ColumnarFileExistsException(null,
                     "Columnar: Trying to create file existing already");
@@ -88,7 +92,7 @@ public class ColumnarHeader extends HFPage {
                     nextPageId = newPage(page);
                     pinPage(pageId, hfPage);
                     hfPage.setNextPage(nextPageId);
-                    page.init(nextPageId, new Page());
+                    page.init(nextPageId, page);
                     page.setPrevPage(pageId);
                     rid = page.insertRecord(byteArray);
                     unpinPage(pageId, true);
@@ -101,6 +105,115 @@ public class ColumnarHeader extends HFPage {
         }
     }
 
+
+    /*
+     * function sets the index info in the meta-data file
+     *
+     */
+    public RID setIndex(IndexInfo info) {
+        return null;
+    }
+
+    /*
+     * function gets the index info from the meta-data file
+     * it will  be used for Btree index
+     * @param columnNum - columnId
+     * @param indType - type of indexing
+     * return type is record id
+     */
+
+    public RID getIndex(int columnNum, IndexType indType) {
+
+        return null;
+
+    }
+
+    /*
+     * function gets the index info from the meta-data file
+     * it will  be used for Bitmap index
+     * @param columnNum - columnId
+     * @param value - value of the column that indexing is applied
+     * @param indType - type of indexing
+     * return type is record id
+     */
+
+
+    public RID getIndex(int columnNum, ValueClass value, IndexType indType) {
+        return null;
+    }
+    /*
+     * function returns the columns info
+     * reading from the page
+     * @return array of AttrType(Column info)
+     */
+
+    public AttrType[] getColumns() throws IOException
+            , HFBufMgrException, InvalidSlotNumberException {
+
+        int countRecords = getColumnCount();
+        AttrType[] attrTypes = new AttrType[countRecords];
+        PageId pageId = new PageId(this.headerPageId.pid);
+        HFPage page = new HFPage();
+        PageId nextPageId;
+        RID prevRID = null;
+        for (int i = 0; i < countRecords; i++) {
+            RID rid = null;
+            pinPage(pageId, page);
+            while (rid == null && pageId.pid != INVALID_PAGE) {
+                if (prevRID == null) {
+                    rid = page.firstRecord();
+                } else {
+                    rid = page.nextRecord(prevRID);
+                    if (rid == null) {
+                        nextPageId = page.getNextPage();
+                        unpinPage(pageId, false);
+                        pageId = nextPageId;
+                        if (pageId.pid != INVALID_PAGE)
+                            pinPage(pageId, page);
+                    }
+                }
+                prevRID = rid;
+            }
+
+            AttrType attrType = convertAttrByteInfo(page.getDataAtSlot(rid));
+        }
+        return null;
+    }
+
+    /*
+     * convert byte[] to attrtype
+     */
+    private AttrType convertAttrByteInfo(byte[] byteinfo)
+            throws IOException {
+        AttrType attrType = new AttrType();
+        attrType.setColumnId(Convert.getShortValue(COLUMNMETA_COLUMNID, byteinfo));
+        attrType.setAttrType(Convert.getShortValue(COLUMNMETA_ATTR, byteinfo));
+        attrType.setSize(Convert.getShortValue(COLUMNMETA_SIZE, byteinfo));
+        attrType.setAttrName(Convert.getStringValue(COLUMNMETA_NAME, byteinfo, 50));
+
+        return attrType;
+    }
+    /*
+     * function to return info about one column
+     * @  return AttrType
+     *
+     */
+
+    public AttrType getColumn(int i) throws IOException
+            , InvalidSlotNumberException, HFBufMgrException {
+        //TODO: Need to be optimzed
+        return getColumns()[i];
+    }
+
+    /*
+     * function to return number of columns
+     * @  return AttrType
+     *
+     */
+    public int getColumnCount() throws IOException {
+        return this.getType();
+    }
+
     private PageId newPage(Page page) throws ColumnarNewPageException {
         try {
             return SystemDefs.JavabaseBM.newPage(page, 1);
@@ -110,9 +223,7 @@ public class ColumnarHeader extends HFPage {
     }
 
     private PageId getFileEntry(String filename) throws HFDiskMgrException {
-
         PageId tmpId = new PageId();
-
         try {
             tmpId = SystemDefs.JavabaseDB.getFileEntry(filename);
         } catch (Exception e) {
@@ -166,4 +277,19 @@ public class ColumnarHeader extends HFPage {
         }
     }
 
+    public String getHdrFile() {
+        return hdrFile;
+    }
+
+    public void setHdrFile(String hdrFile) {
+        this.hdrFile = hdrFile;
+    }
+
+    public PageId getHeaderPageId() {
+        return headerPageId;
+    }
+
+    public void setHeaderPageId(PageId headerPageId) {
+        this.headerPageId = headerPageId;
+    }
 }
