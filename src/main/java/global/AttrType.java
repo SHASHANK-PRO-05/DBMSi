@@ -36,6 +36,10 @@ public class AttrType {
         attrType = _attrType;
     }
 
+    public AttrType() {
+
+    }
+
     public String toString() {
 
         switch (attrType) {
