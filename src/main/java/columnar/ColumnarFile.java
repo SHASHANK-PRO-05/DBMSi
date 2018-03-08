@@ -11,17 +11,13 @@ import global.AttrType;
 import global.GlobalConst;
 import global.PageId;
 import global.SystemDefs;
-import heap.FileAlreadyDeletedException;
-import heap.HFBufMgrException;
-import heap.HFDiskMgrException;
-import heap.HFException;
-import heap.Heapfile;
-import heap.InvalidSlotNumberException;
+import heap.*;
 import heap.InvalidTupleSizeException;
 
 public class ColumnarFile implements GlobalConst {
 
     private ColumnarHeader columnarHeader;
+    //Shashank: I am not sure if it is required
     private Heapfile heapFileNames[];
     private int numColumns;
 
@@ -62,7 +58,7 @@ public class ColumnarFile implements GlobalConst {
             throws IOException, DiskMgrException
             , ColumnarFileDoesExistsException
             , ColumnarFilePinPageException {
-        PageId pageId = getFileEntry(fileName + ".h");
+        PageId pageId = getFileEntry(fileName);
         if (pageId != null) {
             columnarHeader = new ColumnarHeader(pageId, fileName);
         } else {
@@ -77,15 +73,24 @@ public class ColumnarFile implements GlobalConst {
             InvalidTupleSizeException,
             HFBufMgrException,
             HFDiskMgrException,
-            IOException {
+            IOException,
+            ColumnarFilePinPageException,
+            ColumnarFileUnpinPageException,
+            HFException {
+        String fname = this.getColumnarHeader().getHdrFile();
+        PageId pageId = this.getColumnarHeader().getHeaderPageId();
+        HFPage hfPage = new HFPage();
+        pinPage(pageId, hfPage);
         for (int i = 0; i < numColumns; i++) {
-            heapFileNames[i].deleteFile();
-            deleteFileEntry(heapFileNames[i].toString());
+            Heapfile hf = new Heapfile(fname + "i");
+            hf.deleteFile();
         }
-
+        unpinPage(pageId, false);
         deleteFileEntry(columnarHeader.getHdrFile());
 
     }
+
+
 
 
     private void pinPage(PageId pageId, Page page) throws
@@ -95,6 +100,14 @@ public class ColumnarFile implements GlobalConst {
         } catch (Exception e) {
             throw new ColumnarFilePinPageException(e,
                     "Columnar: Not able to pin page");
+        }
+    }
+
+    private void unpinPage(PageId pageId, boolean dirty) throws ColumnarFileUnpinPageException {
+        try {
+            SystemDefs.JavabaseBM.unpinPage(pageId, dirty);
+        } catch (Exception e) {
+            throw new ColumnarFileUnpinPageException(e, "Columnar: not able to unpin");
         }
     }
 

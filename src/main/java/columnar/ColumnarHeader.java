@@ -16,6 +16,10 @@ public class ColumnarHeader extends HFPage {
     final private int COLUMNMETA_ATTR = 2;
     final private int COLUMNMETA_SIZE = 4;
     final private int COLUMNMETA_NAME = 6;
+    final private int INDEXMATA_COLUMNID = 0;
+    final private int INDEXMATA_INDEXTYPE = 2;
+    final private int INDEXMATA_FILENAME = 4;
+    final private int INDEXMATA_VALUE = 54;
 
     public ColumnarHeader(PageId pageId, String tableName) {
         this.headerPageId = pageId;
@@ -35,9 +39,9 @@ public class ColumnarHeader extends HFPage {
         //On failing as file is not present yet so created HFPage and inserted the name and inserted back
         // to DB file
 
-        if (name.length() >= 48)
+        if (name.length() >= 50)
             throw new FileNameTooLongException(null, "FILENAME: file name is too long");
-        hdrFile = name + ".h";
+        hdrFile = name;
         PageId hdrPageNo = getFileEntry(hdrFile);
         if (hdrPageNo == null) {
             hdrPageNo = newPage(this, 1);
@@ -110,8 +114,71 @@ public class ColumnarHeader extends HFPage {
      * function sets the index info in the meta-data file
      *
      */
-    public RID setIndex(IndexInfo info) {
-        return null;
+    public RID setIndex(IndexInfo info)
+            throws IOException,
+            ColumnarMetaInsertException,
+            HFBufMgrException,
+            ColumnarNewPageException {
+        int infoLength = getlengthforIndexInfo(info);
+        byte[] byteInfo = new byte[infoLength];
+        Convert.setShortValue((short) info.getColumnNumber(), INDEXMATA_COLUMNID, byteInfo);
+        Convert.setShortValue((short) info.getIndextype().indexType, INDEXMATA_INDEXTYPE, byteInfo);
+        Convert.setStringValue(info.getFileName(), INDEXMATA_FILENAME, byteInfo);
+        if (info.getValue().getValueType() == 1) {
+            Convert.setIntValue((Integer) info.getValue().getValue(), INDEXMATA_VALUE, byteInfo);
+        } else {
+            Convert.setStringValue((String) info.getValue().getValue(), INDEXMATA_VALUE, byteInfo);
+        }
+        RID rid = this.insertRecord(byteInfo);
+        if (rid == null) {
+            PageId pageId = new PageId(this.getCurPage().pid);
+            PageId nextPageId = new PageId(this.getNextPage().pid);
+            HFPage hfPage = new HFPage();
+            while (nextPageId.pid != INVALID_PAGE && rid == null) {
+                pageId.pid = nextPageId.pid;
+                pinPage(pageId, hfPage);
+                rid = hfPage.insertRecord(byteInfo);
+                nextPageId.pid = hfPage.getNextPage().pid;
+                if (rid != null)
+                    unpinPage(pageId, true);
+                else
+                    unpinPage(pageId, false);
+            }
+            if (rid == null) {
+                HFPage page = new HFPage();
+                nextPageId = newPage(page);
+                pinPage(pageId, hfPage);
+                hfPage.setNextPage(nextPageId);
+                page.init(nextPageId, new Page());
+                page.setPrevPage(pageId);
+                rid = page.insertRecord(byteInfo);
+                unpinPage(pageId, true);
+                unpinPage(nextPageId, true);
+                if (rid == null) {
+                    throw new ColumnarMetaInsertException(null, "Columnar: Not able to insert meta info");
+                }
+            }
+        }
+        return rid;
+    }
+
+    /*
+     * get the length of the Index record
+     * @param- IndexInfo contains the index of information
+     * @return return integer- the length
+     */
+    private int getlengthforIndexInfo(IndexInfo info) {
+        int length = 0;
+        if (info.getValue().getValueType() == 1) {
+            length += 4;
+        } else if (info.getValue().getValueType() == 2) {
+            length += 50;
+            //to-do change the size
+        } else if (info.getValue().getValueType() == -1) {
+            //do nothing
+        }
+        length += 54; //2+2+50
+        return length;
     }
 
     /*
@@ -156,9 +223,11 @@ public class ColumnarHeader extends HFPage {
         HFPage page = new HFPage();
         PageId nextPageId;
         RID prevRID = null;
+        pinPage(pageId, page);
+
         for (int i = 0; i < countRecords; i++) {
             RID rid = null;
-            pinPage(pageId, page);
+
             while (rid == null && pageId.pid != INVALID_PAGE) {
                 if (prevRID == null) {
                     rid = page.firstRecord();
@@ -175,9 +244,10 @@ public class ColumnarHeader extends HFPage {
                 prevRID = rid;
             }
 
-            AttrType attrType = convertAttrByteInfo(page.getDataAtSlot(rid));
+            attrTypes[i] = convertAttrByteInfo(page.getDataAtSlot(rid));
         }
-        return null;
+        unpinPage(pageId, false);
+        return attrTypes;
     }
 
     /*

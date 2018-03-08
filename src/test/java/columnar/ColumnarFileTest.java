@@ -26,5 +26,10 @@ public class ColumnarFileTest {
         System.out.println(columnarFile.getColumnarHeader().getNextPage().pid);
         System.out.println(columnarFile.getColumnarHeader().getColumnCount());
         columnarFile.getColumnarHeader().getColumns();
+        columnarFile.deleteColumnarFile();
+        SystemDefs.JavabaseBM.flushAllPages();
+        System.out.println(SystemDefs.JavabaseDB.getFileEntry(columnarFile.getColumnarHeader().getHdrFile()));
+
+
     }
 }
