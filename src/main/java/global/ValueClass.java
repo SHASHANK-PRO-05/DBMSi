@@ -25,15 +25,12 @@ public abstract class ValueClass{
             return 2;
         else if (this instanceof FloatValue)
             return 3;
-        else if (this instanceof RangeIntValue)
-            return 4;
-        else if (this instanceof RangeStringValue)
-            return 5;
-        else if (this instanceof RangeFloatValue)
-            return 6;
         else
             return -1; //invalid type
 
     }
+    
+    public abstract Object getValue();
+    public abstract void setValue(Object obj);
 
 }

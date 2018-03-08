@@ -3,12 +3,14 @@ package global;
 public class IntegerValue extends ValueClass {
     int value;
 
-
-    public int getIntValue() {
+    public IntegerValue(Object obj) {
+		value = (Integer)obj;
+	}
+    public Object getValue() {
         return value;
     }
 
-    public void setIntValue(int value) {
-        this.value = value;
+    public void setValue(Object val) {
+        this.value = (int)val;
     }
 }

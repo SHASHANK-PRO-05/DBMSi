@@ -16,12 +16,7 @@ public class BitMapTest {
 
     }
 
-    class IntegerKey extends ValueClass {
-        public IntegerKey() {
-
-        }
-    }
-
+  
     @Test
     public void setupBitMapOperation() throws Exception {
         String dbPath = "Minibase.min";

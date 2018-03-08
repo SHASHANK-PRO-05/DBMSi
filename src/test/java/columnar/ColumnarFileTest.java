@@ -1,8 +1,7 @@
 package columnar;
 
 import bufmgr.LRU;
-import global.AttrType;
-import global.SystemDefs;
+import global.*;
 import org.junit.Test;
 
 public class ColumnarFileTest {
@@ -12,11 +11,15 @@ public class ColumnarFileTest {
         SystemDefs systemDefs = new SystemDefs(dbPath, 3000
                 , 400, "LRU");
         AttrType[] attrTypes = new AttrType[20];
+        int[] in = new int[20];
+
         for (int i = 0; i < 20; i++) {
-            attrTypes[i] = new AttrType((int) (Math.random() * 4));
+            attrTypes[i] = new AttrType();
             attrTypes[i].setColumnId(i);
             attrTypes[i].setSize(4);
+            attrTypes[i].setAttrType(1);
             attrTypes[i].setAttrName("Column" + i);
+            in[i] = (int) (Math.random() * 40);
         }
         ColumnarFile columnarFile = new ColumnarFile("Employee", 20, attrTypes);
         SystemDefs.JavabaseBM.flushAllPages();
@@ -26,5 +29,30 @@ public class ColumnarFileTest {
         System.out.println(columnarFile.getColumnarHeader().getNextPage().pid);
         System.out.println(columnarFile.getColumnarHeader().getColumnCount());
         columnarFile.getColumnarHeader().getColumns();
+
+        columnarFile.insertTuple(Convert.intAtobyteA(in));
+
+
+        IndexInfo info = new IndexInfo();
+        info.setColumnNumber(12);
+        info.setFileName("Laveena");
+        info.setIndexType(new IndexType(1));
+        info.setValue(new IntegerValue(4));
+
+
+        columnarFile.getColumnarHeader().setIndex(info);
+        IndexInfo info1 = columnarFile.getColumnarHeader().getIndex(12, new IndexType(1));
+        System.out.println(info1.getColumnNumber());
+        System.out.println(info1.getFileName());
+
+
+        SystemDefs.JavabaseBM.unpinPage(columnarFile.getColumnarHeader().getHeaderPageId(), false);
+        SystemDefs.JavabaseBM.flushAllPages();
+
+        columnarFile.deleteColumnarFile();
+        SystemDefs.JavabaseBM.flushAllPages();
+        System.out.println(SystemDefs.JavabaseDB.getFileEntry(columnarFile.getColumnarHeader().getHdrFile()));
+
+
     }
 }
