@@ -18,7 +18,12 @@ public class ColumnarFile implements GlobalConst {
     //Shashank: I am not sure if it is required
     private Heapfile heapFileNames[];
     private int numColumns;
-
+    /*
+     * Contructor for initialization
+     * @param filename: dbname
+     * @param numColumns; number of columns
+     * @param type : attribute information
+     */
 
     public ColumnarFile(String fileName, int numColumns, AttrType[] type)
             throws ColumnClassCreationException, HFDiskMgrException,
@@ -51,7 +56,10 @@ public class ColumnarFile implements GlobalConst {
                     , "ColumnarFile: not able to create a file");
         }
     }
-
+    
+    /*
+     * constructor for opening the db
+     */
     public ColumnarFile(String fileName)
             throws IOException, DiskMgrException
             , ColumnarFileDoesExistsException
@@ -64,7 +72,10 @@ public class ColumnarFile implements GlobalConst {
                     , "Columnar File Does not exists");
         }
     }
-
+    /*
+     * Deletes whole Database
+     * Not completed yet
+     */
     public void deleteColumnarFile()
             throws InvalidSlotNumberException,
             FileAlreadyDeletedException,
@@ -88,7 +99,11 @@ public class ColumnarFile implements GlobalConst {
 
     }
 
-
+    /*
+     * insert a tuple in the heapfile
+     * @param bytePtr: saves the information of tuple 
+     * return: TID 
+     */
     public TID insertTuple(byte[] bytePtr) throws Exception {
 
         ByteToTuple byteToTuple
@@ -102,13 +117,20 @@ public class ColumnarFile implements GlobalConst {
 
         return new TID(rids.length, this.getTupleCount(), rids);
     }
-
+    /*
+     * gives the count of tuple 
+     * return: Integer - count of total records
+     */
     public int getTupleCount() throws Exception {
         String fileName = this.getColumnarHeader().getHdrFile() + ".0";
         Heapfile heapfile = new Heapfile(fileName);
         return heapfile.getRecCnt();
     }
-
+    
+    /*
+     * setup functions 
+     * starts here
+     */
     private void pinPage(PageId pageId, Page page) throws
             ColumnarFilePinPageException {
         try {
@@ -138,7 +160,14 @@ public class ColumnarFile implements GlobalConst {
             throw new HFDiskMgrException(e, "Heapfile.java: deallocatePage failed");
         }
     }
-
+    /*
+     * setup file ends here
+     */
+    
+    
+    /*
+     * deletes a single file entry
+     */
     private void deleteFileEntry(String filename)
             throws HFDiskMgrException {
 
@@ -149,7 +178,9 @@ public class ColumnarFile implements GlobalConst {
         }
 
     }
-
+    /*
+     * getter-setters starts here
+     */
     public ColumnarHeader getColumnarHeader() {
         return columnarHeader;
     }
@@ -173,4 +204,9 @@ public class ColumnarFile implements GlobalConst {
     public void setNumColumns(int numColumns) {
         this.numColumns = numColumns;
     }
+    
+    
+    /*
+     * getter-setter ends here
+     */
 }
