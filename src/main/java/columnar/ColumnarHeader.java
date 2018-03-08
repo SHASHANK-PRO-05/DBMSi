@@ -20,6 +20,7 @@ public class ColumnarHeader extends HFPage {
     final private int INDEXMATA_INDEXTYPE = 2;
     final private int INDEXMATA_FILENAME = 4;
     final private int INDEXMATA_VALUE = 54;
+    private int counter;
 
     public ColumnarHeader(PageId pageId, String tableName) {
         this.headerPageId = pageId;
@@ -51,6 +52,7 @@ public class ColumnarHeader extends HFPage {
             init(hdrPageNo, this);
             PageId pageId = new PageId(INVALID_PAGE);
             setType((short) numColumns);
+            setCounter(0);
             init(type);
             unpinPage(hdrPageNo, true /*dirty*/);
             this.headerPageId = hdrPageNo;
@@ -110,10 +112,6 @@ public class ColumnarHeader extends HFPage {
     }
 
 
-    /*
-     * function sets the index info in the meta-data file
-     *
-     */
     public RID setIndex(IndexInfo info)
             throws IOException,
             ColumnarMetaInsertException,
@@ -137,6 +135,7 @@ public class ColumnarHeader extends HFPage {
             while (nextPageId.pid != INVALID_PAGE && rid == null) {
                 pageId.pid = nextPageId.pid;
                 pinPage(pageId, hfPage);
+
                 rid = hfPage.insertRecord(byteInfo);
                 nextPageId.pid = hfPage.getNextPage().pid;
                 if (rid != null)
@@ -159,6 +158,7 @@ public class ColumnarHeader extends HFPage {
                 }
             }
         }
+        setCounter(++counter);
         return rid;
     }
 
@@ -181,33 +181,11 @@ public class ColumnarHeader extends HFPage {
         return length;
     }
 
-    /*
-     * function gets the index info from the meta-data file
-     * it will  be used for Btree index
-     * @param columnNum - columnId
-     * @param indType - type of indexing
-     * return type is record id
-     */
-
-    public RID getIndex(int columnNum, IndexType indType) {
-
-        return null;
-
-    }
-
-    /*
-     * function gets the index info from the meta-data file
-     * it will  be used for Bitmap index
-     * @param columnNum - columnId
-     * @param value - value of the column that indexing is applied
-     * @param indType - type of indexing
-     * return type is record id
-     */
 
 
-    public RID getIndex(int columnNum, ValueClass value, IndexType indType) {
-        return null;
-    }
+
+
+
     /*
      * function returns the columns info
      * reading from the page
@@ -253,6 +231,128 @@ public class ColumnarHeader extends HFPage {
     /*
      * convert byte[] to attrtype
      */
+    private IndexInfo convertIndexByteInfo(byte[] byteinfo)
+            throws IOException {
+        IndexInfo indexInfo = new IndexInfo();
+        indexInfo.setColumnNumber(Convert.getShortValue(COLUMNMETA_COLUMNID, byteinfo));
+        indexInfo.setIndexType(new IndexType(Convert.getShortValue(COLUMNMETA_ATTR, byteinfo)));
+        indexInfo.setFileName(Convert.getStringValue(COLUMNMETA_SIZE, byteinfo, 50));
+        indexInfo.setValue(new IntegerValue(Convert.getIntValue(COLUMNMETA_NAME, byteinfo)));
+
+        return indexInfo;
+    }
+
+
+//    final private int INDEXMATA_COLUMNID = 0;
+//    final private int INDEXMATA_INDEXTYPE = 2;
+//    final private int INDEXMATA_FILENAME = 4;
+//    final private int INDEXMATA_VALUE = 54;
+
+    /*
+     * function gets the index info from the meta-data file
+     * it will  be used for Btree index
+     * @param columnNum - columnId
+     * @param indType - type of indexing
+     * return type is record id
+     */
+
+    public IndexInfo getIndex(int columnNum, IndexType indType)
+            throws IOException,
+            HFBufMgrException,
+            InvalidSlotNumberException {
+        int indexCount = getCounter();
+        int countRecords = getColumnCount();
+        PageId pageId = new PageId(this.headerPageId.pid);
+        HFPage page = new HFPage();
+        PageId nextPageId;
+        RID prevRID = null;
+        IndexInfo info;
+        pinPage(pageId, page);
+
+        for (int i = 0; i < indexCount + countRecords; i++) {
+            RID rid = null;
+
+            while (rid == null && pageId.pid != INVALID_PAGE) {
+                if (prevRID == null) {
+                    rid = page.firstRecord();
+                } else {
+                    rid = page.nextRecord(prevRID);
+                    if (rid == null) {
+                        nextPageId = page.getNextPage();
+                        unpinPage(pageId, false);
+                        pageId = nextPageId;
+                        if (pageId.pid != INVALID_PAGE)
+                            pinPage(pageId, page);
+                    }
+                }
+                prevRID = rid;
+            }
+            if (i >= countRecords) {
+                info = convertIndexByteInfo(page.getDataAtSlot(rid));
+                if (info.getColumnNumber() == columnNum && info.getIndextype() == indType) {
+                    unpinPage(pageId, false);
+                    return info;
+                }
+            }
+        }
+        unpinPage(pageId, false);
+        return null;
+    }
+
+    /*
+     * function gets the index info from the meta-data file
+     * it will  be used for Bitmap index
+     * @param columnNum - columnId
+     * @param value - value of the column that indexing is applied
+     * @param indType - type of indexing
+     * return type is record id
+     */
+    public IndexInfo getIndex(int columnNum, ValueClass value, IndexType indType)
+            throws IOException,
+            HFBufMgrException,
+            InvalidSlotNumberException {
+        int countRecords = getColumnCount();
+        PageId pageId = new PageId(this.headerPageId.pid);
+        HFPage page = new HFPage();
+        PageId nextPageId;
+        RID prevRID = null;
+        IndexInfo info;
+        pinPage(pageId, page);
+
+        for (int i = 0; i < getCounter(); i++) {
+            RID rid = null;
+
+            while (rid == null && pageId.pid != INVALID_PAGE) {
+                if (prevRID == null) {
+                    rid = page.firstRecord();
+                } else {
+                    rid = page.nextRecord(prevRID);
+                    if (rid == null) {
+                        nextPageId = page.getNextPage();
+                        unpinPage(pageId, false);
+                        pageId = nextPageId;
+                        if (pageId.pid != INVALID_PAGE)
+                            pinPage(pageId, page);
+                    }
+                }
+                prevRID = rid;
+            }
+            if (i >= countRecords) {
+                info = convertIndexByteInfo(page.getDataAtSlot(rid));
+                if (info.getColumnNumber() == columnNum && info.getIndextype() == indType && info.getValue() == value) {
+                    unpinPage(pageId, false);
+                    return info;
+                }
+            }
+        }
+        unpinPage(pageId, false);
+        return null;
+
+    }
+
+    /*
+     * convert byte[] to attrtype
+     */
     private AttrType convertAttrByteInfo(byte[] byteinfo)
             throws IOException {
         AttrType attrType = new AttrType();
@@ -273,6 +373,24 @@ public class ColumnarHeader extends HFPage {
             , InvalidSlotNumberException, HFBufMgrException {
         //TODO: Need to be optimzed
         return getColumns()[i];
+    }
+
+
+    public void setCounter(int indexColunter)
+            throws IOException {
+
+        Convert.setIntValue(indexColunter, PREV_PAGE, data);
+    }
+
+
+    /**
+     * @return page number of next page
+     * @throws IOException I/O errors
+     */
+    public int getCounter()
+            throws IOException {
+        int indexColunter = Convert.getIntValue(PREV_PAGE, data);
+        return indexColunter;
     }
 
     /*

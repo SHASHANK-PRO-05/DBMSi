@@ -1,6 +1,8 @@
 package global;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 public class Convert {
     public static void setIntValue(int value, int position, byte[] data)
@@ -81,6 +83,15 @@ public class Convert {
         outstr.writeFloat(value);
         byte[] B = ((ByteArrayOutputStream) out).toByteArray();
         System.arraycopy(B, 0, data, position, 4);
+    }
+
+    public static byte[] intAtobyteA(int[] data) {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(data.length * 4);
+        IntBuffer intBuffer = byteBuffer.asIntBuffer();
+        intBuffer.put(data);
+
+        byte[] array = byteBuffer.array();
+        return array;
     }
 
     public static void setShortValue(short value, int position, byte[] data)

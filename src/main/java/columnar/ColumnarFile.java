@@ -2,15 +2,13 @@ package columnar;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 
 import bufmgr.BufMgr;
 import diskmgr.DiskMgrException;
 import diskmgr.FileNameTooLongException;
 import diskmgr.Page;
-import global.AttrType;
-import global.GlobalConst;
-import global.PageId;
-import global.SystemDefs;
+import global.*;
 import heap.*;
 import heap.InvalidTupleSizeException;
 
@@ -91,7 +89,25 @@ public class ColumnarFile implements GlobalConst {
     }
 
 
+    public TID insertTuple(byte[] bytePtr) throws Exception {
 
+        ByteToTuple byteToTuple
+                = new ByteToTuple(this.getColumnarHeader().getColumns());
+        ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(bytePtr);
+        RID[] rids = new RID[arrayList.size()];
+        for (int i = 0; i < arrayList.size(); i++) {
+            Heapfile heapfile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + i);
+            rids[i] = heapfile.insertRecord(arrayList.get(i));
+        }
+
+        return new TID(rids.length, this.getTupleCount(), rids);
+    }
+
+    public int getTupleCount() throws Exception {
+        String fileName = this.getColumnarHeader().getHdrFile() + ".0";
+        Heapfile heapfile = new Heapfile(fileName);
+        return heapfile.getRecCnt();
+    }
 
     private void pinPage(PageId pageId, Page page) throws
             ColumnarFilePinPageException {
