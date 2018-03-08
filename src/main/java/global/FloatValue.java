@@ -1,28 +1,25 @@
 package global;
 
-public class FloatValue extends ValueClass{
+public class FloatValue extends ValueClass {
     float value;
 
-    public float getFloatValue() {
+    public FloatValue(float val) {
+        super();
+        this.value = val;
+    }
+
+    public FloatValue(Object val) {
+        super();
+        this.value = ((Float)val).floatValue();
+    }
+
+    public Object getValue() {
         return value;
     }
 
-
-    public void setFloatValue(float value) {
-        this.value = value;
+    public void setValue(Object v) {
+        this.value =((Float)v).floatValue();
     }
-
-
-	@Override
-	public Object getValue() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-
-	@Override
-	public void setValue(Object obj) {
-		// TODO Auto-generated method stub
-		
-	}
+    
+    
 }

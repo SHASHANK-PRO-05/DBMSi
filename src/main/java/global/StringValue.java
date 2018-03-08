@@ -1,25 +1,23 @@
 package global;
 
 public class StringValue extends ValueClass {
+	
     String value;
 
-    public String getStringValue() {
-        return value;
+    public StringValue(String val) {
+        super();
+        this.value = val;
     }
 
-    public void setStringValue(String value) {
-        this.value = value;
+    public StringValue(Object val) {
+        this.value = (String)val;
     }
 
-	@Override
-	public Object getValue() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    public String getValue() {
+        return this.value;
+    }
 
-	@Override
-	public void setValue(Object obj) {
-		// TODO Auto-generated method stub
-		
-	}
+    public void setValue(Object val) {
+        this.value = (String)val;
+    }
 }

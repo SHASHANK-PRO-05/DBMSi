@@ -1,3 +1,13 @@
+/*
+ * The Metadata file stores the column info and the index info
+ * It stores the column in slots one after the other and then it starts to
+ * keep the index information.it is a HFpage with single link list 
+ * where type stores the number of columns
+ * and prevpage stores the number of indexes
+ * There is alot of scope of optimization
+ */
+
+
 package columnar;
 
 import java.io.IOException;
@@ -19,13 +29,26 @@ public class ColumnarHeader extends HFPage {
     final private int INDEXMATA_INDEXTYPE = 2;
     final private int INDEXMATA_FILENAME = 4;
     final private int INDEXMATA_VALUE = 54;
+    
+    
+    //counter for index file, storing at hf-prev byte
     private int counter;
-
+    /*
+     * Constructor to open the meta-data
+     */
     public ColumnarHeader(PageId pageId, String tableName) {
         this.headerPageId = pageId;
         this.hdrFile = tableName;
     }
-
+    /*
+     * Constructor to setup meta-data,
+     * it is a HFpage with single link list 
+     * where type stores the number of columns
+     * and prevpage stores the number of indexes
+     * @param name: Database name
+     * @param numColumn: number of columns
+     * @param type contains ll the info about the columns
+     */
     public ColumnarHeader(String name, int numColumns, AttrType[] type)
             throws HFDiskMgrException,
             HFBufMgrException,
@@ -35,12 +58,10 @@ public class ColumnarHeader extends HFPage {
             ColumnarFileExistsException,
             ColumnarNewPageException,
             ColumnarMetaInsertException {
-        // checking name entry in DB file
-        //On failing as file is not present yet so created HFPage and inserted the name and inserted back
-        // to DB file
-
+    	// File size allowance 50 bytes
         if (name.length() >= 50)
             throw new FileNameTooLongException(null, "FILENAME: file name is too long");
+        
         hdrFile = name;
         PageId hdrPageNo = getFileEntry(hdrFile);
         if (hdrPageNo == null) {
@@ -61,7 +82,10 @@ public class ColumnarHeader extends HFPage {
         }
     }
 
-
+    /*
+     * Columns set-up in the Meta-data
+     * @param attrType - Contains the info about columns
+     */
     public void init(AttrType[] attrTypes) throws IOException
             , HFBufMgrException, ColumnarNewPageException,
             ColumnarMetaInsertException {
@@ -110,7 +134,9 @@ public class ColumnarHeader extends HFPage {
         }
     }
 
-
+    /*
+     * Index-insertion in Meta-data
+     */
     public RID setIndex(IndexInfo info)
             throws IOException,
             ColumnarMetaInsertException,
@@ -123,7 +149,7 @@ public class ColumnarHeader extends HFPage {
         Convert.setStringValue(info.getFileName(), INDEXMATA_FILENAME, byteInfo);
         if (info.getValue().getValueType() == 1) {
             Convert.setIntValue((Integer) info.getValue().getValue(), INDEXMATA_VALUE, byteInfo);
-        } else {
+        } else if (info.getValue().getValueType() == 2) {
             Convert.setStringValue((String) info.getValue().getValue(), INDEXMATA_VALUE, byteInfo);
         }
         RID rid = this.insertRecord(byteInfo);
@@ -182,9 +208,6 @@ public class ColumnarHeader extends HFPage {
 
 
 
-
-
-
     /*
      * function returns the columns info
      * reading from the page
@@ -231,21 +254,22 @@ public class ColumnarHeader extends HFPage {
      * convert byte[] to attrtype
      */
     private IndexInfo convertIndexByteInfo(byte[] byteinfo)
-            throws IOException {
+            throws IOException, InvalidSlotNumberException, HFBufMgrException {
         IndexInfo indexInfo = new IndexInfo();
         indexInfo.setColumnNumber(Convert.getShortValue(COLUMNMETA_COLUMNID, byteinfo));
         indexInfo.setIndexType(new IndexType(Convert.getShortValue(COLUMNMETA_ATTR, byteinfo)));
         indexInfo.setFileName(Convert.getStringValue(COLUMNMETA_SIZE, byteinfo, 50));
-        indexInfo.setValue(new IntegerValue(Convert.getIntValue(COLUMNMETA_NAME, byteinfo)));
-
+        //TO-DO to support all index types incase float also added
+        AttrType attr = new AttrType();
+        int ColumnNo = Convert.getShortValue(COLUMNMETA_COLUMNID, byteinfo);
+        attr = getColumn(ColumnNo);
+        if (attr.getAttrType() == 1) {
+        	indexInfo.setValue(new IntegerValue(Convert.getIntValue(COLUMNMETA_NAME, byteinfo)));
+        }else if(attr.getAttrType() == 0) {
+        	indexInfo.setValue(new StringValue(Convert.getStringValue(COLUMNMETA_NAME, byteinfo,50)));
+        }
         return indexInfo;
     }
-
-
-//    final private int INDEXMATA_COLUMNID = 0;
-//    final private int INDEXMATA_INDEXTYPE = 2;
-//    final private int INDEXMATA_FILENAME = 4;
-//    final private int INDEXMATA_VALUE = 54;
 
     /*
      * function gets the index info from the meta-data file
@@ -336,9 +360,10 @@ public class ColumnarHeader extends HFPage {
                 }
                 prevRID = rid;
             }
+            // i> countRecords then the column indexes will start
             if (i >= countRecords) {
                 info = convertIndexByteInfo(page.getDataAtSlot(rid));
-                if (info.getColumnNumber() == columnNum && info.getIndextype() == indType && info.getValue() == value) {
+                if (info.getColumnNumber() == columnNum && info.getIndextype() == indType && value.isequal(info.getValue())) {
                     unpinPage(pageId, false);
                     return info;
                 }
@@ -373,7 +398,10 @@ public class ColumnarHeader extends HFPage {
         //TODO: Need to be optimzed
         return getColumns()[i];
     }
-
+    
+    /*
+     * sets the number of indexes in the meta-data
+     */
 
     public void setCounter(int indexColunter)
             throws IOException {
@@ -408,6 +436,7 @@ public class ColumnarHeader extends HFPage {
             throw new ColumnarNewPageException(null, "Columnar: Not able to get a new page for header");
         }
     }
+    
 
     private PageId getFileEntry(String filename) throws HFDiskMgrException {
         PageId tmpId = new PageId();
