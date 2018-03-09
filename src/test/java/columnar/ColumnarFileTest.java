@@ -28,22 +28,27 @@ public class ColumnarFileTest {
                 , columnarFile.getColumnarHeader(), false);
         System.out.println(columnarFile.getColumnarHeader().getNextPage().pid);
         System.out.println(columnarFile.getColumnarHeader().getColumnCount());
-        columnarFile.getColumnarHeader().getColumns();
-
+        AttrType[] attrTypes1 = columnarFile.getColumnarHeader().getColumns();
+        for (AttrType attrType : attrTypes1) {
+            System.out.println(attrType.getSize());
+            System.out.println(attrType.getAttrType());
+            System.out.println(attrType.getColumnId());
+            System.out.println(attrType.getAttrName());
+        }
         columnarFile.insertTuple(Convert.intAtobyteA(in));
 
 
-        IndexInfo info = new IndexInfo();
-        info.setColumnNumber(12);
-        info.setFileName("Laveena");
-        info.setIndexType(new IndexType(1));
-        info.setValue(new IntegerValue(4));
-
-
-        columnarFile.getColumnarHeader().setIndex(info);
-        IndexInfo info1 = columnarFile.getColumnarHeader().getIndex(12, new IndexType(1));
-        System.out.println(info1.getColumnNumber());
-        System.out.println(info1.getFileName());
+//        IndexInfo info = new IndexInfo();
+//        info.setColumnNumber(12);
+//        info.setFileName("Laveena");
+//        info.setIndexType(new IndexType(1));
+//        info.setValue(new IntegerValue(4));
+//
+//
+//        columnarFile.getColumnarHeader().setIndex(info);
+//        IndexInfo info1 = columnarFile.getColumnarHeader().getIndex(12, new IndexType(1));
+//        System.out.println(info1.getColumnNumber());
+//        System.out.println(info1.getFileName());
 
 
         SystemDefs.JavabaseBM.unpinPage(columnarFile.getColumnarHeader().getHeaderPageId(), false);

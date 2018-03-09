@@ -56,7 +56,7 @@ public class ColumnarFile implements GlobalConst {
                     , "ColumnarFile: not able to create a file");
         }
     }
-    
+
     /*
      * constructor for opening the db
      */
@@ -72,6 +72,7 @@ public class ColumnarFile implements GlobalConst {
                     , "Columnar File Does not exists");
         }
     }
+
     /*
      * Deletes whole Database
      * Not completed yet
@@ -101,34 +102,43 @@ public class ColumnarFile implements GlobalConst {
 
     /*
      * insert a tuple in the heapfile
-     * @param bytePtr: saves the information of tuple 
-     * return: TID 
+     * @param bytePtr: saves the information of tuple
+     * return: TID
      */
     public TID insertTuple(byte[] bytePtr) throws Exception {
 
+        DirectoryHFPage directoryHFPage = new DirectoryHFPage();
+        pinPage(this.getColumnarHeader().getHeaderPageId(), directoryHFPage);
         ByteToTuple byteToTuple
                 = new ByteToTuple(this.getColumnarHeader().getColumns());
         ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(bytePtr);
         RID[] rids = new RID[arrayList.size()];
         for (int i = 0; i < arrayList.size(); i++) {
             Heapfile heapfile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + i);
+            //TODO: Exception handling and removal in case
+            //TODO: of failures
             rids[i] = heapfile.insertRecord(arrayList.get(i));
         }
-
-        return new TID(rids.length, this.getTupleCount(), rids);
+        long pos = directoryHFPage.getReccnt() + 1;
+        directoryHFPage.setReccnt(pos);
+        unpinPage(this.getColumnarHeader().getHeaderPageId(), true);
+        return new TID(rids.length, pos, rids);
     }
+
     /*
-     * gives the count of tuple 
+     * gives the count of tuple
      * return: Integer - count of total records
      */
-    public int getTupleCount() throws Exception {
-        String fileName = this.getColumnarHeader().getHdrFile() + ".0";
-        Heapfile heapfile = new Heapfile(fileName);
-        return heapfile.getRecCnt();
+    public long getTupleCount() throws Exception {
+        DirectoryHFPage directoryHFPage = new DirectoryHFPage();
+        pinPage(this.getColumnarHeader().getHeaderPageId(), directoryHFPage);
+        long ans = directoryHFPage.getReccnt();
+        unpinPage(this.getColumnarHeader().getHeaderPageId(), false);
+        return ans;
     }
-    
+
     /*
-     * setup functions 
+     * setup functions
      * starts here
      */
     private void pinPage(PageId pageId, Page page) throws
@@ -163,8 +173,8 @@ public class ColumnarFile implements GlobalConst {
     /*
      * setup file ends here
      */
-    
-    
+
+
     /*
      * deletes a single file entry
      */
@@ -178,7 +188,6 @@ public class ColumnarFile implements GlobalConst {
         }
 
     }
-    
     public AttrType getColumnInfo(int i) 
     		throws ColumnarFilePinPageException,
     		InvalidSlotNumberException, 
@@ -195,7 +204,7 @@ public class ColumnarFile implements GlobalConst {
     }
     
     
-    /*heap
+    /*
      * getter-setters starts here
      */
     public ColumnarHeader getColumnarHeader() {
@@ -221,8 +230,8 @@ public class ColumnarFile implements GlobalConst {
     public void setNumColumns(int numColumns) {
         this.numColumns = numColumns;
     }
-    
-    
+
+
     /*
      * getter-setter ends here
      */

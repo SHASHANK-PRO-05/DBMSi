@@ -1,7 +1,7 @@
 /*
  * The Metadata file stores the column info and the index info
  * It stores the column in slots one after the other and then it starts to
- * keep the index information.it is a HFpage with single link list 
+ * keep the index information.it is a HFpage with single link list
  * where type stores the number of columns
  * and prevpage stores the number of indexes
  * There is alot of scope of optimization
@@ -18,7 +18,7 @@ import global.*;
 import heap.*;
 
 
-public class ColumnarHeader extends HFPage {
+public class ColumnarHeader extends DirectoryHFPage {
     private String hdrFile;
     private PageId headerPageId;
     final private int COLUMNMETA_COLUMNID = 0;
@@ -29,10 +29,11 @@ public class ColumnarHeader extends HFPage {
     final private int INDEXMATA_INDEXTYPE = 2;
     final private int INDEXMATA_FILENAME = 4;
     final private int INDEXMATA_VALUE = 54;
-    
-    
+
+
     //counter for index file, storing at hf-prev byte
     private int counter;
+
     /*
      * Constructor to open the meta-data
      */
@@ -40,9 +41,10 @@ public class ColumnarHeader extends HFPage {
         this.headerPageId = pageId;
         this.hdrFile = tableName;
     }
+
     /*
      * Constructor to setup meta-data,
-     * it is a HFpage with single link list 
+     * it is a HFpage with single link list
      * where type stores the number of columns
      * and prevpage stores the number of indexes
      * @param name: Database name
@@ -58,10 +60,10 @@ public class ColumnarHeader extends HFPage {
             ColumnarFileExistsException,
             ColumnarNewPageException,
             ColumnarMetaInsertException {
-    	// File size allowance 50 bytes
+        // File size allowance 50 bytes
         if (name.length() >= 50)
             throw new FileNameTooLongException(null, "FILENAME: file name is too long");
-        
+
         hdrFile = name;
         PageId hdrPageNo = getFileEntry(hdrFile);
         if (hdrPageNo == null) {
@@ -73,8 +75,9 @@ public class ColumnarHeader extends HFPage {
             PageId pageId = new PageId(INVALID_PAGE);
             setType((short) numColumns);
             setCounter(0);
+            setReccnt((long) 0);
             init(type);
-            unpinPage(hdrPageNo, true /*dirty*/);
+            unpinPage(hdrPageNo, true);
             this.headerPageId = hdrPageNo;
         } else {
             throw new ColumnarFileExistsException(null,
@@ -105,7 +108,7 @@ public class ColumnarHeader extends HFPage {
             if (rid == null) {
                 PageId pageId = new PageId(this.getCurPage().pid);
                 PageId nextPageId = new PageId(this.getNextPage().pid);
-                HFPage hfPage = new HFPage();
+                DirectoryHFPage hfPage = new DirectoryHFPage();
                 while (nextPageId.pid != INVALID_PAGE && rid == null) {
                     pageId.pid = nextPageId.pid;
                     pinPage(pageId, hfPage);
@@ -117,7 +120,7 @@ public class ColumnarHeader extends HFPage {
                         unpinPage(pageId, false);
                 }
                 if (rid == null) {
-                    HFPage page = new HFPage();
+                    DirectoryHFPage page = new DirectoryHFPage();
                     nextPageId = newPage(page);
                     pinPage(pageId, hfPage);
                     hfPage.setNextPage(nextPageId);
@@ -156,7 +159,7 @@ public class ColumnarHeader extends HFPage {
         if (rid == null) {
             PageId pageId = new PageId(this.getCurPage().pid);
             PageId nextPageId = new PageId(this.getNextPage().pid);
-            HFPage hfPage = new HFPage();
+            DirectoryHFPage hfPage = new DirectoryHFPage();
             while (nextPageId.pid != INVALID_PAGE && rid == null) {
                 pageId.pid = nextPageId.pid;
                 pinPage(pageId, hfPage);
@@ -169,7 +172,7 @@ public class ColumnarHeader extends HFPage {
                     unpinPage(pageId, false);
             }
             if (rid == null) {
-                HFPage page = new HFPage();
+                DirectoryHFPage page = new DirectoryHFPage();
                 nextPageId = newPage(page);
                 pinPage(pageId, hfPage);
                 hfPage.setNextPage(nextPageId);
@@ -220,7 +223,7 @@ public class ColumnarHeader extends HFPage {
         int countRecords = getColumnCount();
         AttrType[] attrTypes = new AttrType[countRecords];
         PageId pageId = new PageId(this.headerPageId.pid);
-        HFPage page = new HFPage();
+        DirectoryHFPage page = new DirectoryHFPage();
         PageId nextPageId;
         RID prevRID = null;
         pinPage(pageId, page);
@@ -264,9 +267,9 @@ public class ColumnarHeader extends HFPage {
         int ColumnNo = Convert.getShortValue(COLUMNMETA_COLUMNID, byteinfo);
         attr = getColumn(ColumnNo);
         if (attr.getAttrType() == 1) {
-        	indexInfo.setValue(new IntegerValue(Convert.getIntValue(COLUMNMETA_NAME, byteinfo)));
-        }else if(attr.getAttrType() == 0) {
-        	indexInfo.setValue(new StringValue(Convert.getStringValue(COLUMNMETA_NAME, byteinfo,50)));
+            indexInfo.setValue(new IntegerValue(Convert.getIntValue(COLUMNMETA_NAME, byteinfo)));
+        } else if (attr.getAttrType() == 0) {
+            indexInfo.setValue(new StringValue(Convert.getStringValue(COLUMNMETA_NAME, byteinfo, 50)));
         }
         return indexInfo;
     }
@@ -286,7 +289,7 @@ public class ColumnarHeader extends HFPage {
         int indexCount = getCounter();
         int countRecords = getColumnCount();
         PageId pageId = new PageId(this.headerPageId.pid);
-        HFPage page = new HFPage();
+        DirectoryHFPage page = new DirectoryHFPage();
         PageId nextPageId;
         RID prevRID = null;
         IndexInfo info;
@@ -336,7 +339,7 @@ public class ColumnarHeader extends HFPage {
             InvalidSlotNumberException {
         int countRecords = getColumnCount();
         PageId pageId = new PageId(this.headerPageId.pid);
-        HFPage page = new HFPage();
+        DirectoryHFPage page = new DirectoryHFPage();
         PageId nextPageId;
         RID prevRID = null;
         IndexInfo info;
@@ -398,7 +401,7 @@ public class ColumnarHeader extends HFPage {
         //TODO: Need to be optimzed
         return getColumns()[i];
     }
-    
+
     /*
      * sets the number of indexes in the meta-data
      */
@@ -436,7 +439,7 @@ public class ColumnarHeader extends HFPage {
             throw new ColumnarNewPageException(null, "Columnar: Not able to get a new page for header");
         }
     }
-    
+
 
     private PageId getFileEntry(String filename) throws HFDiskMgrException {
         PageId tmpId = new PageId();
