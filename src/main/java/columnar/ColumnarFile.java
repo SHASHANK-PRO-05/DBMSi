@@ -21,7 +21,7 @@ public class ColumnarFile implements GlobalConst {
 
     private ColumnarHeader columnarHeader;
     //Shashank: I am not sure if it is required
-    private Heapfile heapFileNames[];
+    public Heapfile heapFileNames[];
     private int numColumns;
     private AttrType type[];
     /*

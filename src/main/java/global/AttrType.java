@@ -12,7 +12,7 @@ public class AttrType {
     public static final int attrSymbol = 3;
     public static final int attrNull = 4;
 
-    private int attrType;
+    public int attrType;
     private String attrName;
     private int size;
     private int columnId;
