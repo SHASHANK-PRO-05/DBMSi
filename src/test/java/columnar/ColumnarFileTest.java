@@ -2,6 +2,8 @@ package columnar;
 
 import bufmgr.LRU;
 import global.*;
+import heap.Tuple;
+
 import org.junit.Test;
 
 public class ColumnarFileTest {
@@ -12,6 +14,7 @@ public class ColumnarFileTest {
                 , 400, "LRU");
         AttrType[] attrTypes = new AttrType[20];
         int[] in = new int[20];
+        int [] b = new int[20];
 
         for (int i = 0; i < 20; i++) {
             attrTypes[i] = new AttrType();
@@ -20,7 +23,9 @@ public class ColumnarFileTest {
             attrTypes[i].setAttrType(1);
             attrTypes[i].setAttrName("Column" + i);
             in[i] = (int) (Math.random() * 40);
+            b[i] = 20;
         }
+        System.out.println("Random value "+in[3]);
         ColumnarFile columnarFile = new ColumnarFile("Employee", 20, attrTypes);
         SystemDefs.JavabaseBM.flushAllPages();
         columnarFile = new ColumnarFile("Employee");
@@ -29,11 +34,13 @@ public class ColumnarFileTest {
         System.out.println(columnarFile.getColumnarHeader().getNextPage().pid);
         System.out.println(columnarFile.getColumnarHeader().getColumnCount());
         columnarFile.getColumnarHeader().getColumns();
+        TID tid = columnarFile.insertTuple(Convert.intAtobyteA(in));
+        //TID tid = columnarFile.insertTuple(Convert.intAtobyteA(b));
+        Tuple newTuple = new Tuple(Convert.intAtobyteA(b),0,Convert.intAtobyteA(b).length);
+        boolean value= columnarFile.updateTuple(tid, newTuple);
+        System.out.println(value);
 
-        columnarFile.insertTuple(Convert.intAtobyteA(in));
-
-
-        IndexInfo info = new IndexInfo();
+     /*   IndexInfo info = new IndexInfo();
         info.setColumnNumber(12);
         info.setFileName("Laveena");
         info.setIndexType(new IndexType(1));
@@ -48,11 +55,20 @@ public class ColumnarFileTest {
 
         SystemDefs.JavabaseBM.unpinPage(columnarFile.getColumnarHeader().getHeaderPageId(), false);
         SystemDefs.JavabaseBM.flushAllPages();
-
+*/
         columnarFile.deleteColumnarFile();
-        SystemDefs.JavabaseBM.flushAllPages();
-        System.out.println(SystemDefs.JavabaseDB.getFileEntry(columnarFile.getColumnarHeader().getHdrFile()));
+     //   SystemDefs.JavabaseBM.flushAllPages();
+      //  System.out.println(SystemDefs.JavabaseDB.getFileEntry(columnarFile.getColumnarHeader().getHdrFile()));
 
 
+
+
+        
     }
+    
+    @Test
+    public void getTupleTest() throws Exception {
+    	
+    }
+    
 }
