@@ -4,7 +4,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.ArrayList;
 
-public class DeleteQuery {
+public class Delete {
   private static String columnDBName;
   private static String columnarFileName;
   private static ArrayList<String> targetColumnNames;
