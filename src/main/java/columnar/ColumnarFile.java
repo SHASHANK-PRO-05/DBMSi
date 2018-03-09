@@ -196,13 +196,15 @@ public class ColumnarFile implements GlobalConst {
     		HFBufMgrException, 
     		Exception {
     	System.out.println(this.getType());
-    	pinPage(this.getColumnarHeader().getHdrFile(), page);
-    	Heapfile heapFile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + column);
+    	SystemDefs.JavabaseBM.pinPage(this.getColumnarHeader().getHeaderPageId(), this.getColumnarHeader(), false);
+        String fname = this.getColumnarHeader().getHdrFile();
+    	Heapfile heapFile = new Heapfile(fname + "." + column);
     	RID rid = tid.getRecordIDs()[column];
     	Tuple tuple = heapFile.getRecord(rid);
     	int length=tuple.getLength()-tuple.getOffset();
 		byte[] by = new byte[length]; 
 		System.arraycopy(tuple.returnTupleByteArray(), tuple.getOffset(), by, 0,length );
+		SystemDefs.JavabaseBM.unpinPage(this.getColumnarHeader().getHeaderPageId(), false);
     	if(this.type[column].getAttrType()==0) {
     		StringValue stringValue = new StringValue(by.toString());
     		return stringValue;
