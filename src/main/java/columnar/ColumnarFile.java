@@ -2,6 +2,7 @@ package columnar;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 import bufmgr.BufMgr;
@@ -113,6 +114,7 @@ public class ColumnarFile implements GlobalConst {
         for (int i = 0; i < arrayList.size(); i++) {
             Heapfile heapfile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + i);
             rids[i] = heapfile.insertRecord(arrayList.get(i));
+           // System.out.println("RID"+rids[i]);
         }
 
         return new TID(rids.length, this.getTupleCount(), rids);
@@ -126,6 +128,53 @@ public class ColumnarFile implements GlobalConst {
         Heapfile heapfile = new Heapfile(fileName);
         return heapfile.getRecCnt();
     }
+    
+    public Tuple getTuple(TID tid) 
+    		throws InvalidSlotNumberException, 
+    		InvalidTupleSizeException, 
+    		Exception {
+		StringBuffer stringBuffer = new StringBuffer();
+    	for(int i=0;i<tid.getNumRIDs();i++) {
+    		Heapfile heapFile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + i);
+    		Tuple tuple = heapFile.getRecord(tid.getRecordIDs()[i]);
+    		int length=tuple.getLength()-tuple.getOffset();
+    		byte[] by = new byte[length]; 
+    		System.arraycopy(tuple.returnTupleByteArray(), tuple.getOffset(), by, 0,length );
+    		
+    		
+    		stringBuffer.append(by.toString());
+    	}
+    	
+    	return new Tuple(stringBuffer.toString().getBytes(),0,stringBuffer.length());
+    	
+    }
+    
+    boolean updateTuple(TID tid, Tuple newTuple ) 
+    		throws InvalidSlotNumberException, 
+    		InvalidTupleSizeException, 
+    		Exception {
+    /*	if(getTuple(tid)==null)
+    		throw new Exception("Record to be updated does not exist");*/
+    	int length=newTuple.getLength()-newTuple.getOffset();
+    	byte[] newTupleBytes = new byte[length];
+    	ByteToTuple byteToTuple = new ByteToTuple(this.getColumnarHeader().getColumns());
+    	//int length=newTuple.getLength()-newTuple.getOffset();
+    	System.arraycopy(newTuple.returnTupleByteArray(), newTuple.getOffset(), newTupleBytes, 0,length );
+    	ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(newTupleBytes);
+    	for(int i=0;i<tid.getNumRIDs();i++) {
+    		Tuple temp = new Tuple(arrayList.get(i),0,arrayList.get(i).length);
+    		Heapfile heapFile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + i);
+    		Tuple x = heapFile.getRecord(tid.getRecordIDs()[i]);
+    		boolean result = heapFile.updateRecord(tid.getRecordIDs()[i], temp);
+    		Tuple tid1 = heapFile.getRecord(tid.getRecordIDs()[i]);
+    		if(result==false)
+    			return false;
+    	}
+    	
+    	return true;
+    }
+    
+    
     
     /*
      * setup functions 

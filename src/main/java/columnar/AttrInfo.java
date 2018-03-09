@@ -1,7 +1,6 @@
 package columnar;
 
 
-import global.AttrType;
 
 public class AttrInfo {
 

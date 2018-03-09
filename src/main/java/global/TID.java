@@ -4,6 +4,28 @@ public class TID extends java.lang.Object {
     int numRIDs;
     int position;
     RID[] recordIDs;
+    
+    public int getNumRIDs() {
+		return numRIDs;
+	}
+
+	public void setNumRIDs(int numRIDs) {
+		this.numRIDs = numRIDs;
+	}
+
+	public RID[] getRecordIDs() {
+		return recordIDs;
+	}
+
+	public void setRecordIDs(RID[] recordIDs) {
+		this.recordIDs = recordIDs;
+	}
+
+	public int getPosition() {
+		return position;
+	}
+
+	
 
     public TID(int numRIDs) {
         this.numRIDs = numRIDs;

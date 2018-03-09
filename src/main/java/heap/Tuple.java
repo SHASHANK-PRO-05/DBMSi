@@ -187,6 +187,10 @@ public class Tuple implements GlobalConst {
     public byte[] returnTupleByteArray() {
         return data;
     }
+    
+    public String returnTupleDataString() {
+    	return data.toString();
+    }
 
     /**
      * Convert this field into integer
