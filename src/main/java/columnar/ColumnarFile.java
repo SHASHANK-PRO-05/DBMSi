@@ -209,6 +209,26 @@ public class ColumnarFile implements GlobalConst {
     	
     }
     
+    boolean updateColumnOfTuple(TID tid, Tuple newTuple, int column) 
+    		throws InvalidSlotNumberException, 
+    		InvalidUpdateException, 
+    		InvalidTupleSizeException, 
+    		Exception
+    {
+    	Heapfile heapFile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + column);
+    	int length = newTuple.getLength()-newTuple.getOffset();
+    	byte[] newTupleBytes = new byte[length];
+    	ByteToTuple byteToTuple = new ByteToTuple(this.getColumnarHeader().getColumns());
+    	System.arraycopy(newTuple.returnTupleByteArray(), newTuple.getOffset(), newTupleBytes, 0,length );
+    	ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(newTupleBytes);
+    	Tuple temp = new Tuple(arrayList.get(column),0,arrayList.get(column).length);
+    	boolean result = heapFile.updateRecord(tid.getRecordIDs()[column], temp);
+		if(result==false)
+			return false;
+		else
+			return true;
+    }
+    
     /*
      * setup functions 
      * starts here
