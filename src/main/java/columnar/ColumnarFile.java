@@ -1,17 +1,21 @@
 package columnar;
 
-import java.io.FileNotFoundException;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-
-import bufmgr.BufMgr;
 import diskmgr.DiskMgrException;
-import diskmgr.FileNameTooLongException;
 import diskmgr.Page;
 import global.*;
-import heap.*;
+import heap.FileAlreadyDeletedException;
+import heap.HFBufMgrException;
+import heap.HFDiskMgrException;
+import heap.HFException;
+import heap.HFPage;
+import heap.Heapfile;
+import heap.InvalidSlotNumberException;
 import heap.InvalidTupleSizeException;
+import heap.Tuple;
 
 public class ColumnarFile implements GlobalConst {
 

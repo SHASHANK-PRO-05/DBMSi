@@ -37,7 +37,7 @@ public class ColumnarFileTest {
         TID tid = columnarFile.insertTuple(Convert.intAtobyteA(in));
         //TID tid = columnarFile.insertTuple(Convert.intAtobyteA(b));
         Tuple newTuple = new Tuple(Convert.intAtobyteA(b),0,Convert.intAtobyteA(b).length);
-        boolean value= columnarFile.updateTuple(tid, newTuple);
+        ValueClass value= columnarFile.getValue(tid, 0);
         System.out.println(value);
 
      /*   IndexInfo info = new IndexInfo();
