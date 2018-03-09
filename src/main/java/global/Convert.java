@@ -103,6 +103,28 @@ public class Convert {
         System.arraycopy(B, 0, data, position, 2);
     }
 
+    public static long getLongValue(int position, byte[] data)
+            throws IOException {
+        InputStream in;
+        DataInputStream instr;
+        long value;
+        byte tmp[] = new byte[8];
+        System.arraycopy(data, position, tmp, 0, 8);
+        in = new ByteArrayInputStream(tmp);
+        instr = new DataInputStream(in);
+        value = instr.readLong();
+        return value;
+    }
+
+    public static void setLongValue(long value, int position, byte[] data)
+            throws IOException {
+        OutputStream out = new ByteArrayOutputStream();
+        DataOutputStream outstr = new DataOutputStream(out);
+        outstr.writeLong(value);
+        byte[] B = ((ByteArrayOutputStream) out).toByteArray();
+        System.arraycopy(B, 0, data, position, 8);
+    }
+
     public static String getStringValue(int position, byte[] data, int length)
             throws IOException {
         InputStream in;

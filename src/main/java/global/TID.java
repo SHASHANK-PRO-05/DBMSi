@@ -2,7 +2,7 @@ package global;
 
 public class TID extends java.lang.Object {
     int numRIDs;
-    int position;
+    long position;
     RID[] recordIDs;
 
     public TID(int numRIDs) {
@@ -14,7 +14,7 @@ public class TID extends java.lang.Object {
         this.position = position;
     }
 
-    public TID(int numRIDs, int position, RID[] recordIDs) {
+    public TID(int numRIDs, long position, RID[] recordIDs) {
         this.numRIDs = numRIDs;
         this.position = position;
         this.recordIDs = recordIDs;

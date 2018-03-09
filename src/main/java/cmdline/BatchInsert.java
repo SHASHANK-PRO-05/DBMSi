@@ -63,7 +63,7 @@ public class BatchInsert implements GlobalConst {
         int pageSizeRequired = (int) (file
                 .length() / MINIBASE_PAGESIZE) * 4;
 
-        int bufferSize = pageSizeRequired / 4;
+        int bufferSize = pageSizeRequired / 3;
         if (bufferSize < 10) bufferSize = 10;
         SystemDefs systemDefs = new SystemDefs(columnDBName, pageSizeRequired
                 , bufferSize, "LRU");
@@ -93,6 +93,7 @@ public class BatchInsert implements GlobalConst {
             s = bufferedReader.readLine();
         }
         int count = 0;
+        double startTime = System.currentTimeMillis();
         for (int j = 0; j < arrayList.size(); j++) {
             String[] strings = arrayList.get(j).toString().split("\n");
             byte[] bytes = new byte[size];
@@ -104,14 +105,16 @@ public class BatchInsert implements GlobalConst {
                     Convert.setStringValue(strings[i], position[i], bytes);
                 }
             }
-            double startTime = System.currentTimeMillis();
+
             columnarFile.insertTuple(bytes);
-            double endTime = System.currentTimeMillis();
-            double duration = (endTime - startTime);
-            System.out.println(duration / 1000);
-            //System.out.println(count++);
+
+            //System.out.println(columnarFile.getTupleCount());
         }
+        double endTime = System.currentTimeMillis();
+        double duration = (endTime - startTime);
+        System.out.println(duration / 1000);
         System.out.println(SystemDefs.pCounter.getwCounter());
+        SystemDefs.JavabaseBM.flushAllPages();
 //        int size = 0;
 //        int[] position = new int[attrTypes.length];
 //        int prev = 0;
