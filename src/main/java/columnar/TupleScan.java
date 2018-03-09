@@ -14,6 +14,7 @@ public class TupleScan {
 
   /**
    * Create a Tuple scan over all the columns in a Columnar file
+   *
    * @param cf Columnar File to be scanned for Tuples
    * @throws IOException
    * @throws InvalidTupleSizeException
@@ -38,13 +39,21 @@ public class TupleScan {
 
   /**
    * Create a tuple scan over only a particular column set
-   * @param cf Columnar File to be scanned
+   *
+   * @param cf             Columnar File to be scanned
    * @param columnNosArray Column IDs that are supposed to be scanned in Columnar File
    * @throws IOException
    * @throws InvalidTupleSizeException
    */
   TupleScan(ColumnarFile cf, int columnNosArray[]) throws IOException, InvalidTupleSizeException {
     this.cf = cf;
+
+    for (int i = 0; i < columnNosArray.length; i++) {
+      if (columnNosArray[i] > cf.heapFileNames.length) {
+        throw new IOException("Error -> Column No: " + columnNosArray[i] + ", greater than available columns. " +
+            "The no of columns in the columnar file: " + cf.heapFileNames.length);
+      }
+    }
 
     int noOfColumns = columnNosArray.length;
     columnNos = new int[noOfColumns];
@@ -60,6 +69,7 @@ public class TupleScan {
 
   /**
    * Private function that returns the no of columns that make up the scanned tuple
+   *
    * @return No of columns being scanned.
    */
   private int getNoOfColumns() {
@@ -77,6 +87,7 @@ public class TupleScan {
 
   /**
    * Gets the next tuples from all the columns being scanned and merges them into a single tuple
+   *
    * @param tid Tuple ID object
    * @return A single tuple that is the result of a merge between all the scanned column tuples
    * @throws InvalidTupleSizeException
@@ -96,6 +107,7 @@ public class TupleScan {
 
   /**
    * Positions the scans on different columns to a particular tuple ID
+   *
    * @param tid Tuple ID
    * @return returns true with the positioning is successful
    * @throws InvalidTupleSizeException
@@ -113,6 +125,7 @@ public class TupleScan {
 
   /**
    * Private function that merges tuples from different columns into a single tuple
+   *
    * @param tuples Tuples to be merged
    * @return Resultant tuple from the merge
    */
