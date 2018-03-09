@@ -153,20 +153,16 @@ public class ColumnarFile implements GlobalConst {
     		throws InvalidSlotNumberException, 
     		InvalidTupleSizeException, 
     		Exception {
-    /*	if(getTuple(tid)==null)
-    		throw new Exception("Record to be updated does not exist");*/
+    	
     	int length=newTuple.getLength()-newTuple.getOffset();
     	byte[] newTupleBytes = new byte[length];
     	ByteToTuple byteToTuple = new ByteToTuple(this.getColumnarHeader().getColumns());
-    	//int length=newTuple.getLength()-newTuple.getOffset();
     	System.arraycopy(newTuple.returnTupleByteArray(), newTuple.getOffset(), newTupleBytes, 0,length );
     	ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(newTupleBytes);
     	for(int i=0;i<tid.getNumRIDs();i++) {
     		Tuple temp = new Tuple(arrayList.get(i),0,arrayList.get(i).length);
     		Heapfile heapFile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + i);
-    		Tuple x = heapFile.getRecord(tid.getRecordIDs()[i]);
     		boolean result = heapFile.updateRecord(tid.getRecordIDs()[i], temp);
-    		Tuple tid1 = heapFile.getRecord(tid.getRecordIDs()[i]);
     		if(result==false)
     			return false;
     	}
@@ -174,7 +170,26 @@ public class ColumnarFile implements GlobalConst {
     	return true;
     }
     
-    
+    boolean updateColumnOfTuple(TID tid, Tuple newTuple, int column) 
+    		throws InvalidSlotNumberException, 
+    		InvalidUpdateException, 
+    		InvalidTupleSizeException, 
+    		Exception
+    {
+    	Heapfile heapFile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + column);
+    	int length = newTuple.getLength()-newTuple.getOffset();
+    	byte[] newTupleBytes = new byte[length];
+    	ByteToTuple byteToTuple = new ByteToTuple(this.getColumnarHeader().getColumns());
+    	System.arraycopy(newTuple.returnTupleByteArray(), newTuple.getOffset(), newTupleBytes, 0,length );
+    	ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(newTupleBytes);
+    	Tuple temp = new Tuple(arrayList.get(column),0,arrayList.get(column).length);
+    	boolean result = heapFile.updateRecord(tid.getRecordIDs()[column], temp);
+		if(result==false)
+			return false;
+		else
+			return true;   	
+    	
+    }
     
     /*
      * setup functions 
