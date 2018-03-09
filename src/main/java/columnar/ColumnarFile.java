@@ -15,6 +15,7 @@ import heap.HFPage;
 import heap.Heapfile;
 import heap.InvalidSlotNumberException;
 import heap.InvalidTupleSizeException;
+import heap.InvalidUpdateException;
 import heap.Tuple;
 
 public class ColumnarFile implements GlobalConst {
