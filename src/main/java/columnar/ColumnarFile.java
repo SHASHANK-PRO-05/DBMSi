@@ -126,14 +126,15 @@ public class ColumnarFile implements GlobalConst {
 
         ByteToTuple byteToTuple
                 = new ByteToTuple(this.getColumnarHeader().getColumns());
+        SystemDefs.JavabaseBM.pinPage(this.getColumnarHeader().getHeaderPageId(), this.getColumnarHeader(), false);
+        String fname = this.getColumnarHeader().getHdrFile();
         ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(bytePtr);
         RID[] rids = new RID[arrayList.size()];
         for (int i = 0; i < arrayList.size(); i++) {
-            Heapfile heapfile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + i);
+            Heapfile heapfile = new Heapfile(fname + "." + i);
             rids[i] = heapfile.insertRecord(arrayList.get(i));
-           // System.out.println("RID"+rids[i]);
         }
-
+        SystemDefs.JavabaseBM.unpinPage(this.getColumnarHeader().getHeaderPageId(), false);
         return new TID(rids.length, this.getTupleCount(), rids);
     }
     /*
@@ -151,16 +152,17 @@ public class ColumnarFile implements GlobalConst {
     		InvalidTupleSizeException, 
     		Exception {
 		StringBuffer stringBuffer = new StringBuffer();
+		SystemDefs.JavabaseBM.pinPage(this.getColumnarHeader().getHeaderPageId(), this.getColumnarHeader(), false);
+        String fname = this.getColumnarHeader().getHdrFile();
     	for(int i=0;i<tid.getNumRIDs();i++) {
-    		Heapfile heapFile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + i);
+    		Heapfile heapFile = new Heapfile(fname + "." + i);
     		Tuple tuple = heapFile.getRecord(tid.getRecordIDs()[i]);
     		int length=tuple.getLength()-tuple.getOffset();
     		byte[] by = new byte[length]; 
     		System.arraycopy(tuple.returnTupleByteArray(), tuple.getOffset(), by, 0,length );
-    		
-    		
     		stringBuffer.append(by.toString());
     	}
+    	SystemDefs.JavabaseBM.unpinPage(this.getColumnarHeader().getHeaderPageId(), false);
     	
     	return new Tuple(stringBuffer.toString().getBytes(),0,stringBuffer.length());
     	
@@ -170,23 +172,22 @@ public class ColumnarFile implements GlobalConst {
     		throws InvalidSlotNumberException, 
     		InvalidTupleSizeException, 
     		Exception {
-    /*	if(getTuple(tid)==null)
-    		throw new Exception("Record to be updated does not exist");*/
+    	
     	int length=newTuple.getLength()-newTuple.getOffset();
+    	SystemDefs.JavabaseBM.pinPage(this.getColumnarHeader().getHeaderPageId(), this.getColumnarHeader(), false);
+        String fname = this.getColumnarHeader().getHdrFile();
     	byte[] newTupleBytes = new byte[length];
     	ByteToTuple byteToTuple = new ByteToTuple(this.getColumnarHeader().getColumns());
-    	//int length=newTuple.getLength()-newTuple.getOffset();
     	System.arraycopy(newTuple.returnTupleByteArray(), newTuple.getOffset(), newTupleBytes, 0,length );
     	ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(newTupleBytes);
     	for(int i=0;i<tid.getNumRIDs();i++) {
     		Tuple temp = new Tuple(arrayList.get(i),0,arrayList.get(i).length);
-    		Heapfile heapFile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + i);
-    		Tuple x = heapFile.getRecord(tid.getRecordIDs()[i]);
+    		Heapfile heapFile = new Heapfile(fname + "." + i);
     		boolean result = heapFile.updateRecord(tid.getRecordIDs()[i], temp);
-    		Tuple tid1 = heapFile.getRecord(tid.getRecordIDs()[i]);
-    		if(result==false)
+    		if(!result)
     			return false;
     	}
+    	SystemDefs.JavabaseBM.unpinPage(this.getColumnarHeader().getHeaderPageId(), false);
     	
     	return true;
     }
@@ -199,12 +200,15 @@ public class ColumnarFile implements GlobalConst {
     		HFBufMgrException, 
     		Exception {
     	System.out.println(this.getType());
-    	Heapfile heapFile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + column);
+    	SystemDefs.JavabaseBM.pinPage(this.getColumnarHeader().getHeaderPageId(), this.getColumnarHeader(), false);
+        String fname = this.getColumnarHeader().getHdrFile();
+    	Heapfile heapFile = new Heapfile(fname + "." + column);
     	RID rid = tid.getRecordIDs()[column];
     	Tuple tuple = heapFile.getRecord(rid);
     	int length=tuple.getLength()-tuple.getOffset();
 		byte[] by = new byte[length]; 
 		System.arraycopy(tuple.returnTupleByteArray(), tuple.getOffset(), by, 0,length );
+		SystemDefs.JavabaseBM.unpinPage(this.getColumnarHeader().getHeaderPageId(), false);
     	if(this.type[column].getAttrType()==0) {
     		StringValue stringValue = new StringValue(by.toString());
     		return stringValue;
@@ -215,6 +219,29 @@ public class ColumnarFile implements GlobalConst {
     		return integerValue;
     	}
     	
+    }
+    
+    boolean updateColumnOfTuple(TID tid, Tuple newTuple, int column) 
+    		throws InvalidSlotNumberException, 
+    		InvalidUpdateException, 
+    		InvalidTupleSizeException, 
+    		Exception
+    {
+    	SystemDefs.JavabaseBM.pinPage(this.getColumnarHeader().getHeaderPageId(), this.getColumnarHeader(), false);
+        String fname = this.getColumnarHeader().getHdrFile();
+    	Heapfile heapFile = new Heapfile(fname + "." + column);
+    	int length = newTuple.getLength()-newTuple.getOffset();
+    	byte[] newTupleBytes = new byte[length];
+    	ByteToTuple byteToTuple = new ByteToTuple(this.getColumnarHeader().getColumns());
+    	System.arraycopy(newTuple.returnTupleByteArray(), newTuple.getOffset(), newTupleBytes, 0,length );
+    	ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(newTupleBytes);
+    	Tuple temp = new Tuple(arrayList.get(column),0,arrayList.get(column).length);
+    	boolean result = heapFile.updateRecord(tid.getRecordIDs()[column], temp);
+    	SystemDefs.JavabaseBM.unpinPage(this.getColumnarHeader().getHeaderPageId(), false);
+		if(!result)
+			return false;
+		else
+			return true;
     }
     
     /*
