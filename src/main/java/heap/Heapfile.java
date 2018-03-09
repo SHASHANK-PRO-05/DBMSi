@@ -352,7 +352,6 @@ public class Heapfile implements Filetype,  GlobalConst {
   /** Insert record into file, return its Rid.
    *
    * @param recPtr pointer of the record
-   * @param recLen the length of the record
    *
    * @exception InvalidSlotNumberException invalid slot number
    * @exception InvalidTupleSizeException invalid tuple size
@@ -946,7 +945,6 @@ public class Heapfile implements Filetype,  GlobalConst {
   
   /**
    * short cut to access the pinPage function in bufmgr package.
-   * @see bufmgr.pinPage
    */
   private void pinPage(PageId pageno, Page page, boolean emptyPage)
     throws HFBufMgrException {
@@ -962,7 +960,6 @@ public class Heapfile implements Filetype,  GlobalConst {
 
   /**
    * short cut to access the unpinPage function in bufmgr package.
-   * @see bufmgr.unpinPage
    */
   private void unpinPage(PageId pageno, boolean dirty)
     throws HFBufMgrException {
