@@ -27,6 +27,10 @@ public class Scan implements GlobalConst {
     init(cf, columnNo);
   }
 
+  public RID getFirstRID() throws IOException {
+    return dirPage.firstRecord();
+  }
+
   public Tuple getNext(RID rid) throws InvalidTupleSizeException, IOException {
     Tuple recptrTuple = null;
 
