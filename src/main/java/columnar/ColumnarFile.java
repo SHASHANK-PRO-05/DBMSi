@@ -85,7 +85,7 @@ public class ColumnarFile implements GlobalConst {
             IOException,
             ColumnarFilePinPageException,
             ColumnarFileUnpinPageException,
-            HFException {
+            HFException, heap.InvalidSlotNumberException {
         String fname = this.getColumnarHeader().getHdrFile();
         PageId pageId = this.getColumnarHeader().getHeaderPageId();
         HFPage hfPage = new HFPage();
@@ -178,7 +178,24 @@ public class ColumnarFile implements GlobalConst {
         }
 
     }
-    /*
+    
+    public AttrType getColumnInfo(int i) 
+    		throws ColumnarFilePinPageException,
+    		InvalidSlotNumberException, 
+    		HFBufMgrException, 
+    		heap.InvalidSlotNumberException, 
+    		IOException,
+    		ColumnarFileUnpinPageException {
+    	DirectoryHFPage dirpage = new DirectoryHFPage();
+    	PageId id = columnarHeader.getHeaderPageId();
+        pinPage(id, dirpage);
+    	AttrType attrTye = columnarHeader.getColumn(i);
+    	unpinPage(id, false);
+    	return attrTye;	
+    }
+    
+    
+    /*heap
      * getter-setters starts here
      */
     public ColumnarHeader getColumnarHeader() {
