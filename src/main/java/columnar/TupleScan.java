@@ -4,7 +4,6 @@ import global.TID;
 import heap.InvalidTupleSizeException;
 import heap.Scan;
 import heap.Tuple;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 
@@ -35,7 +34,7 @@ public class TupleScan {
     Tuple nextTuples[] = new Tuple[noOfColumns];
 
     for (int i = 0; i < noOfColumns; i++) {
-      nextTuples[i] = scans[i].getNext(tid.recordIDs[i]);
+      nextTuples[i] = scans[i].getNext(tid.getRecordIDs()[i]);
     }
 
     return mergeTuples(nextTuples);
@@ -45,7 +44,7 @@ public class TupleScan {
     boolean result = true;
 
     for (int i = 0; i < noOfColumns; i++) {
-      result = scans[i].position(tid.recordIDs[i]);
+      result = scans[i].position(tid.getRecordIDs()[i]);
     }
 
     return result;

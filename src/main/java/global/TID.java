@@ -3,7 +3,7 @@ package global;
 public class TID extends java.lang.Object {
 	int numRIDs;
 	int position;
-	public RID[] recordIDs;
+	RID[] recordIDs;
 
 	public TID(int numRIDs) {
 		this.numRIDs = numRIDs;
@@ -24,6 +24,10 @@ public class TID extends java.lang.Object {
 		this.numRIDs = tid.numRIDs;
 		this.position = tid.position;
 		this.recordIDs = tid.recordIDs;
+	}
+
+	public RID[] getRecordIDs() {
+		return recordIDs;
 	}
 
 	boolean equals(TID tid) {
