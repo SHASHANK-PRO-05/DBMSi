@@ -8,6 +8,7 @@ import global.SystemDefs;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class BatchInsert implements GlobalConst {
@@ -23,10 +24,11 @@ public class BatchInsert implements GlobalConst {
     /**
      * TODO: Change this to buffered reader
      */
-    private static Scanner bufferedReader;
+    private static BufferedReader bufferedReader;
 
     private static AttrType[] parseHeader() throws Exception {
-        String header = bufferedReader.nextLine();
+
+        String header = bufferedReader.readLine();
         String columnsString[] = header.split("\t");
         AttrType[] attrTypes = new AttrType[columnsString.length];
 
@@ -53,7 +55,7 @@ public class BatchInsert implements GlobalConst {
     private static void initFromArgs(String argv[])
             throws Exception {
         String fileName = argv[0];
-        bufferedReader = new Scanner(new File(fileName));
+        bufferedReader = new BufferedReader(new FileReader(fileName));
         String columnDBName = argv[1];
         String columnarFileName = argv[2];
         int numberOfColumns = Integer.parseInt(argv[3]);
@@ -64,7 +66,7 @@ public class BatchInsert implements GlobalConst {
         int bufferSize = pageSizeRequired / 4;
         if (bufferSize < 10) bufferSize = 10;
         SystemDefs systemDefs = new SystemDefs(columnDBName, pageSizeRequired
-                , bufferSize, null);
+                , bufferSize, "LRU");
         AttrType[] attrTypes = parseHeader();
         ColumnarFile columnarFile = new ColumnarFile(columnarFileName, numberOfColumns, attrTypes);
         SystemDefs.JavabaseBM.flushAllPages();
@@ -84,23 +86,61 @@ public class BatchInsert implements GlobalConst {
 
             prev = prev + attrTypes[i].getSize();
         }
+        ArrayList<String> arrayList = new ArrayList<String>();
+        String s = bufferedReader.readLine();
+        while (s != null) {
+            arrayList.add(s);
+            s = bufferedReader.readLine();
+        }
         int count = 0;
-        while (bufferedReader.hasNext()) {
-            String[] s = bufferedReader.nextLine().split("\t");
+        for (int j = 0; j < arrayList.size(); j++) {
+            String[] strings = arrayList.get(j).toString().split("\n");
             byte[] bytes = new byte[size];
-            for (int i = 0; i < s.length; i++) {
+            for (int i = 0; i < strings.length; i++) {
                 if (attrTypes[i].getAttrType() == 1) {
-                    int value = Integer.parseInt(s[i]);
+                    int value = Integer.parseInt(strings[i]);
                     Convert.setIntValue(value, position[i], bytes);
                 } else {
-                    Convert.setStringValue(s[i], position[i], bytes);
+                    Convert.setStringValue(strings[i], position[i], bytes);
                 }
             }
-            //System.out.println("hello");
+            double startTime = System.currentTimeMillis();
             columnarFile.insertTuple(bytes);
-            System.out.println(count++);
+            double endTime = System.currentTimeMillis();
+            double duration = (endTime - startTime);
+            System.out.println(duration / 1000);
+            //System.out.println(count++);
         }
-        System.out.println("-------------------------");
-        System.out.println(columnarFile.getTupleCount());
+        System.out.println(SystemDefs.pCounter.getwCounter());
+//        int size = 0;
+//        int[] position = new int[attrTypes.length];
+//        int prev = 0;
+//
+//        for (int i = 0; i < attrTypes.length; i++) {
+//            size += attrTypes[i].getSize();
+//            position[i] = prev;
+//
+//            prev = prev + attrTypes[i].getSize();
+//        }
+//        int count = 0;
+//        String string = bufferedReader.readLine();
+//        while (string != null) {
+//            String[] s = string.split("\t");
+//            byte[] bytes = new byte[size];
+//            for (int i = 0; i < s.length; i++) {
+//                if (attrTypes[i].getAttrType() == 1) {
+//                    int value = Integer.parseInt(s[i]);
+//                    Convert.setIntValue(value, position[i], bytes);
+//                } else {
+//                    Convert.setStringValue(s[i], position[i], bytes);
+//                }
+//            }
+//            //System.out.println("hello");
+//            columnarFile.insertTuple(bytes);
+//            //System.out.println(count++);
+//            string = bufferedReader.readLine();
+//        }
+//        System.out.println("-------------------------");
+//        System.out.println(columnarFile.getTupleCount());
     }
 }
