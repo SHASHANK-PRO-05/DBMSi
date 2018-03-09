@@ -19,6 +19,7 @@ public class ColumnarFile implements GlobalConst {
     //Shashank: I am not sure if it is required
     private Heapfile heapFileNames[];
     private int numColumns;
+    private AttrType type[];
     /*
      * Contructor for initialization
      * @param filename: dbname
@@ -31,6 +32,8 @@ public class ColumnarFile implements GlobalConst {
             IOException {
 
         try {
+        	this.type=type;
+        	this.numColumns=numColumns;
             columnarHeader = new ColumnarHeader(fileName, numColumns, type);
             heapFileNames = new Heapfile[numColumns];
             for (int i = 0; i < numColumns; i++) {
@@ -72,8 +75,18 @@ public class ColumnarFile implements GlobalConst {
             throw new ColumnarFileDoesExistsException(null
                     , "Columnar File Does not exists");
         }
+        
+        
     }
-    /*
+    public AttrType[] getType() {
+		return type;
+	}
+
+	public void setType(AttrType[] type) {
+		this.type = type;
+	}
+
+	/*
      * Deletes whole Database
      * Not completed yet
      */
@@ -174,7 +187,31 @@ public class ColumnarFile implements GlobalConst {
     	return true;
     }
     
-    
+    ValueClass getValue(TID tid, int column) 
+    		throws InvalidSlotNumberException, 
+    		InvalidTupleSizeException, 
+    		HFException, 
+    		HFDiskMgrException, 
+    		HFBufMgrException, 
+    		Exception {
+    	System.out.println(this.getType());
+    	Heapfile heapFile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + column);
+    	RID rid = tid.getRecordIDs()[column];
+    	Tuple tuple = heapFile.getRecord(rid);
+    	int length=tuple.getLength()-tuple.getOffset();
+		byte[] by = new byte[length]; 
+		System.arraycopy(tuple.returnTupleByteArray(), tuple.getOffset(), by, 0,length );
+    	if(this.type[column].getAttrType()==0) {
+    		StringValue stringValue = new StringValue(by.toString());
+    		return stringValue;
+    	}
+    	else {
+    		ByteBuffer bb = ByteBuffer.wrap(by);
+    		IntegerValue integerValue = new IntegerValue(bb.getInt());
+    		return integerValue;
+    	}
+    	
+    }
     
     /*
      * setup functions 
