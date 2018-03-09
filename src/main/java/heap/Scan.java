@@ -6,7 +6,6 @@ import global.GlobalConst;
 import global.PageId;
 import global.RID;
 import global.SystemDefs;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 
@@ -24,11 +23,11 @@ public class Scan implements GlobalConst {
   private short columnNo;
   private boolean nextUserStatus;
 
-  public Scan(ColumnarFile cf, short columnNo) {
+  public Scan(ColumnarFile cf, short columnNo) throws IOException, InvalidTupleSizeException {
     init(cf, columnNo);
   }
 
-  public Tuple getNext(RID rid) {
+  public Tuple getNext(RID rid) throws InvalidTupleSizeException, IOException {
     Tuple recptrTuple = null;
 
     if (!nextUserStatus) {
@@ -53,7 +52,7 @@ public class Scan implements GlobalConst {
     return recptrTuple;
   }
 
-  public boolean position(RID rid) {
+  public boolean position(RID rid) throws InvalidTupleSizeException, IOException {
     RID nextRID = new RID();
     boolean bst;
 
@@ -102,7 +101,7 @@ public class Scan implements GlobalConst {
     return bst;
   }
 
-  private void init(ColumnarFile cf, short columnNo) {
+  private void init(ColumnarFile cf, short columnNo) throws IOException, InvalidTupleSizeException {
     this.cf = cf;
     this.columnNo = columnNo;
     if (!firstDataPage()) {
@@ -141,7 +140,7 @@ public class Scan implements GlobalConst {
     nextUserStatus = true;
   }
 
-  private boolean firstDataPage() {
+  private boolean firstDataPage() throws IOException, InvalidTupleSizeException {
     DataPageInfo dpInfo;
     Tuple recTuple = null;
     Boolean bst;
@@ -157,12 +156,7 @@ public class Scan implements GlobalConst {
       e.printStackTrace();
     }
 
-    try {
-      /** now try to get a pointer to the first dataPage */
-      dataPageRID = dirPage.firstRecord();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    dataPageRID = dirPage.firstRecord();
 
     if (dataPageRID != null) {
       /** there is a dataPage record on the first directory page: */
@@ -173,21 +167,15 @@ public class Scan implements GlobalConst {
         e.printStackTrace();
       }
 
-      try {
-        dpInfo = new DataPageInfo(recTuple);
-        dataPageId.pid = dpInfo.pageId.pid;
-      } catch (InvalidTupleSizeException e) {
-        e.printStackTrace();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+      dpInfo = new DataPageInfo(recTuple);
+      dataPageId.pid = dpInfo.pageId.pid;
 
     } else {
 
       /** the first directory page is the only one which can possibly remain
        * empty: therefore try to get the next directory page and
        * check it. The next one has to contain a dataPage record, unless
-       * the heapfile is empty:
+       * the heapFile is empty:
        */
       PageId nextDirPageId = new PageId();
 
@@ -249,11 +237,11 @@ public class Scan implements GlobalConst {
             e.printStackTrace();
           }
         } else {
-          // heapfile empty
+          // heapFile empty
           dataPageId.pid = INVALID_PAGE;
         }
       }//end if01
-      else {// heapfile empty
+      else {// heapFile empty
         dataPageId.pid = INVALID_PAGE;
       }
     }
@@ -273,24 +261,213 @@ public class Scan implements GlobalConst {
      * - first directory page pinned
      * - this->dirPageId has Id of first directory page
      * - this->dirPage valid
-     * - if heapfile empty:
+     * - if heapFile empty:
      *    - this->dataPage == NULL, this->dataPageId==INVALID_PAGE
-     * - if heapfile nonempty:
+     * - if heapFile nonempty:
      *    - this->dataPage == NULL, this->dataPageId, this->dataPageRID valid
      *    - first dataPage is not yet pinned
      */
   }
 
-  private boolean nextDataPage() {
-    throw new NotImplementedException();
+  private boolean nextDataPage()
+      throws InvalidTupleSizeException,
+      IOException {
+
+    DataPageInfo dpinfo;
+
+    boolean nextDataPageStatus;
+    PageId nextDirPageId = new PageId();
+    Tuple rectuple = null;
+
+    // ASSERTIONS:
+    // - this->dirPageId has Id of current directory page
+    // - this->dirPage is valid and pinned
+    // (1) if heapFile empty:
+    //    - this->dataPage==NULL; this->dataPageId == INVALID_PAGE
+    // (2) if overall first record in heapFile:
+    //    - this->dataPage==NULL, but this->dataPageId valid
+    //    - this->dataPageRID valid
+    //    - current data page unpinned !!!
+    // (3) if somewhere in heapFile
+    //    - this->dataPageId, this->dataPage, this->dataPageRID valid
+    //    - current data page pinned
+    // (4)- if the scan had already been done,
+    //        dirPage = NULL;  dataPageId = INVALID_PAGE
+
+    if ((dirPage == null) && (dataPageId.pid == INVALID_PAGE))
+      return false;
+
+    if (dataPage == null) {
+      if (dataPageId.pid == INVALID_PAGE) {
+        // heapFile is empty to begin with
+
+        try {
+          unpinPage(dirPageId, false);
+          dirPage = null;
+        } catch (Exception e) {
+          //  System.err.println("Scan: Chain Error: " + e);
+          e.printStackTrace();
+        }
+
+      } else {
+
+        // pin first data page
+        try {
+          dataPage = new HFPage();
+          pinPage(dataPageId, (Page) dataPage, false);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+
+        try {
+          userRID = dataPage.firstRecord();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+
+        return true;
+      }
+    }
+
+    // ASSERTIONS:
+    // - this->dataPage, this->dataPageId, this->dataPageRID valid
+    // - current dataPage pinned
+
+    // unpin the current dataPage
+    try {
+      unpinPage(dataPageId, false /* no dirty */);
+      dataPage = null;
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    // read next dataPagerecord from current directory page
+    // dirPage is set to NULL at the end of scan. Hence
+
+    if (dirPage == null) {
+      return false;
+    }
+
+    dataPageRID = dirPage.nextRecord(dataPageRID);
+
+    if (dataPageRID == null) {
+      nextDataPageStatus = false;
+      // we have read all dataPage records on the current directory page
+
+      // get next directory page
+      nextDirPageId = dirPage.getNextPage();
+
+      // unpin the current directory page
+      try {
+        unpinPage(dirPageId, false /* not dirty */);
+        dirPage = null;
+
+        dataPageId.pid = INVALID_PAGE;
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+
+      if (nextDirPageId.pid == INVALID_PAGE)
+        return false;
+      else {
+        // ASSERTION:
+        // - nextDirPageId has correct id of the page which is to get
+
+        dirPageId = nextDirPageId;
+
+        try {
+          dirPage = new HFPage();
+          pinPage(dirPageId, (Page) dirPage, false);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+
+        if (dirPage == null)
+          return false;
+
+        try {
+          dataPageRID = dirPage.firstRecord();
+          nextDataPageStatus = true;
+        } catch (Exception e) {
+          nextDataPageStatus = false;
+          return false;
+        }
+      }
+    }
+
+    // ASSERTION:
+    // - this->dirPageId, this->dirPage valid
+    // - this->dirPage pinned
+    // - the new dataPage to be read is on dirPage
+    // - this->dataPageRID has the Rid of the next dataPage to be read
+    // - this->dataPage, this->dataPageId invalid
+
+    // data page is not yet loaded: read its record from the directory page
+    try {
+      rectuple = dirPage.getRecord(dataPageRID);
+    } catch (Exception e) {
+      System.err.println("HeapFile: Error in Scan" + e);
+    }
+
+    if (rectuple.getLength() != DataPageInfo.size)
+      return false;
+
+    dpinfo = new DataPageInfo(rectuple);
+    dataPageId.pid = dpinfo.pageId.pid;
+
+    try {
+      dataPage = new HFPage();
+      pinPage(dpinfo.pageId, dataPage, false);
+    } catch (Exception e) {
+      System.err.println("HeapFile: Error in Scan" + e);
+    }
+
+
+    // - directory page is pinned
+    // - dataPage is pinned
+    // - this->dirPageId, this->dirPage correct
+    // - this->dataPageId, this->dataPage, this->dataPageRID correct
+
+    userRID = dataPage.firstRecord();
+
+    if (userRID == null) {
+      nextUserStatus = false;
+      return false;
+    }
+
+    return true;
   }
 
   private boolean peekNext(RID rid) {
-    throw new NotImplementedException();
+    rid.pageNo.pid = userRID.pageNo.pid;
+    rid.slotNo = userRID.slotNo;
+    return true;
   }
 
-  private boolean mvNext(RID rid) {
-    throw new NotImplementedException();
+  private boolean mvNext(RID rid) throws IOException, InvalidTupleSizeException {
+    RID nextRID;
+    boolean status;
+
+    if (dataPage == null)
+      return false;
+
+    nextRID = dataPage.nextRecord(rid);
+
+    if (nextRID != null) {
+      userRID.pageNo.pid = nextRID.pageNo.pid;
+      userRID.slotNo = nextRID.slotNo;
+      return true;
+    } else {
+      status = nextDataPage();
+
+      if (status) {
+        rid.pageNo.pid = userRID.pageNo.pid;
+        rid.slotNo = userRID.slotNo;
+      }
+
+    }
+
+    return true;
   }
 
   /**
