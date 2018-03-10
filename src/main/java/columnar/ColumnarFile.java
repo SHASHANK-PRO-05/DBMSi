@@ -4,6 +4,11 @@ package columnar;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+
+import bitmap.AddFileEntryException;
+import bitmap.BitMapFile;
+import bitmap.ConstructPageException;
+import bitmap.GetFileEntryException;
 import diskmgr.DiskMgrException;
 import diskmgr.Page;
 import global.*;
@@ -25,6 +30,7 @@ public class ColumnarFile implements GlobalConst {
     public Heapfile heapFileNames[];
     private int numColumns;
     private AttrType type[];
+    private String indexFileName;
     /*
      * Contructor for initialization
      * @param filename: dbname
@@ -225,7 +231,7 @@ public class ColumnarFile implements GlobalConst {
     boolean updateColumnOfTuple(TID tid, Tuple newTuple, int column) 
     		throws InvalidSlotNumberException, 
     		InvalidUpdateException, 
-    		InvalidTupleSizeException, 
+    		InvalidTupleSizeException,
     		Exception
     {
     	SystemDefs.JavabaseBM.pinPage(this.getColumnarHeader().getHeaderPageId(), this.getColumnarHeader(), false);
@@ -243,6 +249,17 @@ public class ColumnarFile implements GlobalConst {
 			return false;
 		else
 			return true;
+    }
+    public boolean createBitMapIndex(int columnNo, ValueClass value) 
+    		throws GetFileEntryException, 
+    		ConstructPageException, 
+    		AddFileEntryException, 
+    		IOException {
+    	
+    	new BitMapFile(indexFileName, this, columnNo, value);
+    	
+    	return true;
+    	
     }
     
     /*
@@ -322,6 +339,14 @@ public class ColumnarFile implements GlobalConst {
     public void setNumColumns(int numColumns) {
         this.numColumns = numColumns;
     }
+
+	public String getIndexFileName() {
+		return indexFileName;
+	}
+
+	public void setIndexFileName(String indexFileName) {
+		this.indexFileName = indexFileName;
+	}
     
     
     /*
