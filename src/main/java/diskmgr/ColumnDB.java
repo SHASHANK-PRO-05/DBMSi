@@ -22,16 +22,18 @@ public class ColumnDB implements GlobalConst {
     public void openDB(String fName)
             throws IOException, DiskMgrException {
         this.fName = fName;
+
         filePointer = new RandomAccessFile(this.fName, "rw");
         PageId pageId = new PageId();
+        Page apage = new Page();
         pageId.pid = 0;
-        Page page = new Page();
-        numPages = 1;
-        pinPage(pageId, page, false);
-        DBFirstPage dbFirstPage = new DBFirstPage();
-        dbFirstPage.openPage(page);
-        numPages = dbFirstPage.getNumDBPages();
-        unpinPage(pageId, false);
+        this.numPages = 1;    //temporary num_page value for pinpage to work
+        pinPage(pageId, apage, false /*read disk*/);
+        DBFirstPage firstpg = new DBFirstPage();
+        firstpg.openPage(apage);
+        numPages = firstpg.getNumDBPages();
+        this.numOfMapPages = (numPages + BITS_PER_PAGE - 1) / BITS_PER_PAGE;
+        unpinPage(pageId, false /* undirty*/);
     }
 
     public void openDB(String fName, int numPages) throws IOException

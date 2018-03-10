@@ -26,6 +26,7 @@ public class SystemDefs {
                 Runtime.getRuntime().exit(1);
             }
         else
+
             try {
                 JavabaseDB.openDB(dbName, numPages);
                 JavabaseBM.flushAllPages();
