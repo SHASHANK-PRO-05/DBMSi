@@ -3,7 +3,10 @@ package columnar;
 import bufmgr.LRU;
 import global.*;
 import heap.Scan;
+import heap.Tuple;
 import org.junit.Test;
+
+import java.util.Arrays;
 
 public class ColumnarFileTest {
     @Test
@@ -26,6 +29,7 @@ public class ColumnarFileTest {
         ColumnarFile columnarFile = new ColumnarFile("Employee", 20, attrTypes);
         SystemDefs.JavabaseBM.flushAllPages();
         columnarFile = new ColumnarFile("Employee");
+        SystemDefs.JavabaseBM.flushAllPages();
         //SystemDefs.JavabaseBM.pinPage(columnarFile.getColumnarHeader().getHeaderPageId()
         //       , columnarFile.getColumnarHeader(), false);
         System.out.println(columnarFile.getColumnarHeader().getNextPage().pid);
@@ -39,8 +43,16 @@ public class ColumnarFileTest {
         }
         columnarFile.insertTuple(Convert.intAtobyteA(in));
         System.out.println("--------------------");
-        System.out.println(columnarFile.getTupleCount());
-        //Scan scan = new Scan(columnarFile, (short) 0);
+        System.out.println(columnarFile.getHeapFileNames()[1].getRecCnt());
+        //SystemDefs.JavabaseBM.pinPage(columnarFile.getColumnarHeader().getHeaderPageId(), columnarFile.getColumnarHeader(), false);
+        System.out.println(columnarFile.getHeapFileNames()[0].getRecCnt());
+        Scan scan = new Scan(columnarFile, (short) 0);
+        System.out.println("First RID:" + scan.getFirstRID());
+        RID rid = new RID();
+        Tuple tuple = scan.getNext(rid);
+        System.out.println(Arrays.toString(tuple.getTupleByteArray()) + " " + in[0]);
+        System.out.println(tuple.getLength());
+        scan.closeScan();
         //System.out.println(scan.getNext(scan.getFirstRID()).getLength());
 //        IndexInfo info = new IndexInfo();
 //        info.setColumnNumber(12);
@@ -56,10 +68,10 @@ public class ColumnarFileTest {
 
 
         //SystemDefs.JavabaseBM.unpinPage(columnarFile.getColumnarHeader().getHeaderPageId(), false);
-        SystemDefs.JavabaseBM.flushAllPages();
+        //SystemDefs.JavabaseBM.flushAllPages();
 
-        columnarFile.deleteColumnarFile();
-        SystemDefs.JavabaseBM.flushAllPages();
+        //columnarFile.deleteColumnarFile();
+        //SystemDefs.JavabaseBM.flushAllPages();
         System.out.println(SystemDefs.JavabaseDB.getFileEntry(columnarFile.getColumnarHeader().getHdrFile()));
 
 

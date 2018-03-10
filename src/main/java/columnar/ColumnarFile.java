@@ -74,7 +74,7 @@ public class ColumnarFile implements GlobalConst {
             pinPage(pageId, columnarHeader);
             heapFileNames = new Heapfile[columnarHeader.getColumnCount()];
             for (int i = 0; i < heapFileNames.length; i++) {
-                heapFileNames[i] = new Heapfile(fileName + "i");
+                heapFileNames[i] = new Heapfile(fileName + "." + i);
             }
             unpinPage(pageId, false);
         } else {
@@ -102,7 +102,7 @@ public class ColumnarFile implements GlobalConst {
         HFPage hfPage = new HFPage();
         pinPage(pageId, hfPage);
         for (int i = 0; i < numColumns; i++) {
-            Heapfile hf = new Heapfile(fname + "i");
+            Heapfile hf = new Heapfile(fname + '.' + i);
             hf.deleteFile();
         }
         unpinPage(pageId, false);
