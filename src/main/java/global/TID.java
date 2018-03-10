@@ -30,22 +30,21 @@ public class TID extends java.lang.Object {
         int i = 0;
         if (tid == null)
             return false;
-
-        if (numRIDs == tid.numRIDs && position == tid.position) {
-            for (RID rid : recordIDs) {
-                if (tid.recordIDs[i] != null) {
-                    if (rid.slotNo == tid.recordIDs[i].slotNo && rid.pageNo.pid == tid.recordIDs[i].pageNo.pid) {
-                        i++;
-                        continue;
-                    } else
-                        return false;
-                } else
-                    return false;
-            }
-            return true;
-        }
-        return false;
-    }
+		if (numRIDs == tid.numRIDs && position == tid.position) {
+			for (RID rid : recordIDs) {
+				if (tid.recordIDs[i] != null) {
+					if (rid.slotNo == tid.recordIDs[i].slotNo && rid.pageNo.pid == tid.recordIDs[i].pageNo.pid) {
+						i++;
+						continue;
+					} else
+						return false;
+				} else
+					return false;
+			}
+			return true;
+		}
+		return false;
+	}
 
     void writeToByteArray(byte[] array, int offset) {
 
