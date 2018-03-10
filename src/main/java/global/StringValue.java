@@ -22,7 +22,7 @@ public class StringValue extends ValueClass {
 
     public boolean isequal(Object obj) {
     	 if(obj instanceof StringValue) {
-    		if(((String)obj).equals(this.getValue())) {
+    		if(((String)((StringValue) obj).getValue()).equals(this.getValue())) {
     			return true;
     		}
     	}
