@@ -153,9 +153,6 @@ public class Scan implements GlobalConst {
         nextUserStatus = true;
 
         try {
-            /**
-             * To akshar. Thre
-             */
             dirPage = new HFPage();
             pinPage(dirPageId, dirPage, false);
         } catch (Exception e) {
@@ -345,7 +342,7 @@ public class Scan implements GlobalConst {
             unpinPage(dataPageId, false /* no dirty */);
             dataPage = null;
         } catch (Exception e) {
-            e.printStackTrace();
+
         }
 
         // read next dataPagerecord from current directory page
