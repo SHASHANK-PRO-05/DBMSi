@@ -65,7 +65,7 @@ public class BatchInsert implements GlobalConst {
 
         int bufferSize = pageSizeRequired / 3;
         if (bufferSize < 10) bufferSize = 10;
-        SystemDefs systemDefs = new SystemDefs(columnDBName, pageSizeRequired
+        SystemDefs systemDefs = new SystemDefs(columnDBName, 0
                 , bufferSize, "LRU");
         AttrType[] attrTypes = parseHeader();
         ColumnarFile columnarFile = new ColumnarFile(columnarFileName, numberOfColumns, attrTypes);
