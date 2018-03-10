@@ -17,7 +17,7 @@ public class ColumnarFileTest {
             attrTypes[i] = new AttrType();
             attrTypes[i].setColumnId(i);
             attrTypes[i].setSize(4);
-            attrTypes[i].setAttrType(1);
+            attrTypes[i].setAttrType(2);
             attrTypes[i].setAttrName("Column" + i);
             in[i] = (int) (Math.random() * 40);
         }
@@ -37,18 +37,34 @@ public class ColumnarFileTest {
         }
         columnarFile.insertTuple(Convert.intAtobyteA(in));
 
+        //Index insertion Info testing
+        IndexInfo info = new IndexInfo();
+        info.setColumnNumber(12);
+        info.setFileName("Laveena");
+        info.setIndexType(new IndexType(1));
+        info.setValue(new IntegerValue(4));
 
-//        IndexInfo info = new IndexInfo();
-//        info.setColumnNumber(12);
-//        info.setFileName("Laveena");
-//        info.setIndexType(new IndexType(1));
-//        info.setValue(new IntegerValue(4));
-//
-//
+        
 //        columnarFile.getColumnarHeader().setIndex(info);
-//        IndexInfo info1 = columnarFile.getColumnarHeader().getIndex(12, new IndexType(1));
+//        IndexInfo info1 = columnarFile.getColumnarHeader().getIndex(12, new IntegerValue(4), new IndexType(1) );
 //        System.out.println(info1.getColumnNumber());
 //        System.out.println(info1.getFileName());
+//        System.out.println(info1.getValue().getValue());
+        
+        
+        
+        IndexInfo info2 = new IndexInfo();
+        info2.setColumnNumber(6);
+        info2.setFileName("Laveena");
+        info2.setIndexType(new IndexType(1));
+        info2.setValue(new StringValue("bachani"));
+
+        
+        columnarFile.getColumnarHeader().setIndex(info2);
+        IndexInfo info3 = columnarFile.getColumnarHeader().getIndex(6, new StringValue("bachani"), new IndexType(1) );
+        System.out.println(info3.getColumnNumber());
+        System.out.println(info3.getFileName());
+        System.out.println(info3.getValue().getValue());
 
 
         SystemDefs.JavabaseBM.unpinPage(columnarFile.getColumnarHeader().getHeaderPageId(), false);

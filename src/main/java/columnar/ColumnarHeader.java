@@ -122,6 +122,7 @@ public class ColumnarHeader extends DirectoryHFPage {
                 if (rid == null) {
                     DirectoryHFPage page = new DirectoryHFPage();
                     nextPageId = newPage(page);
+
                     pinPage(pageId, hfPage);
                     hfPage.setNextPage(nextPageId);
                     page.init(nextPageId, page);
@@ -259,21 +260,23 @@ public class ColumnarHeader extends DirectoryHFPage {
     private IndexInfo convertIndexByteInfo(byte[] byteinfo)
             throws IOException, InvalidSlotNumberException, HFBufMgrException {
         IndexInfo indexInfo = new IndexInfo();
-        indexInfo.setColumnNumber(Convert.getShortValue(COLUMNMETA_COLUMNID, byteinfo));
-        indexInfo.setIndexType(new IndexType(Convert.getShortValue(COLUMNMETA_ATTR, byteinfo)));
-        indexInfo.setFileName(Convert.getStringValue(COLUMNMETA_SIZE, byteinfo, 50));
+        indexInfo.setColumnNumber(Convert.getShortValue(INDEXMATA_COLUMNID, byteinfo));
+        indexInfo.setIndexType(new IndexType(Convert.getShortValue(INDEXMATA_INDEXTYPE, byteinfo)));
+        indexInfo.setFileName(Convert.getStringValue(INDEXMATA_FILENAME, byteinfo, 49));
         //TO-DO to support all index types incase float also added
         AttrType attr = new AttrType();
         int ColumnNo = Convert.getShortValue(COLUMNMETA_COLUMNID, byteinfo);
         attr = getColumn(ColumnNo);
         if (attr.getAttrType() == 1) {
-            indexInfo.setValue(new IntegerValue(Convert.getIntValue(COLUMNMETA_NAME, byteinfo)));
+            indexInfo.setValue(new IntegerValue(Convert.getIntValue(INDEXMATA_VALUE, byteinfo)));
         } else if (attr.getAttrType() == 0) {
-            indexInfo.setValue(new StringValue(Convert.getStringValue(COLUMNMETA_NAME, byteinfo, 50)));
+            indexInfo.setValue(new StringValue(Convert.getStringValue(INDEXMATA_VALUE, byteinfo, 50)));
         }
         return indexInfo;
     }
 
+    
+   
     /*
      * function gets the index info from the meta-data file
      * it will  be used for Btree index
@@ -315,8 +318,9 @@ public class ColumnarHeader extends DirectoryHFPage {
             }
             if (i >= countRecords) {
                 info = convertIndexByteInfo(page.getDataAtSlot(rid));
-                if (info.getColumnNumber() == columnNum && info.getIndextype() == indType) {
-                    unpinPage(pageId, false);
+                if (info.getColumnNumber() == columnNum && info.getIndextype().toString().equals(indType.toString()) ) {
+                    System.out.println(info.getValue());
+                	unpinPage(pageId, false);
                     return info;
                 }
             }
@@ -337,6 +341,7 @@ public class ColumnarHeader extends DirectoryHFPage {
             throws IOException,
             HFBufMgrException,
             InvalidSlotNumberException {
+    	int indexCount = getCounter();
         int countRecords = getColumnCount();
         PageId pageId = new PageId(this.headerPageId.pid);
         DirectoryHFPage page = new DirectoryHFPage();
@@ -345,7 +350,7 @@ public class ColumnarHeader extends DirectoryHFPage {
         IndexInfo info;
         pinPage(pageId, page);
 
-        for (int i = 0; i < getCounter(); i++) {
+        for (int i = 0; i < indexCount + countRecords; i++) {
             RID rid = null;
 
             while (rid == null && pageId.pid != INVALID_PAGE) {
@@ -366,8 +371,8 @@ public class ColumnarHeader extends DirectoryHFPage {
             // i> countRecords then the column indexes will start
             if (i >= countRecords) {
                 info = convertIndexByteInfo(page.getDataAtSlot(rid));
-                if (info.getColumnNumber() == columnNum && info.getIndextype() == indType && value.isequal(info.getValue())) {
-                    unpinPage(pageId, false);
+                if (info.getColumnNumber() == columnNum && info.getIndextype().toString().equals(indType.toString() )&& value.isequal(info.getValue())) {
+                	unpinPage(pageId, false);
                     return info;
                 }
             }
