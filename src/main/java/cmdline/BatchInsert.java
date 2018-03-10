@@ -5,11 +5,11 @@ import global.AttrType;
 import global.Convert;
 import global.GlobalConst;
 import global.SystemDefs;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Scanner;
+
 
 public class BatchInsert implements GlobalConst {
     private static String dbFile;
@@ -108,42 +108,12 @@ public class BatchInsert implements GlobalConst {
 
             columnarFile.insertTuple(bytes);
 
-            //System.out.println(columnarFile.getTupleCount());
+            System.out.println(columnarFile.getTupleCount());
         }
         double endTime = System.currentTimeMillis();
         double duration = (endTime - startTime);
         System.out.println(duration / 1000);
         System.out.println(SystemDefs.pCounter.getwCounter());
         SystemDefs.JavabaseBM.flushAllPages();
-//        int size = 0;
-//        int[] position = new int[attrTypes.length];
-//        int prev = 0;
-//
-//        for (int i = 0; i < attrTypes.length; i++) {
-//            size += attrTypes[i].getSize();
-//            position[i] = prev;
-//
-//            prev = prev + attrTypes[i].getSize();
-//        }
-//        int count = 0;
-//        String string = bufferedReader.readLine();
-//        while (string != null) {
-//            String[] s = string.split("\t");
-//            byte[] bytes = new byte[size];
-//            for (int i = 0; i < s.length; i++) {
-//                if (attrTypes[i].getAttrType() == 1) {
-//                    int value = Integer.parseInt(s[i]);
-//                    Convert.setIntValue(value, position[i], bytes);
-//                } else {
-//                    Convert.setStringValue(s[i], position[i], bytes);
-//                }
-//            }
-//            //System.out.println("hello");
-//            columnarFile.insertTuple(bytes);
-//            //System.out.println(count++);
-//            string = bufferedReader.readLine();
-//        }
-//        System.out.println("-------------------------");
-//        System.out.println(columnarFile.getTupleCount());
     }
 }

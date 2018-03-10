@@ -2,6 +2,7 @@ package columnar;
 
 import bufmgr.LRU;
 import global.*;
+import heap.Scan;
 import org.junit.Test;
 
 public class ColumnarFileTest {
@@ -21,11 +22,12 @@ public class ColumnarFileTest {
             attrTypes[i].setAttrName("Column" + i);
             in[i] = (int) (Math.random() * 40);
         }
+
         ColumnarFile columnarFile = new ColumnarFile("Employee", 20, attrTypes);
         SystemDefs.JavabaseBM.flushAllPages();
         columnarFile = new ColumnarFile("Employee");
-        SystemDefs.JavabaseBM.pinPage(columnarFile.getColumnarHeader().getHeaderPageId()
-                , columnarFile.getColumnarHeader(), false);
+        //SystemDefs.JavabaseBM.pinPage(columnarFile.getColumnarHeader().getHeaderPageId()
+        //       , columnarFile.getColumnarHeader(), false);
         System.out.println(columnarFile.getColumnarHeader().getNextPage().pid);
         System.out.println(columnarFile.getColumnarHeader().getColumnCount());
         AttrType[] attrTypes1 = columnarFile.getColumnarHeader().getColumns();
@@ -36,8 +38,10 @@ public class ColumnarFileTest {
             System.out.println(attrType.getAttrName());
         }
         columnarFile.insertTuple(Convert.intAtobyteA(in));
-
-
+        System.out.println("--------------------");
+        System.out.println(columnarFile.getTupleCount());
+        //Scan scan = new Scan(columnarFile, (short) 0);
+        //System.out.println(scan.getNext(scan.getFirstRID()).getLength());
 //        IndexInfo info = new IndexInfo();
 //        info.setColumnNumber(12);
 //        info.setFileName("Laveena");
@@ -51,7 +55,7 @@ public class ColumnarFileTest {
 //        System.out.println(info1.getFileName());
 
 
-        SystemDefs.JavabaseBM.unpinPage(columnarFile.getColumnarHeader().getHeaderPageId(), false);
+        //SystemDefs.JavabaseBM.unpinPage(columnarFile.getColumnarHeader().getHeaderPageId(), false);
         SystemDefs.JavabaseBM.flushAllPages();
 
         columnarFile.deleteColumnarFile();
