@@ -14,7 +14,15 @@ public class Scan implements GlobalConst {
     init(cf);
   }
 
-  public Tuple getNext() {
+  public Scan(ColumnarFile cf, short columnNo) {
+	    init(cf, columnNo);
+	  }
+  private void init(ColumnarFile cf2, short columnNo) {
+	// TODO Auto-generated method stub
+	
+}
+
+public Tuple getNext() {
     throw new NotImplementedException();
   }
 
@@ -26,6 +34,7 @@ public class Scan implements GlobalConst {
     this.cf = cf;
     firstDataPage();
   }
+  
 
   private void closeScan() {
     throw new NotImplementedException();
@@ -79,4 +88,9 @@ public class Scan implements GlobalConst {
       throw new HFBufMgrException(e, "Scan.java: unpinPage() failed");
     }
   }
+
+public Tuple getNext(RID rid) {
+	// TODO Auto-generated method stub
+	return null;
+}
 }

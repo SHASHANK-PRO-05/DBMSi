@@ -59,4 +59,20 @@ public class TID extends java.lang.Object {
         recordIDs[column - 1] = recordID;
     }
 
+	public int getNumRIDs() {
+		return numRIDs;
+	}
+
+	public void setNumRIDs(int numRIDs) {
+		this.numRIDs = numRIDs;
+	}
+
+	public RID[] getRecordIDs() {
+		return recordIDs;
+	}
+
+	public void setRecordIDs(RID[] recordIDs) {
+		this.recordIDs = recordIDs;
+	}
+
 }
