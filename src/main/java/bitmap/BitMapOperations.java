@@ -15,35 +15,37 @@ public class BitMapOperations implements GlobalConst {
             throws IOException {
         ArrayList<Integer> positions = new ArrayList<Integer>();
 
-        BitMapHeaderPage bitMapHeaderPage = bitMapFile.getHeaderPage();
+        BitMapHeaderPage bitMapHeaderPage = bitMapFile.getBitMapHeaderPage();
+        pinPage(bitMapFile.getHeaderPageId(), bitMapHeaderPage);
         PageId nextPageId = bitMapHeaderPage.getNextPage();
+        unpinPage(bitMapFile.getHeaderPageId(), false);
         BMPage bmPage = new BMPage();
         int numBMPages = 0;
 
         while (nextPageId.pid != INVALID_PAGE) {
             pinPage(nextPageId, bmPage);
-            int count = bmPage.getCount();
-            int counter = (bmPage.getCount() + 32) / 32;
+            int counter = bmPage.getCount();
             int reservedPage = bmPage.getStartByte();
             for (int i = 0; i < counter; i++) {
-                int nextStart = i * 4 + reservedPage;
-                int valToTraverse = Convert.getIntValue(nextStart, bmPage.getPage());
-                int currentPtr = i * 32;
+                int nextStart = i + reservedPage;
+                short valToTraverse = bmPage.getPage()[nextStart];
+                int currentPtr = i * 8;
                 int bytePos = 0;
-                while (valToTraverse != 0) {
+
+                for (int k = 0; k < 8; k++) {
                     if ((valToTraverse & 1) != 0) {
                         int tempValue = (currentPtr + bytePos)
-                                + numBMPages * (bmPage.getAvailableMap());
+                                + numBMPages * (bmPage.getAvailableMap() * 8);
                         positions.add(tempValue);
+
                     }
-                    valToTraverse = valToTraverse >> 1;
+                    valToTraverse = (short) (valToTraverse >> 1);
                     bytePos++;
                 }
-                currentPtr += 32;
             }
             numBMPages++;
-            unpinPage(nextPageId, false);
             nextPageId.pid = bmPage.getNextPage().pid;
+            unpinPage(nextPageId, false);
         }
         return positions;
     }

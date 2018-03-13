@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import bitmap.BitMapFile;
 import bufmgr.BufMgr;
 import diskmgr.DiskMgrException;
 import diskmgr.FileNameTooLongException;
@@ -83,6 +84,18 @@ public class ColumnarFile implements GlobalConst {
         }
     }
 
+    //TODO: change the throwing exceptions
+    public boolean createBitMapIndex(int columnNo, ValueClass valueClass)
+            throws Exception {
+        String fileName = this.getColumnarHeader().getHdrFile()
+                + "." + columnNo + "." + valueClass.getValue();
+
+        BitMapFile bitMapFile = new BitMapFile(fileName
+                , this, columnNo, valueClass);
+
+        return true;
+    }
+
     /*
      * Deletes whole Database
      * Not completed yet
@@ -117,7 +130,7 @@ public class ColumnarFile implements GlobalConst {
      */
     public TID insertTuple(byte[] bytePtr) throws Exception {
 
-        DirectoryHFPage directoryHFPage = new DirectoryHFPage();
+        ColumnarHeader directoryHFPage = new ColumnarHeader();
         pinPage(this.getColumnarHeader().getHeaderPageId(), directoryHFPage);
         ByteToTuple byteToTuple
                 = new ByteToTuple(this.getColumnarHeader().getColumns());
