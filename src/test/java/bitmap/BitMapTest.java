@@ -66,8 +66,17 @@ public class BitMapTest {
         columnarFile.createBitMapIndex(1, new StringValue("Shashank"));
         SystemDefs.JavabaseBM.flushAllPages();
         BitMapFile bitMapFile = new BitMapFile("Employee.1.Shashank");
+        SystemDefs.JavabaseBM.flushAllPages();
         BitMapOperations bitMapOperations = new BitMapOperations();
+        SystemDefs.JavabaseBM.flushAllPages();
+        bitMapFile.Delete(9999);
+        SystemDefs.JavabaseBM.flushAllPages();
+
+        bitMapFile.Insert(10000);
+        SystemDefs.JavabaseBM.flushAllPages();
+
         bitMapOperations.getIndexedPostions(bitMapFile);
+        SystemDefs.JavabaseBM.flushAllPages();
 
     }
 

@@ -37,15 +37,15 @@ public class BitMapOperations implements GlobalConst {
                         int tempValue = (currentPtr + bytePos)
                                 + numBMPages * (bmPage.getAvailableMap() * 8);
                         positions.add(tempValue);
-
+                        //System.out.println(tempValue);
                     }
                     valToTraverse = (short) (valToTraverse >> 1);
                     bytePos++;
                 }
             }
             numBMPages++;
-            nextPageId.pid = bmPage.getNextPage().pid;
             unpinPage(nextPageId, false);
+            nextPageId.pid = bmPage.getNextPage().pid;
         }
         return positions;
     }

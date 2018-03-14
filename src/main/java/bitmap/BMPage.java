@@ -258,15 +258,20 @@ public class BMPage extends Page implements GlobalConst {
         Convert.setShortValue(counter, COUNTER, data);
     }
 
-    public void setABit(int position) throws IOException {
+    public void setABit(int position, int bit) throws IOException {
         int positionToUse = position / 8;
         int setLocation = positionToUse % availableMap;
-        setCount((short) (setLocation + 1));
+        setCount((short) Math.max(setLocation + 1, this.getCount()));
         positionToUse = position % 8;
-        short tempAns = (short) (1 << positionToUse);
-        data[setLocation + DPFIXED] = (byte) (data[setLocation + DPFIXED] | tempAns);
-
-
+        if (bit == 1) {
+            short tempAns = (short) (1 << positionToUse);
+            data[setLocation + DPFIXED] = (byte) (data[setLocation + DPFIXED] | tempAns);
+        } else {
+            System.out.println(data[setLocation + DPFIXED]);
+            short tempAns = (short) (~(1 << positionToUse));
+            data[setLocation + DPFIXED] = (byte) (data[setLocation + DPFIXED] & tempAns);
+            System.out.println(data[setLocation + DPFIXED]);
+        }
     }
 
 

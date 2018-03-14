@@ -14,7 +14,7 @@ import global.*;
 import heap.*;
 
 
-public class BitMapFile {
+public class BitMapFile implements GlobalConst {
 
 
     private PageId headerPageId;
@@ -112,7 +112,7 @@ public class BitMapFile {
             PinPageException, ConstructPageException, UnpinPageException {
         headerPageId = getFileEntry(fileName);
         this.fileName = fileName;
-        bitMapHeaderPage = new BitMapHeaderPage();
+        bitMapHeaderPage = new BitMapHeaderPage(true);
         pinPage(headerPageId, bitMapHeaderPage);
         unpinPage(headerPageId, false);
     }
@@ -126,7 +126,7 @@ public class BitMapFile {
         headerPageId = getFileEntry(fileName);
         if (headerPageId == null) // file not exist
         {
-            bitMapHeaderPage = new BitMapHeaderPage();
+            bitMapHeaderPage = new BitMapHeaderPage(false);
             headerPageId = bitMapHeaderPage.getCurrPage();
             addFileEntry(fileName, headerPageId);
             bitMapHeaderPage.setColumnIndex((short) columnNo);
@@ -229,7 +229,7 @@ public class BitMapFile {
             String val = Convert.getStringValue(0, tuple.getTupleByteArray()
                     , columnarFile.getColumnarHeader().getColumns()[columnNo].getSize());
             if (val.equals(value)) {
-                bmPage.setABit(position);
+                bmPage.setABit(position, 1);
             }
             int tempAns = bmPage.getAvailableSpace() - 1;
             bmPage.setAvailableSpace(tempAns);
@@ -270,7 +270,7 @@ public class BitMapFile {
         while (tuple != null) {
             int val = Convert.getIntValue(0, tuple.getTupleByteArray());
             if (val == value) {
-                bmPage.setABit(position);
+                bmPage.setABit(position, 1);
             }
             int tempAns = bmPage.getAvailableSpace() - 1;
             bmPage.setAvailableSpace(tempAns);
@@ -316,12 +316,41 @@ public class BitMapFile {
 
     }
 
-    public boolean Delete(int position) {
+    public boolean setBMPagePositions(int position, int bit) throws PinPageException, IOException
+            , UnpinPageException {
+        pinPage(headerPageId, bitMapHeaderPage);
+        PageId pageId = bitMapHeaderPage.getNextPage();
+        BMPage bmPage = new BMPage();
+        pinPage(pageId, bmPage);
+        int bytes = (position + 8) / 8;
+        int locationUntilLoop = bytes / bmPage.getAvailableMap();
+
+        for (int i = 0; i < locationUntilLoop; i++) {
+            PageId nextPageId = bmPage.getNextPage();
+            bmPage.setCount((short) bmPage.getAvailableMap());
+            if (nextPageId.pid == INVALID_PAGE) {
+                allocatePage(nextPageId, 1);
+                bmPage.setNextPage(nextPageId);
+            }
+            unpinPage(pageId);
+            pageId = nextPageId;
+            pinPage(pageId, bmPage);
+        }
+        unpinPage(pageId, true);
+        bmPage.setABit(position, bit);
+        unpinPage(headerPageId, false);
         return false;
     }
 
-    public boolean Insert(int position) {
-        return false;
+    public boolean Delete(int position)
+            throws PinPageException, IOException
+            , UnpinPageException {
+        return setBMPagePositions(position, 0);
+    }
+
+    public boolean Insert(int position) throws PinPageException, IOException
+            , UnpinPageException {
+        return setBMPagePositions(position, 1);
     }
 
     public PageId getHeaderPageId() {
