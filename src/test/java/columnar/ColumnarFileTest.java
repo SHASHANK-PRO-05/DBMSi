@@ -1,6 +1,7 @@
 package columnar;
 
 import bufmgr.LRU;
+import cmdline.Index;
 import global.*;
 import heap.Scan;
 import heap.Tuple;
@@ -42,8 +43,6 @@ public class ColumnarFileTest {
             System.out.println(attrType.getAttrName());
         }
         columnarFile.insertTuple(Convert.intAtobyteA(in));
-
-
         //Index insertion Info testing
         IndexInfo info = new IndexInfo();
         info.setColumnNumber(12);
@@ -81,7 +80,7 @@ public class ColumnarFileTest {
         
         
         
-        IndexInfo info2 = new IndexInfo();
+       /* IndexInfo info2 = new IndexInfo();
         info2.setColumnNumber(6);
         info2.setFileName("Laveena");
         info2.setIndexType(new IndexType(1));
@@ -101,7 +100,7 @@ public class ColumnarFileTest {
         //columnarFile.deleteColumnarFile();
         //SystemDefs.JavabaseBM.flushAllPages();
         System.out.println(SystemDefs.JavabaseDB.getFileEntry(columnarFile.getColumnarHeader().getHdrFile()));
-
+*/
 
     }
 }

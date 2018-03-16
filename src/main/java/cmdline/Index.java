@@ -35,6 +35,7 @@ public class Index {
 
 	//	new SystemDefs(columnDBName, 0, 10, "LRU"); // Not sure about buffer pool size
 
+
 		columnarFile = new ColumnarFile(columnarFileName);
 		for (int i = 0; i < columnarFile.getColumnarHeader().getColumnCount(); i++) {
 			if (columnarFile.getColumnarHeader().getColumns()[i].getAttrName().equals(columnName)) {
@@ -54,9 +55,8 @@ public class Index {
 		break;
 		}
 
-		}
-
-	
+		
+	}
 
 	private static void generationBitmap(ColumnarFile columnarFile) throws Exception {
 		Scan scan = new Scan(columnarFile, (short) columnId);
@@ -73,8 +73,7 @@ public class Index {
 			PageId pageId;
 			byte[] by = tuple.getTupleByteArray();
 			if (columnarFile.getColumnarHeader().getColumns()[i].getAttrType() == 0) {
-				String s= Convert.getStringValue(0, by, by.length);
-				StringValue stringValue = new StringValue(s);
+				StringValue stringValue = new StringValue(Convert.getStringValue(0, by, by.length));
 				indexInfo.setValue(stringValue);
 				value = stringValue;
 			}
