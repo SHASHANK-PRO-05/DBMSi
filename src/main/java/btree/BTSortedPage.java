@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import diskmgr.Page;
 import global.PageId;
-import global.RID;
 import global.SystemDefs;
 import global.TID;
 import heap.HFPage;
@@ -56,5 +55,7 @@ public class BTSortedPage extends HFPage {
 	protected int numberOfRecords() throws IOException {
 		return getSlotCnt();
 	}
+	
+	
 
 }
