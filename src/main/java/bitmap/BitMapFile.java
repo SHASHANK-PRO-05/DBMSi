@@ -126,24 +126,10 @@ public class BitMapFile implements GlobalConst {
 	private void init(long totalTuples) throws PinPageException, UnpinPageException, IOException {
 		BMPage bmPage = new BMPage();
 		PageId pageId = new PageId();
-		allocatePage(pageId, 1);
+		int numPages= 1+ (int) totalTuples/(bmPage.getAvailableMap());
+		allocatePage(pageId, numPages);
 		pinPage(pageId, bmPage);
 		bmPage.init(pageId, bmPage);
-		for (int i = 0; i < totalTuples; i++) {
-			bmPage.setABit(i, 0);
-			int tempAns = bmPage.getAvailableSpace() - 1;
-			bmPage.setAvailableSpace(tempAns);
-
-			if (tempAns == 0) {
-				PageId pageIdTemp = new PageId();
-				allocatePage(pageIdTemp, 1);
-				bmPage.setNextPage(pageIdTemp);
-				unpinPage(pageId, true);
-				pageId = pageIdTemp;
-				pinPage(pageId, bmPage);
-				bmPage.init(pageId, bmPage);
-			}
-		}
 		unpinPage(pageId, true);
 	}
 

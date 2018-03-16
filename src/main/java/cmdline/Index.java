@@ -33,7 +33,7 @@ public class Index {
 		columnName = argv[2];
 		indexType = argv[3];
 
-		new SystemDefs(columnDBName, 0, 10, "LRU"); // Not sure about buffer pool size
+	//	new SystemDefs(columnDBName, 0, 10, "LRU"); // Not sure about buffer pool size
 
 		columnarFile = new ColumnarFile(columnarFileName);
 		for (int i = 0; i < columnarFile.getColumnarHeader().getColumnCount(); i++) {
@@ -73,7 +73,8 @@ public class Index {
 			PageId pageId;
 			byte[] by = tuple.getTupleByteArray();
 			if (columnarFile.getColumnarHeader().getColumns()[i].getAttrType() == 0) {
-				StringValue stringValue = new StringValue(Convert.getStringValue(0, by, by.length));
+				String s= Convert.getStringValue(0, by, by.length);
+				StringValue stringValue = new StringValue(s);
 				indexInfo.setValue(stringValue);
 				value = stringValue;
 			}
@@ -83,7 +84,7 @@ public class Index {
 				indexInfo.setValue(integerValue);
 				value = integerValue;
 			}
-			indexFileName = columnDBName + "." + columnId + "." + value.toString();
+			indexFileName = columnDBName + "." + columnId + "." + value.getValue().toString();
 			columnarFile.setIndexFileName(indexFileName);
 			indexInfo.setFileName(indexFileName);
 			indexInfo.setIndexType(indexType);
