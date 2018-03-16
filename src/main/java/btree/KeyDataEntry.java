@@ -5,8 +5,8 @@ import global.RID;
 import global.TID;
 
 public class KeyDataEntry {
-	private KeyClass key;
-	private DataClass data;
+	public KeyClass key;
+	public DataClass data;
 
 	public KeyDataEntry(Integer key, PageId pageNo) {
 		this.key = new IntegerKey(key);

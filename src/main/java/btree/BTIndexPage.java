@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import diskmgr.Page;
 import global.PageId;
-import global.RID;
+import global.TID;
 import global.TID;
 
 public class BTIndexPage extends BTSortedPage {
@@ -24,7 +24,7 @@ public class BTIndexPage extends BTSortedPage {
 		setType(NodeType.INDEX);
 	}
 	
-	public RID insertKey(KeyClass key, PageId pageNo) {
+	public TID insertKey(KeyClass key, PageId pageNo) {
 		return null;
 		
 	}
@@ -41,14 +41,14 @@ public class BTIndexPage extends BTSortedPage {
 		return null;
 	}
 	
-	public KeyDataEntry getFirst(RID rid) {
+	public KeyDataEntry getFirst(TID TID) {
 		return null;
 		
 		
 		
 	}
 	
-	public KeyDataEntry getNext (RID rid) {
+	public KeyDataEntry getNext (TID TID) {
 		return null;
 		
 	}

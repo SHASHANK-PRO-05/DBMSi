@@ -38,11 +38,11 @@ public class BtreeLeafPage extends BTSortedPage {
 		}
 	}
 
-	public KeyDataEntry getFirst(TID tid) {
+	public KeyDataEntry getFirst(RID tid) {
 		return null;
 	}
 
-	public KeyDataEntry getCurrent(TID tid) {
+	public KeyDataEntry getCurrent(RID tid) {
 		return null;
 
 	}
