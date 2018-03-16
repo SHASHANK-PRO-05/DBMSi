@@ -34,7 +34,7 @@ public class Index {
 		columnName = argv[2];
 		indexType = argv[3];
 
-		SystemDefs systemDefs = new SystemDefs(columnDBName, 0, 10, "LRU"); // Not sure about buffer pool size
+		SystemDefs systemDefs = new SystemDefs(columnDBName, 0, 100000, "LRU"); // Not sure about buffer pool size
 		if (Integer.parseInt(indexType) == 3) {
 			columnarFile = new ColumnarFile(columnarFileName);
 			for (int i = 0; i < columnarFile.getColumnarHeader().getColumnCount(); i++) {
@@ -45,7 +45,7 @@ public class Index {
 			}
 
 			Scan scan = new Scan(columnarFile, (short) columnId);
-			long count = columnarFile.getTupleCount();
+			long count = columnarFile.getHeapFileNames()[columnId].getRecCnt();
 			RID rid = new RID();
 			Tuple tuple;
 			for (int i = 0; i < count; i++) {
