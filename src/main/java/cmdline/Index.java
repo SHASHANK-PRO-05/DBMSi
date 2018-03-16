@@ -1,11 +1,10 @@
 package cmdline;
 
-import java.nio.ByteBuffer;
-
+import bitmap.BitMapFile;
 import bitmap.GetFileEntryException;
 import columnar.ColumnarFile;
 import columnar.IndexInfo;
-import diskmgr.ColumnDB;
+import global.Convert;
 import global.IndexType;
 import global.IntegerValue;
 import global.PageId;
@@ -34,59 +33,68 @@ public class Index {
 		columnName = argv[2];
 		indexType = argv[3];
 
-		SystemDefs systemDefs = new SystemDefs(columnDBName, 0, 10, "LRU"); // Not sure about buffer pool size
-		if (Integer.parseInt(indexType) == 3) {
-			columnarFile = new ColumnarFile(columnarFileName);
-			for (int i = 0; i < columnarFile.getColumnarHeader().getColumnCount(); i++) {
-				if (columnarFile.getColumnarHeader().getColumns()[i].getAttrName().equals(columnName)) {
-					columnId = columnarFile.getColumnarHeader().getColumns()[i].getColumnId();
+		new SystemDefs(columnDBName, 0, 10, "LRU"); // Not sure about buffer pool size
 
-				}
-			}
-
-			Scan scan = new Scan(columnarFile, (short) columnId);
-			long count = columnarFile.getTupleCount();
-			RID rid = new RID();
-			Tuple tuple;
-			for (int i = 0; i < count; i++) {
-				String indexFileName = new String();
-				tuple = scan.getNext(rid);
-				IndexInfo indexInfo = new IndexInfo();
-				indexInfo.setColumnNumber(columnId);
-				IndexType indexType = new IndexType(3);
-				ValueClass value;
-				PageId pageId;
-				int length = tuple.getLength() - tuple.getOffset(); // assuming no header in tuple
-				byte[] by = new byte[length];
-				System.arraycopy(tuple.returnTupleByteArray(), tuple.getOffset(), by, 0, length);
-				if (columnarFile.getColumnarHeader().getColumns()[i].getAttrType() == 0) {
-					StringValue stringValue = new StringValue(by.toString());
-					indexInfo.setValue(stringValue);
-					value = stringValue;
-					indexFileName = columnDBName + "." + columnName + "." + by.toString();
-				}
-
-				else {
-					ByteBuffer bb = ByteBuffer.wrap(by);
-					IntegerValue integerValue = new IntegerValue(bb.getInt());
-					indexInfo.setValue(integerValue);
-					value = integerValue;
-					indexFileName = columnDBName + "." + columnName + "." + Integer.toString(bb.getInt());
-				}
-				columnarFile.setIndexFileName(indexFileName);
-				indexInfo.setFileName(indexFileName);
-				indexInfo.setIndexType(indexType);
-				pageId = getFileEntry(indexFileName);
-				if (pageId == null) {
-					columnarFile.createBitMapIndex(columnId, value);
-					columnarFile.getColumnarHeader().setIndex(indexInfo);
-				}
+		columnarFile = new ColumnarFile(columnarFileName);
+		for (int i = 0; i < columnarFile.getColumnarHeader().getColumnCount(); i++) {
+			if (columnarFile.getColumnarHeader().getColumns()[i].getAttrName().equals(columnName)) {
+				columnId = columnarFile.getColumnarHeader().getColumns()[i].getColumnId();
 
 			}
-			scan.closeScan();
+		}
+
+		switch(indexType) {
+		case ("BITMAP"):{
+			generationBitmap(columnarFile);
+		}
+			break;
+		case("BTREE"):{
+			
+		}
+		break;
+		}
 
 		}
 
+	
+
+	private static void generationBitmap(ColumnarFile columnarFile) throws Exception {
+		Scan scan = new Scan(columnarFile, (short) columnId);
+		long count = columnarFile.getTupleCount();
+		RID rid = new RID();
+		Tuple tuple;
+		for (int i = 0; i < count; i++) {
+			String indexFileName = new String();
+			tuple = scan.getNext(rid);
+			IndexInfo indexInfo = new IndexInfo();
+			indexInfo.setColumnNumber(columnId);
+			IndexType indexType = new IndexType(3);
+			ValueClass value;
+			PageId pageId;
+			byte[] by = tuple.getTupleByteArray();
+			if (columnarFile.getColumnarHeader().getColumns()[i].getAttrType() == 0) {
+				StringValue stringValue = new StringValue(Convert.getStringValue(0, by, by.length));
+				indexInfo.setValue(stringValue);
+				value = stringValue;
+			}
+
+			else {
+				IntegerValue integerValue = new IntegerValue(Convert.getIntValue(0, by));
+				indexInfo.setValue(integerValue);
+				value = integerValue;
+			}
+			indexFileName = columnDBName + "." + columnId + "." + value.toString();
+			columnarFile.setIndexFileName(indexFileName);
+			indexInfo.setFileName(indexFileName);
+			indexInfo.setIndexType(indexType);
+			pageId = getFileEntry(indexFileName);
+			if (pageId == null) {
+				new BitMapFile(indexFileName,columnarFile, columnId, value);
+			}
+
+		}
+
+		
 	}
 
 	private static PageId getFileEntry(String fileName) throws GetFileEntryException {

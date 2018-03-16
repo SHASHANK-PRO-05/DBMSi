@@ -553,5 +553,5 @@ public class Tuple implements GlobalConst {
         return 0;
     }
 }
->>>>>>> scan
+
 
