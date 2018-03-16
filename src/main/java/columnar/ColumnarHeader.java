@@ -108,7 +108,7 @@ public class ColumnarHeader extends DirectoryHFPage {
             if (rid == null) {
                 PageId pageId = new PageId(this.getCurPage().pid);
                 PageId nextPageId = new PageId(this.getNextPage().pid);
-                DirectoryHFPage hfPage = new DirectoryHFPage();
+                ColumnarHeader hfPage = new ColumnarHeader();
                 while (nextPageId.pid != INVALID_PAGE && rid == null) {
                     pageId.pid = nextPageId.pid;
                     pinPage(pageId, hfPage);
@@ -120,8 +120,9 @@ public class ColumnarHeader extends DirectoryHFPage {
                         unpinPage(pageId, false);
                 }
                 if (rid == null) {
-                    DirectoryHFPage page = new DirectoryHFPage();
+                    ColumnarHeader page = new ColumnarHeader();
                     nextPageId = newPage(page);
+
                     pinPage(pageId, hfPage);
                     hfPage.setNextPage(nextPageId);
                     page.init(nextPageId, page);
@@ -159,7 +160,7 @@ public class ColumnarHeader extends DirectoryHFPage {
         if (rid == null) {
             PageId pageId = new PageId(this.getCurPage().pid);
             PageId nextPageId = new PageId(this.getNextPage().pid);
-            DirectoryHFPage hfPage = new DirectoryHFPage();
+            ColumnarHeader hfPage = new ColumnarHeader();
             while (nextPageId.pid != INVALID_PAGE && rid == null) {
                 pageId.pid = nextPageId.pid;
                 pinPage(pageId, hfPage);
@@ -172,7 +173,7 @@ public class ColumnarHeader extends DirectoryHFPage {
                     unpinPage(pageId, false);
             }
             if (rid == null) {
-                DirectoryHFPage page = new DirectoryHFPage();
+                ColumnarHeader page = new ColumnarHeader();
                 nextPageId = newPage(page);
                 pinPage(pageId, hfPage);
                 hfPage.setNextPage(nextPageId);
@@ -209,7 +210,9 @@ public class ColumnarHeader extends DirectoryHFPage {
         return length;
     }
 
+    public ColumnarHeader() {
 
+    }
 
     /*
      * function returns the columns info
@@ -220,14 +223,13 @@ public class ColumnarHeader extends DirectoryHFPage {
     public AttrType[] getColumns() throws IOException
             , HFBufMgrException, InvalidSlotNumberException {
 
-        int countRecords = getColumnCount();
-        AttrType[] attrTypes = new AttrType[countRecords];
         PageId pageId = new PageId(this.headerPageId.pid);
-        DirectoryHFPage page = new DirectoryHFPage();
+        ColumnarHeader page = new ColumnarHeader();
         PageId nextPageId;
         RID prevRID = null;
         pinPage(pageId, page);
-
+        int countRecords = page.getColumnCount();
+        AttrType[] attrTypes = new AttrType[countRecords];
         for (int i = 0; i < countRecords; i++) {
             RID rid = null;
 
@@ -259,20 +261,22 @@ public class ColumnarHeader extends DirectoryHFPage {
     private IndexInfo convertIndexByteInfo(byte[] byteinfo)
             throws IOException, InvalidSlotNumberException, HFBufMgrException {
         IndexInfo indexInfo = new IndexInfo();
-        indexInfo.setColumnNumber(Convert.getShortValue(COLUMNMETA_COLUMNID, byteinfo));
-        indexInfo.setIndexType(new IndexType(Convert.getShortValue(COLUMNMETA_ATTR, byteinfo)));
-        indexInfo.setFileName(Convert.getStringValue(COLUMNMETA_SIZE, byteinfo, 50));
+        indexInfo.setColumnNumber(Convert.getShortValue(INDEXMATA_COLUMNID, byteinfo));
+        indexInfo.setIndexType(new IndexType(Convert.getShortValue(INDEXMATA_INDEXTYPE, byteinfo)));
+        indexInfo.setFileName(Convert.getStringValue(INDEXMATA_FILENAME, byteinfo, 49));
         //TO-DO to support all index types incase float also added
         AttrType attr = new AttrType();
         int ColumnNo = Convert.getShortValue(COLUMNMETA_COLUMNID, byteinfo);
         attr = getColumn(ColumnNo);
         if (attr.getAttrType() == 1) {
-            indexInfo.setValue(new IntegerValue(Convert.getIntValue(COLUMNMETA_NAME, byteinfo)));
+            indexInfo.setValue(new IntegerValue(Convert.getIntValue(INDEXMATA_VALUE, byteinfo)));
         } else if (attr.getAttrType() == 0) {
-            indexInfo.setValue(new StringValue(Convert.getStringValue(COLUMNMETA_NAME, byteinfo, 50)));
+            indexInfo.setValue(new StringValue(Convert.getStringValue(INDEXMATA_VALUE, byteinfo, 50)));
         }
         return indexInfo;
     }
+
+
 
     /*
      * function gets the index info from the meta-data file
@@ -286,15 +290,15 @@ public class ColumnarHeader extends DirectoryHFPage {
             throws IOException,
             HFBufMgrException,
             InvalidSlotNumberException {
-        int indexCount = getCounter();
-        int countRecords = getColumnCount();
+
         PageId pageId = new PageId(this.headerPageId.pid);
-        DirectoryHFPage page = new DirectoryHFPage();
+        ColumnarHeader page = new ColumnarHeader();
         PageId nextPageId;
         RID prevRID = null;
         IndexInfo info;
         pinPage(pageId, page);
-
+        int indexCount = page.getCounter();
+        int countRecords = page.getColumnCount();
         for (int i = 0; i < indexCount + countRecords; i++) {
             RID rid = null;
 
@@ -315,7 +319,8 @@ public class ColumnarHeader extends DirectoryHFPage {
             }
             if (i >= countRecords) {
                 info = convertIndexByteInfo(page.getDataAtSlot(rid));
-                if (info.getColumnNumber() == columnNum && info.getIndextype() == indType) {
+                if (info.getColumnNumber() == columnNum && info.getIndextype().toString().equals(indType.toString())) {
+                    System.out.println(info.getValue());
                     unpinPage(pageId, false);
                     return info;
                 }
@@ -337,15 +342,16 @@ public class ColumnarHeader extends DirectoryHFPage {
             throws IOException,
             HFBufMgrException,
             InvalidSlotNumberException {
-        int countRecords = getColumnCount();
+
         PageId pageId = new PageId(this.headerPageId.pid);
-        DirectoryHFPage page = new DirectoryHFPage();
+        ColumnarHeader page = new ColumnarHeader();
         PageId nextPageId;
         RID prevRID = null;
         IndexInfo info;
         pinPage(pageId, page);
-
-        for (int i = 0; i < getCounter(); i++) {
+        int indexCount = page.getCounter();
+        int countRecords = page.getColumnCount();
+        for (int i = 0; i < indexCount + countRecords; i++) {
             RID rid = null;
 
             while (rid == null && pageId.pid != INVALID_PAGE) {
@@ -366,7 +372,7 @@ public class ColumnarHeader extends DirectoryHFPage {
             // i> countRecords then the column indexes will start
             if (i >= countRecords) {
                 info = convertIndexByteInfo(page.getDataAtSlot(rid));
-                if (info.getColumnNumber() == columnNum && info.getIndextype() == indType && value.isequal(info.getValue())) {
+                if (info.getColumnNumber() == columnNum && info.getIndextype().toString().equals(indType.toString()) && value.isequal(info.getValue())) {
                     unpinPage(pageId, false);
                     return info;
                 }
@@ -429,7 +435,7 @@ public class ColumnarHeader extends DirectoryHFPage {
      *
      */
     public int getColumnCount() throws IOException {
-        return this.getType();
+        return getType();
     }
 
     private PageId newPage(Page page) throws ColumnarNewPageException {

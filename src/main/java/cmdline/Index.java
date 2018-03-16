@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import bitmap.GetFileEntryException;
 import columnar.ColumnarFile;
 import columnar.IndexInfo;
+import diskmgr.ColumnDB;
 import global.IndexType;
 import global.IntegerValue;
 import global.PageId;
@@ -33,18 +34,7 @@ public class Index {
 		columnName = argv[2];
 		indexType = argv[3];
 
-		// Not sure how to use columnDB name as I dont know how to calculate the other
-		// parameters like
-		// pageSizeRequired and bufferSize
-		/*
-		 * int pageSizeRequired = (int) (file .length() / MINIBASE_PAGESIZE) * 4;
-		 *
-		 * int bufferSize = pageSizeRequired / 4; if (bufferSize < 10) bufferSize = 10;
-		 *
-		 * SystemDefs systemDefs = new SystemDefs(columnDBName, pageSizeRequired ,
-		 * bufferSize, null);
-		 */
-
+		SystemDefs systemDefs = new SystemDefs(columnDBName, 0, 10, "LRU"); // Not sure about buffer pool size
 		if (Integer.parseInt(indexType) == 3) {
 			columnarFile = new ColumnarFile(columnarFileName);
 			for (int i = 0; i < columnarFile.getColumnarHeader().getColumnCount(); i++) {
@@ -93,6 +83,7 @@ public class Index {
 				}
 
 			}
+			scan.closeScan();
 
 		}
 

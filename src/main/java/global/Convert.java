@@ -94,6 +94,21 @@ public class Convert {
         return array;
     }
 
+    public static byte[] stringToByteA(String[] strings, int[] sizes)
+            throws IOException {
+        int size = 0;
+        for (int i = 0; i < sizes.length; i++) {
+            size = size + sizes[i];
+        }
+        int tempSize = 0;
+        byte[] bytes = new byte[size];
+        for (int i = 0; i < sizes.length; i++) {
+            Convert.setStringValue(strings[i], tempSize, bytes);
+            tempSize += sizes[i];
+        }
+        return bytes;
+    }
+
     public static void setShortValue(short value, int position, byte[] data)
             throws IOException {
         OutputStream out = new ByteArrayOutputStream();

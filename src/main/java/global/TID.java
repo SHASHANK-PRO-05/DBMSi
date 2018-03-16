@@ -2,7 +2,7 @@ package global;
 
 public class TID extends java.lang.Object {
     int numRIDs;
-    long position;
+    int position;
     RID[] recordIDs;
 
     public TID(int numRIDs) {
@@ -14,7 +14,7 @@ public class TID extends java.lang.Object {
         this.position = position;
     }
 
-    public TID(int numRIDs, long position, RID[] recordIDs) {
+    public TID(int numRIDs, int position, RID[] recordIDs) {
         this.numRIDs = numRIDs;
         this.position = position;
         this.recordIDs = recordIDs;
@@ -24,6 +24,10 @@ public class TID extends java.lang.Object {
         this.numRIDs = tid.numRIDs;
         this.position = tid.position;
         this.recordIDs = tid.recordIDs;
+    }
+
+    public RID[] getRecordIDs() {
+        return recordIDs;
     }
 
     boolean equals(TID tid) {
@@ -49,8 +53,13 @@ public class TID extends java.lang.Object {
     void writeToByteArray(byte[] array, int offset) {
 
     }
+    
 
-    void setPosition(int position) {
+    public int getPosition() {
+		return position;
+	}
+
+	void setPosition(int position) {
         this.position = position;
     }
 
@@ -64,10 +73,6 @@ public class TID extends java.lang.Object {
 
 	public void setNumRIDs(int numRIDs) {
 		this.numRIDs = numRIDs;
-	}
-
-	public RID[] getRecordIDs() {
-		return recordIDs;
 	}
 
 	public void setRecordIDs(RID[] recordIDs) {

@@ -13,62 +13,26 @@ Constructor Parameter - An index file with given file name should not already ex
 
 
 public abstract class ValueClass{
-    private Object obj;
-	
-	public ValueClass() {
-    	
-    	
-    }
-	
-	
-	
-    public Object getObj() {
-		return obj;
-	}
-
-
-
-	public void setObj(Object obj) {
-		this.obj = obj;
-	}
-
 
 
 	public abstract Object getValue();
     public abstract void setValue(Object o);
+    
 
     public int getValueType() {
         if (this instanceof IntegerValue)
             return 1;
         else if (this instanceof StringValue)
-            return 2;
-        else if (this instanceof FloatValue)
-            return 3;
+            return 0;
         else
             return -1; //invalid type
-
+        
+    }
+    public ValueClass(Object obj) {
+    	
+    	
     }
     
-    
-    public boolean isequal(Object obj) {
-    	if(obj instanceof IntegerValue) {
-    		if((Integer)obj == (Integer)getObj()) {
-    			return true;
-    		}
-    	}
-    	
-    	else if(obj instanceof StringValue) {
-    		if((Integer)obj == (Integer)getObj()) {
-    			return true;
-    		}
-    	}
-    	
-    	else if(obj instanceof StringValue) {
-    		if((Integer)obj == (Integer)getObj()) {
-    			return true;
-    		}
-    	}
-    	return false;
-    }
+    public abstract boolean isequal(Object obj);
 
 }
