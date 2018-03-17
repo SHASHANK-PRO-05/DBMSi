@@ -331,7 +331,6 @@ public class Heapfile implements Filetype, GlobalConst {
 
         return answer;
     } // end of getRecCnt
-
     /** Insert record into file, return its Rid.
      *
      * @param recPtr pointer of the record
@@ -567,7 +566,6 @@ public class Heapfile implements Filetype, GlobalConst {
 
 
         return rid;
-
     }
 
     /** Delete record from file with given rid.
@@ -899,34 +897,36 @@ public class Heapfile implements Filetype, GlobalConst {
 
         delete_file_entry(_fileName);
     }
+    
+  /**
+   * short cut to access the pinPage function in bufmgr package.
+   */
+  private void pinPage(PageId pageno, Page page, boolean emptyPage)
+    throws HFBufMgrException {
+    
+    try {
+      SystemDefs.JavabaseBM.pinPage(pageno, page, emptyPage);
+    }
+    catch (Exception e) {
+      throw new HFBufMgrException(e,"Heapfile.java: pinPage() failed");
+    }
+    
+  } // end of pinPage
 
-    /**
-     * short cut to access the pinPage function in bufmgr package.
-     */
-    private void pinPage(PageId pageno, Page page, boolean emptyPage)
-            throws HFBufMgrException {
+  /**
+   * short cut to access the unpinPage function in bufmgr package.
+   */
+  private void unpinPage(PageId pageno, boolean dirty)
+    throws HFBufMgrException {
 
-        try {
-            SystemDefs.JavabaseBM.pinPage(pageno, page, emptyPage);
-        } catch (Exception e) {
-            throw new HFBufMgrException(e, "Heapfile.java: pinPage() failed");
-        }
-
-    } // end of pinPage
-
-    /**
-     * short cut to access the unpinPage function in bufmgr package.
-     */
-    private void unpinPage(PageId pageno, boolean dirty)
-            throws HFBufMgrException {
-
-        try {
-            SystemDefs.JavabaseBM.unpinPage(pageno, dirty);
-        } catch (Exception e) {
-            throw new HFBufMgrException(e, "Heapfile.java: unpinPage() failed");
-        }
-
-    } // end of unpinPage
+    try {
+      SystemDefs.JavabaseBM.unpinPage(pageno, dirty);
+    }
+    catch (Exception e) {
+      throw new HFBufMgrException(e,"Heapfile.java: unpinPage() failed");
+    }
+    
+  } // end of unpinPage
 
     private void freePage(PageId pageno)
             throws HFBufMgrException {

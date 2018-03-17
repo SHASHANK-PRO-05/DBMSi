@@ -2,13 +2,13 @@
 
 package heap;
 
+import java.io.*;
 import global.AttrType;
 import global.Convert;
 import global.GlobalConst;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-
 
 public class Tuple implements GlobalConst {
 
@@ -553,4 +553,5 @@ public class Tuple implements GlobalConst {
         return 0;
     }
 }
+
 

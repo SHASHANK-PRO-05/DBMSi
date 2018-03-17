@@ -34,33 +34,49 @@ public class TID extends java.lang.Object {
         int i = 0;
         if (tid == null)
             return false;
-
-        if (numRIDs == tid.numRIDs && position == tid.position) {
-            for (RID rid : recordIDs) {
-                if (tid.recordIDs[i] != null) {
-                    if (rid.slotNo == tid.recordIDs[i].slotNo && rid.pageNo.pid == tid.recordIDs[i].pageNo.pid) {
-                        i++;
-                        continue;
-                    } else
-                        return false;
-                } else
-                    return false;
-            }
-            return true;
-        }
-        return false;
-    }
+		if (numRIDs == tid.numRIDs && position == tid.position) {
+			for (RID rid : recordIDs) {
+				if (tid.recordIDs[i] != null) {
+					if (rid.slotNo == tid.recordIDs[i].slotNo && rid.pageNo.pid == tid.recordIDs[i].pageNo.pid) {
+						i++;
+						continue;
+					} else
+						return false;
+				} else
+					return false;
+			}
+			return true;
+		}
+		return false;
+	}
 
     void writeToByteArray(byte[] array, int offset) {
 
     }
+    
 
-    void setPosition(int position) {
+    public int getPosition() {
+		return position;
+	}
+
+	void setPosition(int position) {
         this.position = position;
     }
 
     void setRID(int column, RID recordID) {
         recordIDs[column - 1] = recordID;
     }
+
+	public int getNumRIDs() {
+		return numRIDs;
+	}
+
+	public void setNumRIDs(int numRIDs) {
+		this.numRIDs = numRIDs;
+	}
+
+	public void setRecordIDs(RID[] recordIDs) {
+		this.recordIDs = recordIDs;
+	}
 
 }
