@@ -227,7 +227,7 @@ public class DirectoryHFPage extends Page implements ConstSlot, GlobalConst {
     }
 
     public long getReccnt() throws IOException {
-        reccnt = Convert.getLongValue(RECCNT, data);
+        reccnt = Convert.getLongValue(RECCNT, this.data);
         return reccnt;
     }
 

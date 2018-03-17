@@ -30,7 +30,7 @@ public class BitMapTest {
     @Test
     public void setupBitMapOperation() throws Exception {
         String dbPath = "Minibase.min";
-        SystemDefs systemDefs = new SystemDefs(dbPath, 4000, 10, null);
+        SystemDefs systemDefs = new SystemDefs(dbPath, 20000, 10, null);
         AttrType[] attrTypes = new AttrType[20];
         String[][] in = new String[10000][20];
         int[] sizes = new int[20];
@@ -47,7 +47,7 @@ public class BitMapTest {
         int min = Integer.MAX_VALUE;
         for (int i = 0; i < 10000; i++) {
             for (int j = 0; j < 20; j++) {
-                if (i % 3 != 0)
+                if (i % 10 == 0)
                     in[i][j] = randomAlphaNumeric(10);
                 else {
                     in[i][j] = "Shashank";
@@ -61,11 +61,9 @@ public class BitMapTest {
             }
         }
         SystemDefs.JavabaseBM.flushAllPages();
-        columnarFile.createBitMapIndex(1, new StringValue("Shashank"));
+        columnarFile.createBitMapIndex(3, new StringValue("Shashank"));
         SystemDefs.JavabaseBM.flushAllPages();
-        columnarFile.createBitMapIndex(1, new StringValue("Shashank"));
-        SystemDefs.JavabaseBM.flushAllPages();
-        BitMapFile bitMapFile = new BitMapFile("Employee.1.Shashank");
+        BitMapFile bitMapFile = new BitMapFile("Employee.3.Shashank");
         SystemDefs.JavabaseBM.flushAllPages();
         BitMapOperations bitMapOperations = new BitMapOperations();
         SystemDefs.JavabaseBM.flushAllPages();

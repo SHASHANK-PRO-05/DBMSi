@@ -12,12 +12,13 @@ Constructor Parameter - An index file with given file name should not already ex
 */
 
 
-public abstract class ValueClass{
+public abstract class ValueClass {
 
 
-	public abstract Object getValue();
+    public abstract Object getValue();
+
     public abstract void setValue(Object o);
-    
+
 
     public int getValueType() {
         if (this instanceof IntegerValue)
@@ -26,13 +27,26 @@ public abstract class ValueClass{
             return 0;
         else
             return -1; //invalid type
-        
+
     }
+
     public ValueClass(Object obj) {
-    	
-    	
+
+
     }
-    
+
+    @Override
+    public boolean equals(Object obj) {
+        ValueClass temp = (ValueClass) obj;
+        return this.getValue().equals(temp.getValue());
+    }
+
+    @Override
+    public int hashCode() {
+        return this.getValue().hashCode();
+    }
+
     public abstract boolean isequal(Object obj);
+
 
 }

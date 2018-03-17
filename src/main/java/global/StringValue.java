@@ -19,6 +19,7 @@ public class StringValue extends ValueClass {
     }
 
 
+
     public boolean isequal(Object obj) {
         if (obj instanceof StringValue) {
             if (((String) ((StringValue) obj).getValue()).equals(this.getValue())) {
