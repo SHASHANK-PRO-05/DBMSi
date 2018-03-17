@@ -23,8 +23,10 @@ public class BitMapHeaderPage extends Page {
     private short columnIndex = -1;
     private short valueType = -1;
 
-    public BitMapHeaderPage() throws ConstructPageException {
+    public BitMapHeaderPage(boolean empty) throws ConstructPageException {
         super();
+        if (empty)
+            return;
         Page page = new Page();
 
         try {

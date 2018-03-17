@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import bitmap.BitMapFile;
 import bufmgr.BufMgr;
 import diskmgr.DiskMgrException;
 import diskmgr.FileNameTooLongException;
@@ -15,7 +16,8 @@ import heap.InvalidTupleSizeException;
 public class ColumnarFile implements GlobalConst {
 
     private ColumnarHeader columnarHeader;
-    //Shashank: I am not sure if it is required
+    //Question by shashank: I am not sure if it is required
+    //But logic is there so we will have to use this.
     private Heapfile heapFileNames[];
     private int numColumns;
     /*
@@ -63,14 +65,35 @@ public class ColumnarFile implements GlobalConst {
     public ColumnarFile(String fileName)
             throws IOException, DiskMgrException
             , ColumnarFileDoesExistsException
-            , ColumnarFilePinPageException {
+            , ColumnarFilePinPageException
+            , HFException, HFBufMgrException,
+            HFDiskMgrException,
+            ColumnarFileUnpinPageException {
         PageId pageId = getFileEntry(fileName);
         if (pageId != null) {
             columnarHeader = new ColumnarHeader(pageId, fileName);
+            pinPage(pageId, columnarHeader);
+            heapFileNames = new Heapfile[columnarHeader.getColumnCount()];
+            for (int i = 0; i < heapFileNames.length; i++) {
+                heapFileNames[i] = new Heapfile(fileName + "." + i);
+            }
+            unpinPage(pageId, false);
         } else {
             throw new ColumnarFileDoesExistsException(null
                     , "Columnar File Does not exists");
         }
+    }
+
+    //TODO: change the throwing exceptions
+    public boolean createBitMapIndex(int columnNo, ValueClass valueClass)
+            throws Exception {
+        String fileName = this.getColumnarHeader().getHdrFile()
+                + "." + columnNo + "." + valueClass.getValue();
+
+        BitMapFile bitMapFile = new BitMapFile(fileName
+                , this, columnNo, valueClass);
+
+        return true;
     }
 
     /*
@@ -92,7 +115,7 @@ public class ColumnarFile implements GlobalConst {
         HFPage hfPage = new HFPage();
         pinPage(pageId, hfPage);
         for (int i = 0; i < numColumns; i++) {
-            Heapfile hf = new Heapfile(fname + "i");
+            Heapfile hf = new Heapfile(fname + '.' + i);
             hf.deleteFile();
         }
         unpinPage(pageId, false);
@@ -107,7 +130,7 @@ public class ColumnarFile implements GlobalConst {
      */
     public TID insertTuple(byte[] bytePtr) throws Exception {
 
-        DirectoryHFPage directoryHFPage = new DirectoryHFPage();
+        ColumnarHeader directoryHFPage = new ColumnarHeader();
         pinPage(this.getColumnarHeader().getHeaderPageId(), directoryHFPage);
         ByteToTuple byteToTuple
                 = new ByteToTuple(this.getColumnarHeader().getColumns());
@@ -122,7 +145,7 @@ public class ColumnarFile implements GlobalConst {
         long pos = directoryHFPage.getReccnt() + 1;
         directoryHFPage.setReccnt(pos);
         unpinPage(this.getColumnarHeader().getHeaderPageId(), true);
-        return new TID(rids.length, pos, rids);
+        return new TID(rids.length, (int) pos, rids);
     }
 
     /*
@@ -188,22 +211,23 @@ public class ColumnarFile implements GlobalConst {
         }
 
     }
-    public AttrType getColumnInfo(int i) 
-    		throws ColumnarFilePinPageException,
-    		InvalidSlotNumberException, 
-    		HFBufMgrException, 
-    		heap.InvalidSlotNumberException, 
-    		IOException,
-    		ColumnarFileUnpinPageException {
-    	DirectoryHFPage dirpage = new DirectoryHFPage();
-    	PageId id = columnarHeader.getHeaderPageId();
+
+    public AttrType getColumnInfo(int i)
+            throws ColumnarFilePinPageException,
+            InvalidSlotNumberException,
+            HFBufMgrException,
+            heap.InvalidSlotNumberException,
+            IOException,
+            ColumnarFileUnpinPageException {
+        DirectoryHFPage dirpage = new DirectoryHFPage();
+        PageId id = columnarHeader.getHeaderPageId();
         pinPage(id, dirpage);
-    	AttrType attrTye = columnarHeader.getColumn(i);
-    	unpinPage(id, false);
-    	return attrTye;	
+        AttrType attrTye = columnarHeader.getColumn(i);
+        unpinPage(id, false);
+        return attrTye;
     }
-    
-    
+
+
     /*
      * getter-setters starts here
      */

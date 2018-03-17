@@ -20,7 +20,7 @@ public class BMPage extends Page implements GlobalConst {
     public static final int NEXT_PAGE = 8;
     public static final int CUR_PAGE = 12;
 
-    public static final int availableMap = (MINIBASE_PAGESIZE - DPFIXED) * 8;
+    public static final int availableMap = (MINIBASE_PAGESIZE - DPFIXED);
     /*
      * number of bits set
      */
@@ -95,19 +95,25 @@ public class BMPage extends Page implements GlobalConst {
         nextPage.pid = prevPage.pid = INVALID_PAGE;
         Convert.setIntValue(prevPage.pid, PREV_PAGE, data);
         Convert.setIntValue(nextPage.pid, NEXT_PAGE, data);
-        freeSpace = (short) (MINIBASE_PAGESIZE - DPFIXED);    // amount of space available
+        freeSpace = (short) (MINIBASE_PAGESIZE - DPFIXED) * 8;    // amount of space available
         Convert.setShortValue(freeSpace, FREE_SPACE, data);
     }
 
-    public int availableSpace() throws IOException {
+    public short getAvailableSpace() throws IOException {
         freeSpace = Convert.getShortValue(FREE_SPACE, data);
         return (freeSpace);
+    }
+
+    public void setAvailableSpace(int val) throws IOException {
+        freeSpace = (short) val;
+        Convert.setShortValue(freeSpace, FREE_SPACE, data);
     }
 
     public short getCount() throws IOException {
         count = Convert.getShortValue(COUNTER, data);
         return count;
     }
+
 
     /**
      * @return byte array
@@ -246,6 +252,26 @@ public class BMPage extends Page implements GlobalConst {
         // write now bit map the, I do not know the usage
         //now so leaving it blank
 
+    }
+
+    public void setCount(short counter) throws IOException {
+        Convert.setShortValue(counter, COUNTER, data);
+    }
+
+    public void setABit(int position, int bit) throws IOException {
+        int positionToUse = position / 8;
+        int setLocation = positionToUse % availableMap;
+        setCount((short) Math.max(setLocation + 1, this.getCount()));
+        positionToUse = position % 8;
+        if (bit == 1) {
+            short tempAns = (short) (1 << positionToUse);
+            data[setLocation + DPFIXED] = (byte) (data[setLocation + DPFIXED] | tempAns);
+        } else {
+            System.out.println(data[setLocation + DPFIXED]);
+            short tempAns = (short) (~(1 << positionToUse));
+            data[setLocation + DPFIXED] = (byte) (data[setLocation + DPFIXED] & tempAns);
+            System.out.println(data[setLocation + DPFIXED]);
+        }
     }
 
 

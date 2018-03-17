@@ -1,6 +1,7 @@
 package bitmap;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 
 import bufmgr.HashEntryNotFoundException;
@@ -10,16 +11,23 @@ import bufmgr.ReplacerException;
 import columnar.ColumnarFile;
 import diskmgr.Page;
 import global.*;
+import heap.*;
 
 
-public class BitMapFile {
+public class BitMapFile implements GlobalConst {
 
 
-    private BitMapHeaderPage headerPage;
     private PageId headerPageId;
     private String fileName;
-    private ColumnarFile columnarFile;
+    private BitMapHeaderPage bitMapHeaderPage;
 
+    public BitMapHeaderPage getBitMapHeaderPage() {
+        return bitMapHeaderPage;
+    }
+
+    public void setBitMapHeaderPage(BitMapHeaderPage bitMapHeaderPage) {
+        this.bitMapHeaderPage = bitMapHeaderPage;
+    }
 
     /**
      * Access method to data member.
@@ -27,9 +35,6 @@ public class BitMapFile {
      * @return Return a BitMapHeaderPage object that is the header page
      * of this bitmap file.
      */
-    public BitMapHeaderPage getHeaderPage() {
-        return headerPage;
-    }
 
 
     private PageId getFileEntry(String fileName) throws GetFileEntryException {
@@ -41,9 +46,9 @@ public class BitMapFile {
         }
     }
 
-    private Page pinPage(PageId pageId) throws PinPageException {
+    private Page pinPage(PageId pageId, Page page) throws PinPageException {
         try {
-            Page page = new Page();
+
             SystemDefs.JavabaseBM.pinPage(pageId, page, false/*Rdisk*/);
             return page;
         } catch (Exception e) {
@@ -104,138 +109,206 @@ public class BitMapFile {
 
 
     public BitMapFile(String fileName) throws GetFileEntryException,
-            PinPageException, ConstructPageException {
+            PinPageException, ConstructPageException, UnpinPageException {
         headerPageId = getFileEntry(fileName);
-        headerPage = new BitMapHeaderPage(headerPageId);
         this.fileName = fileName;
+        bitMapHeaderPage = new BitMapHeaderPage(true);
+        pinPage(headerPageId, bitMapHeaderPage);
+        unpinPage(headerPageId, false);
     }
 
 
     public BitMapFile(String fileName, ColumnarFile columnarFile, int columnNo, ValueClass value)
             throws GetFileEntryException,
-            ConstructPageException, IOException, AddFileEntryException {
+            ConstructPageException, IOException, AddFileEntryException
+            , UnpinPageException, InvalidTupleSizeException, PinPageException, HFBufMgrException, InvalidSlotNumberException {
 
         headerPageId = getFileEntry(fileName);
         if (headerPageId == null) // file not exist
         {
-            headerPage = new BitMapHeaderPage();
-            headerPageId = headerPage.getCurrPage();
+            bitMapHeaderPage = new BitMapHeaderPage(false);
+            headerPageId = bitMapHeaderPage.getCurrPage();
             addFileEntry(fileName, headerPageId);
-            headerPage.setColumnIndex((short)columnNo);
-            headerPage.setValueType((short)value.getValueType());
-            this.columnarFile = columnarFile;
+            bitMapHeaderPage.setColumnIndex((short) columnNo);
+            bitMapHeaderPage.setValueType((short) value.getValueType());
+
         } else {
-            headerPage = new BitMapHeaderPage(headerPageId);
+            //Exception should be thrown
+            return;
         }
-
-
-        init(value);
+        init(value, columnarFile, columnNo);
         this.fileName = fileName;
-
+        unpinPage(headerPageId, true);
     }
 
 
     /*
      * Initialize our bitMap
      */
-    private boolean compareValues(int a, int b){
-        if (a==b)
-        return true;
-        else
-        return false;
-    }
-    private boolean compareValues(float a, float b){
-        if (a==b)
+    private boolean compareValues(int a, int b) {
+        if (a == b)
             return true;
         else
             return false;
     }
-    private boolean compareValues(String a, String b){
+
+    private boolean compareValues(float a, float b) {
+        if (a == b)
+            return true;
+        else
+            return false;
+    }
+
+    private boolean compareValues(String a, String b) {
         if (a.equals(b))
             return true;
         else
             return false;
     }
-    private boolean compareValues(int c,int a, int b){
+
+    private boolean compareValues(int c, int a, int b) {
         //a must be smaller than b
-        if (c>= a && c<=b)
+        if (c >= a && c <= b)
             return true;
         else
             return false;
     }
-    private boolean compareValues(float c,float a, float b){
+
+    private boolean compareValues(float c, float a, float b) {
         //a must be smaller than b
-        if (c>= a && c<=b)
+        if (c >= a && c <= b)
             return true;
         else
             return false;
     }
-    private boolean compareValues(String c,String a, String b){
+
+    private boolean compareValues(String c, String a, String b) {
         //a must be smaller than b
-        if (c.compareTo(a)>=0 && c.compareTo(b)>=0)
+        if (c.compareTo(a) >= 0 && c.compareTo(b) >= 0)
             return true;
         else
             return false;
     }
-    private void init(ValueClass value) {
-        //initialize a sequential scan on the
 
-        //Scan scan = columnarFile.openColumnScan(1);
-        //check if scan object is not valid
+    private void init(ValueClass value, ColumnarFile columnarFile, int columnNo)
+            throws IOException, InvalidTupleSizeException, PinPageException,
+            UnpinPageException, HFBufMgrException, InvalidSlotNumberException {
+        int valType = value.getValueType();
+        boolean flag = false;
+        int position = 0;
 
-        int val_type=value.getValueType();
-        boolean flag=false;
-        int position=0;
-
-
-         /*check if the tuple match the value*/
-
-         switch(val_type)
-         {
-             case 1:/*IntegerValue value_new1=scan.getnext();
-                    IntegerValue value_given1=(IntegerValue) value;
-
-                    do {
-                        flag = compareValues(value_new1.getIntValue(), value_given1.getIntValue());
-                        if (flag) {
-                            //set bit at the given position as 1
-                            insert(position);
-                        } else {
-                            position = position + 1;
-                            // access next column value
-                            value_new1 = scan.getnext();
-
-                        }
-                    }while(value_new1!=NULL); *///how the scan will end
-
-             case 2:/*StringValue value_new2=scan.getnext();
-                    StringValue value_given2=(StringValue) value;
-                    flag=compareValues(value_new2.getStringValue(),value_given2.getStringValue());*/
-             case 3:/*FloatValue value_new3=scan.getnext();
-                    FloatValue value_given3=(FloatValue)value;
-                    flag=compareValues(value_new3.getFloatValue(),value_given3.getFloatValue());*/
-             /*
-             Issue : How to know that value_new object is range as it will be a single value
-             case 4:RangeIntValue value_new4=scan.getnext();
-                    flag=compareValues(value_new4.getIntValue(),value.getIntValue1(),value.getIntValue2());
-             case 5:RangeStringValue value_new5=scan.getnext();
-                    flag=compareValues(value_new5.getStringValue(),value.getStringValue1(),value.getStringValue2());
-             case 6:RangeFloatValue value_new6=scan.getnext();
-                    flag=compareValues(value_new6.getFloatValue(),value.getFloatValue1(),value.getFloatValue2());
-            */
-         }
-
-
-
+        switch (valType) {
+            case 0:
+                setupStringBitMap((String) value.getValue(), columnarFile, columnNo);
+                break;
+            case 1:
+                setupIntBitMap((Integer) value.getValue(), columnarFile, columnNo);
+                break;
+            case -1:
+                break;
+        }
     }
 
+    private void setupStringBitMap(String value, ColumnarFile columnarFile, int columnNo)
+            throws IOException, InvalidTupleSizeException
+            , PinPageException, UnpinPageException, HFBufMgrException, InvalidSlotNumberException {
+        Scan scan = new Scan(columnarFile, (short) columnNo);
+        pinPage(headerPageId, bitMapHeaderPage);
+        RID rid = scan.getFirstRID();
+        Tuple tuple = scan.getNext(rid);
+        BMPage bmPage = new BMPage();
+
+        PageId pageId = new PageId();
+        int position = 0;
+        allocatePage(pageId, 1);
+        bitMapHeaderPage.setNextPage(pageId);
+        unpinPage(headerPageId, true);
+        pinPage(pageId, bmPage);
+        bmPage.init(pageId, bmPage);
+        while (tuple != null) {
+            String val = Convert.getStringValue(0, tuple.getTupleByteArray()
+                    , columnarFile.getColumnarHeader().getColumns()[columnNo].getSize());
+            if (val.equals(value)) {
+                bmPage.setABit(position, 1);
+            }
+            int tempAns = bmPage.getAvailableSpace() - 1;
+            bmPage.setAvailableSpace(tempAns);
+
+            if (tempAns == 0) {
+                PageId pageIdTemp = new PageId();
+                allocatePage(pageIdTemp, 1);
+                bmPage.setNextPage(pageIdTemp);
+                unpinPage(pageId, true);
+                pageId = pageIdTemp;
+                pinPage(pageId, bmPage);
+                bmPage.init(pageId, bmPage);
+            }
+
+            tuple = scan.getNext(rid);
+            position++;
+        }
+        bmPage.setNextPage(new PageId(-1));
+        unpinPage(pageId, true);
+        scan.closeScan();
+    }
+
+    private void setupIntBitMap(Integer value, ColumnarFile columnarFile, int columnNo)
+            throws IOException, InvalidTupleSizeException
+            , PinPageException, UnpinPageException {
+        Scan scan = new Scan(columnarFile, (short) columnNo);
+        RID rid = scan.getFirstRID();
+        BMPage bitmap = new BMPage();
+        Tuple tuple = scan.getNext(rid);
+        BMPage bmPage = new BMPage();
+
+        PageId pageId = new PageId();
+        int position = 0;
+        allocatePage(pageId, 1);
+        pinPage(pageId, bmPage);
+        bmPage.init(pageId, bmPage);
+
+        while (tuple != null) {
+            int val = Convert.getIntValue(0, tuple.getTupleByteArray());
+            if (val == value) {
+                bmPage.setABit(position, 1);
+            }
+            int tempAns = bmPage.getAvailableSpace() - 1;
+            bmPage.setAvailableSpace(tempAns);
+
+            if (tempAns == 0) {
+                PageId pageIdTemp = new PageId();
+                allocatePage(pageIdTemp, 1);
+                bmPage.setNextPage(pageIdTemp);
+                unpinPage(pageId, true);
+                pageId = pageIdTemp;
+                pinPage(pageId, bmPage);
+                bmPage.init(pageId, bmPage);
+            }
+
+            tuple = scan.getNext(rid);
+            position++;
+        }
+        unpinPage(pageId, true);
+        scan.closeScan();
+    }
+
+    public void allocatePage(PageId pageId, int runSize) {
+        try {
+            SystemDefs.JavabaseDB.allocatePage(pageId, runSize);
+        } catch (Exception e) {
+
+        }
+    }
 
     public void close() throws PageUnpinnedException,
             InvalidFrameNumberException, HashEntryNotFoundException,
             ReplacerException {
-        if (headerPage != null) {
+        /**********************
+         * Why do we need this??
+         *********************/
+        if (bitMapHeaderPage != null) {
             SystemDefs.JavabaseBM.unpinPage(headerPageId, true);
-            headerPage = null;
+            bitMapHeaderPage = null;
         }
     }
 
@@ -243,13 +316,45 @@ public class BitMapFile {
 
     }
 
-    public boolean Delete(int position) {
+    public boolean setBMPagePositions(int position, int bit) throws PinPageException, IOException
+            , UnpinPageException {
+        pinPage(headerPageId, bitMapHeaderPage);
+        PageId pageId = bitMapHeaderPage.getNextPage();
+        BMPage bmPage = new BMPage();
+        pinPage(pageId, bmPage);
+        int bytes = (position + 8) / 8;
+        int locationUntilLoop = bytes / bmPage.getAvailableMap();
+
+        for (int i = 0; i < locationUntilLoop; i++) {
+            PageId nextPageId = bmPage.getNextPage();
+            bmPage.setCount((short) bmPage.getAvailableMap());
+            if (nextPageId.pid == INVALID_PAGE) {
+                allocatePage(nextPageId, 1);
+                bmPage.setNextPage(nextPageId);
+            }
+            unpinPage(pageId);
+            pageId = nextPageId;
+            pinPage(pageId, bmPage);
+        }
+        unpinPage(pageId, true);
+        bmPage.setABit(position, bit);
+        unpinPage(headerPageId, false);
         return false;
     }
 
-    public boolean Insert(int position) {
-        return false;
+    public boolean Delete(int position)
+            throws PinPageException, IOException
+            , UnpinPageException {
+        return setBMPagePositions(position, 0);
+    }
 
+    public boolean Insert(int position) throws PinPageException, IOException
+            , UnpinPageException {
+        return setBMPagePositions(position, 1);
+    }
+
+    public PageId getHeaderPageId() {
+        return headerPageId;
     }
 
 

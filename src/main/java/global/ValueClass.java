@@ -23,7 +23,7 @@ public abstract class ValueClass{
         if (this instanceof IntegerValue)
             return 1;
         else if (this instanceof StringValue)
-            return 2;
+            return 0;
         else
             return -1; //invalid type
         

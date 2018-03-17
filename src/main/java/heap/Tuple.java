@@ -2,10 +2,12 @@
 
 package heap;
 
-import java.io.*;
-import java.lang.*;
+import global.AttrType;
+import global.Convert;
+import global.GlobalConst;
 
-import global.*;
+import java.io.IOException;
+import java.lang.reflect.Array;
 
 
 public class Tuple implements GlobalConst {
@@ -97,6 +99,50 @@ public class Tuple implements GlobalConst {
     }
 
     /**
+     * Code taken from https://stackoverflow.com/questions/80476/how-can-i-concatenate-two-arrays-in-java
+     *
+     * @param a   First Array
+     * @param b   Second Array of the same type as the first
+     * @param <T> Generic Array Type
+     * @return
+     */
+    public static <T> T concatenate(T a, T b) {
+        if (!a.getClass().isArray() || !b.getClass().isArray()) {
+            throw new IllegalArgumentException();
+        }
+
+        Class<?> resCompType;
+        Class<?> aCompType = a.getClass().getComponentType();
+        Class<?> bCompType = b.getClass().getComponentType();
+
+        if (aCompType.isAssignableFrom(bCompType)) {
+            resCompType = aCompType;
+        } else if (bCompType.isAssignableFrom(aCompType)) {
+            resCompType = bCompType;
+        } else {
+            throw new IllegalArgumentException();
+        }
+
+        int aLen = Array.getLength(a);
+        int bLen = Array.getLength(b);
+
+        @SuppressWarnings("unchecked")
+        T result = (T) Array.newInstance(resCompType, aLen + bLen);
+        System.arraycopy(a, 0, result, 0, aLen);
+        System.arraycopy(b, 0, result, aLen, bLen);
+
+        return result;
+    }
+
+    public void mergeTuple(Tuple fromTuple) {
+        data = concatenate(getTupleByteArray(), fromTuple.getTupleByteArray());
+        tuple_length = getLength() + fromTuple.getLength();
+        tuple_offset += fromTuple.tuple_offset;
+        fldCnt += fromTuple.noOfFlds();
+        fldOffset = concatenate(fldOffset, fromTuple.copyFldOffset());
+    }
+
+    /**
      * Copy a tuple to the current tuple position
      * you must make sure the tuple lengths must be equal
      *
@@ -105,8 +151,8 @@ public class Tuple implements GlobalConst {
     public void tupleCopy(Tuple fromTuple) {
         byte[] temparray = fromTuple.getTupleByteArray();
         System.arraycopy(temparray, 0, data, tuple_offset, tuple_length);
-//       fldCnt = fromTuple.noOfFlds(); 
-//       fldOffset = fromTuple.copyFldOffset(); 
+//       fldCnt = fromTuple.noOfFlds();
+//       fldOffset = fromTuple.copyFldOffset();
     }
 
     /**
@@ -126,9 +172,9 @@ public class Tuple implements GlobalConst {
     /**
      * Set a tuple with the given tuple length and offset
      *
-     * @param record a byte array contains the tuple
-     * @param offset the offset of the tuple ( =0 by default)
-     * @param length the length of the tuple
+     * @param  record  a byte array contains the tuple
+     * @param  offset the offset of the tuple ( =0 by default)
+     * @param  length  the length of the tuple
      */
     public void tupleSet(byte[] record, int offset, int length) {
         System.arraycopy(record, offset, data, 0, length);
@@ -191,10 +237,10 @@ public class Tuple implements GlobalConst {
     /**
      * Convert this field into integer
      *
-     * @param fldNo the field number
-     * @return the converted integer if success
      * @throws IOException                    I/O errors
      * @throws FieldNumberOutOfBoundException Tuple field number out of bound
+     * @param  fldNo  the field number
+     * @return the converted integer if success
      */
 
     public int getIntFld(int fldNo)
@@ -270,10 +316,10 @@ public class Tuple implements GlobalConst {
     /**
      * Set this field to integer value
      *
-     * @param fldNo the field number
-     * @param val   the integer value
      * @throws IOException                    I/O errors
      * @throws FieldNumberOutOfBoundException Tuple field number out of bound
+     * @param  fldNo  the field number
+     * @param  val  the integer value
      */
 
     public Tuple setIntFld(int fldNo, int val)
@@ -327,8 +373,8 @@ public class Tuple implements GlobalConst {
      * setHdr will set the header of this tuple.
      *
      * @param numFlds    number of fields
-     * @param types[]    contains the types that will be in this tuple
-     * @param strSizes[] contains the sizes of the string
+     * @param types    contains the types that will be in this tuple
+     * @param strSizes contains the sizes of the string
      * @throws IOException               I/O errors
      * @throws InvalidTypeException      Invalid tupe type
      * @throws InvalidTupleSizeException Tuple size too big
@@ -498,9 +544,9 @@ public class Tuple implements GlobalConst {
      * private method
      * Padding must be used when storing different types.
      *
-     * @param type   the type of tuple
-     * @param offset
+     * @param type the type of tuple
      * @return short typle
+     * @param  offset
      */
 
     private short pad(short offset, AttrType type) {
