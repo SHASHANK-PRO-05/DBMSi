@@ -9,16 +9,20 @@ import columnar.ColumnarFilePinPageException;
 import columnar.ColumnarFileUnpinPageException;
 import diskmgr.DiskMgrException;
 import iterator.ColumnarFileScan;
+import iterator.ColumnarFileScanException;
 import iterator.CondExpr;
 import iterator.FldSpec;
 import iterator.RelSpec;
+import global.AttrOperator;
 import global.AttrType;
+import global.Convert;
 import global.IndexType;
 import global.SystemDefs;
 import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
 import heap.InvalidSlotNumberException;
+import heap.Tuple;
 
 public class Query {
 	private static String columnDBName;
@@ -36,29 +40,13 @@ public class Query {
 	
 	
 	public static void main(String argv[]) 
-			throws DiskMgrException, 
-			ColumnarFileDoesExistsException, 
-			ColumnarFilePinPageException, 
-			HFException, HFBufMgrException, 
-			HFDiskMgrException, 
-			ColumnarFileUnpinPageException, 
-			IOException, 
-			InvalidSlotNumberException {
+			throws Exception {
 		
 			initFromArgs(argv);
 	}
 
 	private static void initFromArgs(String argv[]) 
-			throws DiskMgrException, 
-			ColumnarFileDoesExistsException, 
-			ColumnarFilePinPageException, 
-			HFException, 
-			HFBufMgrException, 
-			HFDiskMgrException, 
-			ColumnarFileUnpinPageException, 
-			IOException,
-			
-			InvalidSlotNumberException {
+			throws Exception {
 		int lengthOfArgv = argv.length;
 		columnDBName = argv[0];
 		columnarFileName = argv[1];
@@ -79,23 +67,12 @@ public class Query {
 	}
 	
 	private static void setUpFileScan() 
-			throws HFBufMgrException, 
-			InvalidSlotNumberException, 
-			IOException, 
-			DiskMgrException, 
-			ColumnarFileDoesExistsException, 
-			ColumnarFilePinPageException, 
-			HFException, 
-			HFDiskMgrException, 
-			ColumnarFileUnpinPageException {
+			throws Exception {
 		
 		AttrType[] in = {};
-		int[] strSizes = {};
-		short lenInput;
-		int outFlds;
+		short[] strSizes = {};
 		int conditonalColumnId =-1;
 		FldSpec[] projList= {};
-		CondExpr[] outFilter;
 		AttrType condAttr = new AttrType();
 		SystemDefs systemDefs = new SystemDefs(columnDBName, 0, numBuf, "LRU");
 		ColumnarFile columnarFile = new ColumnarFile(columnarFileName);
@@ -136,15 +113,23 @@ public class Query {
 		CondExpr[] condition = new CondExpr[2];
 		condition[0].next = null;
 		condition[0].operand1.symbol = new FldSpec(new RelSpec(0),conditonalColumnId);
-		
+		condition[0].op = parseOperator(operator);
 		if(condAttr.getAttrType() == 0)
 			condition[0].operand2.integer = Integer.parseInt(value);
 		else
 			condition[0].operand2.string = value;
 		
-		ColumnarFileScan columnarScan = null;
-	
+		ColumnarFileScan columnarScan = new ColumnarFileScan(columnarFileName, in, strSizes,counterIn, counterFld, projList, condition);
+		Tuple tuple = columnarScan.getNext();
+
+        while (tuple != null) {
+           
+        	
+	        System.out.println();
+	        tuple = columnarScan.getNext();
+        }	
 	}
+	
 	
 	private static IndexType getIndexType(String indexName) {
 		if(indexName == "FILESCAN")
@@ -156,7 +141,23 @@ public class Query {
 		if(indexName == "BITMAP");
 			return new IndexType(3);
 	}
-		
+	
+	private static AttrOperator parseOperator(String operator) {
+		if (operator == "==") 
+			return new AttrOperator(0);
+		if (operator == "<")
+			return new AttrOperator(1);
+		if (operator == ">")
+			return new AttrOperator(2);
+		if (operator == "!=")
+			return new AttrOperator(3);
+		if (operator == "<=")
+			return new AttrOperator(4);
+		if (operator == ">=")
+			return new AttrOperator(5);
+		else 
+			return null;	
+	}
 	
 	
 }

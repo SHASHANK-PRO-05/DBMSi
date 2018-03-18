@@ -14,7 +14,7 @@ public class AttrType {
 
     private int attrType;
     private String attrName;
-    private int size;
+    private short size;
     private int columnId;
 
     /**
@@ -65,11 +65,11 @@ public class AttrType {
         this.attrName = attrName;
     }
 
-    public int getSize() {
+    public short getSize() {
         return size;
     }
 
-    public void setSize(int size) {
+    public void setSize(short size) {
         this.size = size;
     }
 

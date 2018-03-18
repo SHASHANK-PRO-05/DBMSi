@@ -41,9 +41,9 @@ public class BatchInsert implements GlobalConst {
             attrTypes[i].setColumnId(i);
             if (columnType.equals("int")) {
                 attrTypes[i].setAttrType(1);
-                attrTypes[i].setSize(4);
+                attrTypes[i].setSize((short)4);
             } else {
-                int sizeOfString = Integer.parseInt(columnType.substring(5
+                short sizeOfString = (short)Integer.parseInt(columnType.substring(5
                         , columnType.length() - 1));
                 attrTypes[i].setAttrType(0);
                 attrTypes[i].setSize(sizeOfString);
