@@ -47,15 +47,15 @@ public class TupleScan {
      */
     TupleScan(ColumnarFile cf, int columnNosArray[]) throws IOException, InvalidTupleSizeException {
         this.cf = cf;
-
+        int noOfColumns = this.cf.getHeapFileNames().length;
         for (int i = 0; i < columnNosArray.length; i++) {
-            if (columnNosArray[i] > cf.getHeapFileNames().length) {
+            if (columnNosArray[i] > noOfColumns) {
                 throw new IOException("Error -> Column No: " + columnNosArray[i] + ", greater than available columns. " +
                         "The no of columns in the columnar file: " + cf.getHeapFileNames().length);
             }
         }
 
-        int noOfColumns = columnNosArray.length;
+        noOfColumns = columnNosArray.length;
         columnNos = new int[noOfColumns];
 
         System.arraycopy(columnNosArray, 0, columnNos, 0, noOfColumns);
