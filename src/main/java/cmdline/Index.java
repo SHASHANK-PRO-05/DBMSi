@@ -2,6 +2,7 @@ package cmdline;
 
 import bitmap.BitMapFile;
 import bitmap.GetFileEntryException;
+import btree.*;
 import columnar.ColumnarFile;
 import columnar.IndexInfo;
 import global.*;
@@ -57,16 +58,41 @@ public class Index {
         if (indexMethod.equals("BITMAP")) {
             indexType = new IndexType(3);
             indexInfo.setIndexType(indexType);
-            setupBitMapIndexes(indexInfo, scan);
+            setupBitMapIndexes(scan);
         } else if (indexMethod.equals("BTREE")) {
             indexType = new IndexType(2);
             indexInfo.setIndexType(indexType);
+            setupBTreeIndexes(scan);
         }
         scan.closeScan();
         SystemDefs.JavabaseBM.flushAllPages();
     }
 
-    private static void setupBitMapIndexes(IndexInfo indexInfo, Scan scan) throws Exception {
+    private static void setupBTreeIndexes(Scan scan) throws Exception {
+        String fileName = columnarFileName + "." + columnId + ".btree";
+        BTreeFile bTreeFile = new BTreeFile(fileName
+                , attrType.getAttrType(), attrType.getSize(), 1);
+        RID rid = scan.getFirstRID();
+        Tuple tuple = scan.getNext(rid);
+        ValueClass valueClass;
+        KeyClass keyClass;
+        while (tuple != null) {
+            if (attrType.getAttrType() == 0) {
+                valueClass = new StringValue(Convert
+                        .getStringValue(0, tuple.getTupleByteArray(), attrType.getSize()));
+                keyClass = new StringKey((String) valueClass.getValue());
+            } else {
+                valueClass = new IntegerValue(Convert.getIntValue(0, tuple.getTupleByteArray()));
+                keyClass = new IntegerKey((int) valueClass.getValue());
+            }
+            bTreeFile.insert(keyClass, rid);
+            tuple = scan.getNext(rid);
+        }
+        BT.printAllLeafPages(bTreeFile.getHeaderPage());
+        bTreeFile.close();
+    }
+
+    private static void setupBitMapIndexes(Scan scan) throws Exception {
 
         //What type of of unique values are required
         Set uniqueClass;

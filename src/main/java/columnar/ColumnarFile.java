@@ -98,9 +98,7 @@ public class ColumnarFile implements GlobalConst {
 	// TODO: change the throwing exceptions
 	public boolean createBitMapIndex(int columnNo, ValueClass valueClass) throws Exception {
 		String fileName = this.getColumnarHeader().getHdrFile() + "." + columnNo + "." + valueClass.getValue();
-
 		BitMapFile bitMapFile = new BitMapFile(fileName, this, columnNo, valueClass);
-
 		return true;
 	}
 
