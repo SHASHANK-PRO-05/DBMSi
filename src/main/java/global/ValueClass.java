@@ -19,6 +19,7 @@ public abstract class ValueClass {
 
     public abstract void setValue(Object o);
 
+    public abstract int compare(ValueClass valueClass);
 
     public int getValueType() {
         if (this instanceof IntegerValue)

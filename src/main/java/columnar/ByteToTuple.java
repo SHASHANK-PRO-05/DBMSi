@@ -4,7 +4,7 @@ import global.AttrType;
 
 import java.util.ArrayList;
 
-class ByteToTuple {
+public class ByteToTuple {
     private int size;
     private int[] postion;
 
@@ -32,6 +32,4 @@ class ByteToTuple {
         arrayList.add(bytes);
         return arrayList;
     }
-
-
 }

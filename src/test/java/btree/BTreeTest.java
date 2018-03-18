@@ -42,7 +42,6 @@ public class BTreeTest {
             sizes[i] = 12;
         }
         ColumnarFile columnarFile = new ColumnarFile("Employee", 20, attrTypes);
-
         int min = Integer.MAX_VALUE;
         for (int i = 0; i < 10000; i++) {
             for (int j = 0; j < 20; j++) {

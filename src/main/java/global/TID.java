@@ -5,6 +5,8 @@ public class TID extends java.lang.Object {
     int position;
     RID[] recordIDs;
 
+
+
     public TID(int numRIDs) {
         this.numRIDs = numRIDs;
     }
@@ -34,32 +36,32 @@ public class TID extends java.lang.Object {
         int i = 0;
         if (tid == null)
             return false;
-		if (numRIDs == tid.numRIDs && position == tid.position) {
-			for (RID rid : recordIDs) {
-				if (tid.recordIDs[i] != null) {
-					if (rid.slotNo == tid.recordIDs[i].slotNo && rid.pageNo.pid == tid.recordIDs[i].pageNo.pid) {
-						i++;
-						continue;
-					} else
-						return false;
-				} else
-					return false;
-			}
-			return true;
-		}
-		return false;
-	}
+        if (numRIDs == tid.numRIDs && position == tid.position) {
+            for (RID rid : recordIDs) {
+                if (tid.recordIDs[i] != null) {
+                    if (rid.slotNo == tid.recordIDs[i].slotNo && rid.pageNo.pid == tid.recordIDs[i].pageNo.pid) {
+                        i++;
+                        continue;
+                    } else
+                        return false;
+                } else
+                    return false;
+            }
+            return true;
+        }
+        return false;
+    }
 
     void writeToByteArray(byte[] array, int offset) {
 
     }
-    
+
 
     public int getPosition() {
-		return position;
-	}
+        return position;
+    }
 
-	void setPosition(int position) {
+    void setPosition(int position) {
         this.position = position;
     }
 
@@ -67,16 +69,16 @@ public class TID extends java.lang.Object {
         recordIDs[column - 1] = recordID;
     }
 
-	public int getNumRIDs() {
-		return numRIDs;
-	}
+    public int getNumRIDs() {
+        return numRIDs;
+    }
 
-	public void setNumRIDs(int numRIDs) {
-		this.numRIDs = numRIDs;
-	}
+    public void setNumRIDs(int numRIDs) {
+        this.numRIDs = numRIDs;
+    }
 
-	public void setRecordIDs(RID[] recordIDs) {
-		this.recordIDs = recordIDs;
-	}
+    public void setRecordIDs(RID[] recordIDs) {
+        this.recordIDs = recordIDs;
+    }
 
 }

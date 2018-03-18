@@ -1,11 +1,13 @@
 package columnar;
 
+import com.sun.deploy.util.ArrayUtil;
 import global.TID;
 import heap.InvalidTupleSizeException;
 import heap.Scan;
 import heap.Tuple;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public class TupleScan {
     private ColumnarFile cf;
@@ -19,7 +21,7 @@ public class TupleScan {
      * @throws IOException
      * @throws InvalidTupleSizeException
      */
-    TupleScan(ColumnarFile cf) throws IOException, InvalidTupleSizeException {
+    public TupleScan(ColumnarFile cf) throws IOException, InvalidTupleSizeException {
         this.cf = cf;
 
         int noOfColumns = this.cf.getHeapFileNames().length;
@@ -45,7 +47,7 @@ public class TupleScan {
      * @throws IOException
      * @throws InvalidTupleSizeException
      */
-    TupleScan(ColumnarFile cf, int columnNosArray[]) throws IOException, InvalidTupleSizeException {
+    public TupleScan(ColumnarFile cf, int columnNosArray[]) throws IOException, InvalidTupleSizeException {
         this.cf = cf;
         int noOfColumns = this.cf.getHeapFileNames().length;
         for (int i = 0; i < columnNosArray.length; i++) {
@@ -79,7 +81,7 @@ public class TupleScan {
     /**
      * Close scanning on all the columns in the tuple scan.
      */
-    void closeTupleScan() {
+    public void closeTupleScan() {
         for (int i = 0; i < getNoOfColumns(); i++) {
             this.scans[i].closeScan();
         }
@@ -93,16 +95,18 @@ public class TupleScan {
      * @throws InvalidTupleSizeException
      * @throws IOException
      */
-    Tuple getNext(TID tid) throws InvalidTupleSizeException, IOException {
+    public Tuple getNext(TID tid) throws InvalidTupleSizeException, IOException {
         int noOfColumns = getNoOfColumns();
 
         Tuple nextTuples[] = new Tuple[noOfColumns];
-
+        int size = 0;
         for (int i = 0; i < noOfColumns; i++) {
             nextTuples[i] = scans[i].getNext(tid.getRecordIDs()[i]);
+            if (nextTuples[i] == null) return null;
+            size += nextTuples[i].getLength();
         }
 
-        return mergeTuples(nextTuples);
+        return mergeTuples(nextTuples, size);
     }
 
     /**
@@ -113,7 +117,7 @@ public class TupleScan {
      * @throws InvalidTupleSizeException
      * @throws IOException
      */
-    boolean position(TID tid) throws InvalidTupleSizeException, IOException {
+    public boolean position(TID tid) throws InvalidTupleSizeException, IOException {
         boolean result = true;
 
         for (int i = 0; i < getNoOfColumns(); i++) {
@@ -129,13 +133,14 @@ public class TupleScan {
      * @param tuples Tuples to be merged
      * @return Resultant tuple from the merge
      */
-    private Tuple mergeTuples(Tuple tuples[]) {
-        Tuple reslTuple = new Tuple(tuples[0]);
-
-        for (int i = 1; i < getNoOfColumns(); i++) {
-            reslTuple.mergeTuple(tuples[i]);
+    private Tuple mergeTuples(Tuple tuples[], int size) {
+        byte[] insert = new byte[size];
+        int pos = 0;
+        for (int i = 0; i < getNoOfColumns(); i++) {
+            System.arraycopy(tuples[i].getTupleByteArray()
+                    , 0, insert, pos, tuples[i].getLength());
+            pos += tuples[i].getLength();
         }
-
-        return reslTuple;
+        return new Tuple(insert, 0, size);
     }
 }

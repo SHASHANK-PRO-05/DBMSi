@@ -18,7 +18,11 @@ public class StringValue extends ValueClass {
         this.value = (String) val;
     }
 
-
+    @Override
+    public int compare(ValueClass valueClass) {
+        StringValue temp = (StringValue) valueClass;
+        return this.getValue().compareTo(temp.getValue());
+    }
 
     public boolean isequal(Object obj) {
         if (obj instanceof StringValue) {
