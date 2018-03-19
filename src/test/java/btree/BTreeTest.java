@@ -36,7 +36,7 @@ public class BTreeTest {
         for (int i = 0; i < 20; i++) {
             attrTypes[i] = new AttrType();
             attrTypes[i].setColumnId(i);
-            attrTypes[i].setSize(12);
+            attrTypes[i].setSize((short)12);
             attrTypes[i].setAttrType(0);
             attrTypes[i].setAttrName("Column" + i);
             sizes[i] = 12;

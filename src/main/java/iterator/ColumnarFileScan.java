@@ -1,5 +1,7 @@
 package iterator;
 
+import java.util.ArrayList;
+
 import columnar.ByteToTuple;
 import columnar.ColumnarFile;
 import columnar.TupleScan;
@@ -7,8 +9,6 @@ import global.AttrType;
 import global.RID;
 import global.TID;
 import heap.Tuple;
-
-import java.util.ArrayList;
 
 public class ColumnarFileScan {
     private ColumnarFile columnarFile;
@@ -41,7 +41,7 @@ public class ColumnarFileScan {
         for (int i = 0; i < attrTypes.length; i++)
             columnNosArray[i] = attrTypes[i].getColumnId();
         try {
-            tuple.setHdr((short) this.attrLength, this.attrTypes, this.stringSizes);
+            //tuple.setHdr((short) this.attrLength, this.attrTypes, this.stringSizes);
         } catch (Exception e) {
             throw new ColumnarFileScanException(e, "Tuple set hdr error");
         }
@@ -73,11 +73,19 @@ public class ColumnarFileScan {
 
         while (tuple != null) {
             ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
+            Tuple  projectTuples[] = new Tuple[projList.length] ;
+            int sizeOfProjectTuple = 0;
             if (condExprEval.isValid(arrayList)) {
+            	for(int i =0; i<projList.length;i++) {
+            		projectTuples[i] = new Tuple(arrayList.get(i),0,arrayList.get(i).length);
+            		sizeOfProjectTuple += arrayList.get(i).length;
+            	}
+            	
+            	projectedTuple = byteToTuple.mergeTuples(projectTuples, sizeOfProjectTuple);
                 break;
             }
             tuple = tupleScan.getNext(tid);
         }
-        return tuple;
+        return projectedTuple;
     }
 }

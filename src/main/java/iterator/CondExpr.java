@@ -15,6 +15,12 @@ public class CondExpr {
      */
     public AttrOperator op;
 
+    /**
+     * Types of operands, Null AttrType means that operand is not a
+     * literal but an attribute name
+     */
+    public AttrType type1;
+    public AttrType type2;
 
     /**
      * the left operand and right operand

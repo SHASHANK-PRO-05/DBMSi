@@ -1,12 +1,17 @@
 package columnar;
 
 import global.AttrType;
+import heap.Tuple;
 
 import java.util.ArrayList;
 
 public class ByteToTuple {
     private int size;
     private int[] postion;
+    
+    public ByteToTuple() {
+		// TODO Auto-generated constructor stub
+	}
 
     public ByteToTuple(AttrType[] attrTypes) {
         //TODO: Check that we need the attrsize should
@@ -31,5 +36,23 @@ public class ByteToTuple {
                 bytes, 0, bytePtr.length - postion[postion.length - 1]);
         arrayList.add(bytes);
         return arrayList;
+    }
+    
+
+    /**
+     * Private function that merges tuples from different columns into a single tuple
+     *
+     * @param tuples Tuples to be merged
+     * @return Resultant tuple from the merge
+     */
+    public  Tuple mergeTuples(Tuple tuples[], int size) {
+        byte[] insert = new byte[size];
+        int pos = 0;
+        for (int i = 0; i < tuples.length; i++) {
+            System.arraycopy(tuples[i].getTupleByteArray()
+                    , 0, insert, pos, tuples[i].getLength());
+            pos += tuples[i].getLength();
+        }
+        return new Tuple(insert, 0, size);
     }
 }

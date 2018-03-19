@@ -37,7 +37,7 @@ public class CondExprEval {
     }
 
     public boolean isValid(ArrayList<byte[]> arrayList) throws IOException {
-        for (int i = 0; i < condExprs.length - 1; i++) {
+        for (int i = 0; i < condExprs.length-1; i++) {
             AttrType attrType = attrTypes[relativeColumnIndexs[i]];
             int op = 0;
             switch (attrType.getAttrType()) {
