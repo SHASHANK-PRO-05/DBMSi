@@ -110,7 +110,7 @@ public class ColumnarFile implements GlobalConst {
         HFException, heap.InvalidSlotNumberException, InvalidPageNumberException {
         String fname = this.getColumnarHeader().getHdrFile();
         PageId pageId = this.getColumnarHeader().getHeaderPageId();
-        HFPage hfPage = new HFPage();
+        THFPage hfPage = new THFPage();
         pinPage(pageId, hfPage);
         for (int i = 0; i < numColumns; i++) {
             Heapfile hf = new Heapfile(fname + '.' + i, null);

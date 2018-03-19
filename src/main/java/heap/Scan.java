@@ -12,10 +12,10 @@ import java.io.IOException;
 public class Scan implements GlobalConst {
     private ColumnarFile cf;
     private PageId dirPageId = new PageId();
-    private HFPage dirPage = new HFPage();
+    private THFPage dirPage = new THFPage();
     private RID dataPageRID = new RID();
     private PageId dataPageId = new PageId();
-    private HFPage dataPage = new HFPage();
+    private THFPage dataPage = new THFPage();
     private RID userRID = new RID();
     /**
      * Column Index no in the Columnar File starting from 0
@@ -153,7 +153,7 @@ public class Scan implements GlobalConst {
         nextUserStatus = true;
 
         try {
-            dirPage = new HFPage();
+            dirPage = new THFPage();
             pinPage(dirPageId, dirPage, false);
         } catch (Exception e) {
             System.err.println("SCAN Error, try pinpage: " + e);
@@ -201,7 +201,7 @@ public class Scan implements GlobalConst {
 
                 try {
 
-                    dirPage = new HFPage();
+                    dirPage = new THFPage();
                     pinPage(nextDirPageId, (Page) dirPage, false);
 
                 } catch (Exception e) {
@@ -317,7 +317,7 @@ public class Scan implements GlobalConst {
 
                 // pin first data page
                 try {
-                    dataPage = new HFPage();
+                    dataPage = new THFPage();
                     pinPage(dataPageId, (Page) dataPage, false);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -380,7 +380,7 @@ public class Scan implements GlobalConst {
                 dirPageId = nextDirPageId;
 
                 try {
-                    dirPage = new HFPage();
+                    dirPage = new THFPage();
                     pinPage(dirPageId, (Page) dirPage, false);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -420,7 +420,7 @@ public class Scan implements GlobalConst {
         dataPageId.pid = dpinfo.pageId.pid;
 
         try {
-            dataPage = new HFPage();
+            dataPage = new THFPage();
             pinPage(dpinfo.pageId, dataPage, false);
         } catch (Exception e) {
             System.err.println("HeapFile: Error in Scan" + e);
