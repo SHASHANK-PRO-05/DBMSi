@@ -9,6 +9,7 @@ import bufmgr.InvalidFrameNumberException;
 import bufmgr.PageUnpinnedException;
 import bufmgr.ReplacerException;
 import columnar.ColumnarFile;
+import diskmgr.InvalidPageNumberException;
 import diskmgr.Page;
 import global.*;
 import heap.*;
@@ -119,9 +120,9 @@ public class BitMapFile implements GlobalConst {
 
 
     public BitMapFile(String fileName, ColumnarFile columnarFile, int columnNo, ValueClass value)
-            throws GetFileEntryException,
-            ConstructPageException, IOException, AddFileEntryException
-            , UnpinPageException, InvalidTupleSizeException, PinPageException, HFBufMgrException, InvalidSlotNumberException {
+        throws GetFileEntryException,
+        ConstructPageException, IOException, AddFileEntryException
+        , UnpinPageException, InvalidTupleSizeException, PinPageException, HFBufMgrException, InvalidSlotNumberException, InvalidPageNumberException {
 
         headerPageId = getFileEntry(fileName);
         if (headerPageId == null) // file not exist
@@ -191,8 +192,8 @@ public class BitMapFile implements GlobalConst {
     }
 
     private void init(ValueClass value, ColumnarFile columnarFile, int columnNo)
-            throws IOException, InvalidTupleSizeException, PinPageException,
-            UnpinPageException, HFBufMgrException, InvalidSlotNumberException {
+        throws IOException, InvalidTupleSizeException, PinPageException,
+        UnpinPageException, HFBufMgrException, InvalidSlotNumberException, InvalidPageNumberException {
         int valType = value.getValueType();
         boolean flag = false;
         int position = 0;
@@ -210,8 +211,8 @@ public class BitMapFile implements GlobalConst {
     }
 
     private void setupStringBitMap(String value, ColumnarFile columnarFile, int columnNo)
-            throws IOException, InvalidTupleSizeException
-            , PinPageException, UnpinPageException, HFBufMgrException, InvalidSlotNumberException {
+        throws IOException, InvalidTupleSizeException
+        , PinPageException, UnpinPageException, HFBufMgrException, InvalidSlotNumberException, InvalidPageNumberException {
         Scan scan = new Scan(columnarFile, (short) columnNo);
         pinPage(headerPageId, bitMapHeaderPage);
         RID rid = scan.getFirstRID();

@@ -1,13 +1,11 @@
 package columnar;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 
 import bitmap.BitMapFile;
-import bufmgr.BufMgr;
 import diskmgr.DiskMgrException;
-import diskmgr.FileNameTooLongException;
+import diskmgr.InvalidPageNumberException;
 import diskmgr.Page;
 import global.*;
 import heap.*;
@@ -37,7 +35,7 @@ public class ColumnarFile implements GlobalConst {
             for (int i = 0; i < numColumns; i++) {
                 String fileNum = Integer.toString(i);
                 String columnsFileName = fileName + "." + fileNum;
-                heapFileNames[i] = new Heapfile(columnsFileName);
+                heapFileNames[i] = new Heapfile(columnsFileName, type[i]);
             }
 
         } catch (Exception e) {
@@ -75,7 +73,7 @@ public class ColumnarFile implements GlobalConst {
             pinPage(pageId, columnarHeader);
             heapFileNames = new Heapfile[columnarHeader.getColumnCount()];
             for (int i = 0; i < heapFileNames.length; i++) {
-                heapFileNames[i] = new Heapfile(fileName + "." + i);
+                heapFileNames[i] = new Heapfile(fileName + "." + i,  null);
             }
             unpinPage(pageId, false);
         } else {
@@ -101,21 +99,21 @@ public class ColumnarFile implements GlobalConst {
      * Not completed yet
      */
     public void deleteColumnarFile()
-            throws InvalidSlotNumberException,
-            FileAlreadyDeletedException,
-            InvalidTupleSizeException,
-            HFBufMgrException,
-            HFDiskMgrException,
-            IOException,
-            ColumnarFilePinPageException,
-            ColumnarFileUnpinPageException,
-            HFException, heap.InvalidSlotNumberException {
+        throws InvalidSlotNumberException,
+        FileAlreadyDeletedException,
+        InvalidTupleSizeException,
+        HFBufMgrException,
+        HFDiskMgrException,
+        IOException,
+        ColumnarFilePinPageException,
+        ColumnarFileUnpinPageException,
+        HFException, heap.InvalidSlotNumberException, InvalidPageNumberException {
         String fname = this.getColumnarHeader().getHdrFile();
         PageId pageId = this.getColumnarHeader().getHeaderPageId();
         HFPage hfPage = new HFPage();
         pinPage(pageId, hfPage);
         for (int i = 0; i < numColumns; i++) {
-            Heapfile hf = new Heapfile(fname + '.' + i);
+            Heapfile hf = new Heapfile(fname + '.' + i, null);
             hf.deleteFile();
         }
         unpinPage(pageId, false);
@@ -137,11 +135,13 @@ public class ColumnarFile implements GlobalConst {
         ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(bytePtr);
         RID[] rids = new RID[arrayList.size()];
         for (int i = 0; i < arrayList.size(); i++) {
-            Heapfile heapfile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + i);
+//            Heapfile heapfile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + i, null);
             //TODO: Exception handling and removal in case
             //TODO: of failures
-            rids[i] = heapfile.insertRecord(arrayList.get(i));
+//            rids[i] = theapfile.insertRecord(arrayList.get(i));
+            rids[i] = this.heapFileNames[i].insertRecord(arrayList.get(i));
         }
+        
         long pos = directoryHFPage.getReccnt() + 1;
         directoryHFPage.setReccnt(pos);
         unpinPage(this.getColumnarHeader().getHeaderPageId(), true);
@@ -213,12 +213,12 @@ public class ColumnarFile implements GlobalConst {
     }
 
     public AttrType getColumnInfo(int i)
-            throws ColumnarFilePinPageException,
-            InvalidSlotNumberException,
-            HFBufMgrException,
-            heap.InvalidSlotNumberException,
-            IOException,
-            ColumnarFileUnpinPageException {
+        throws ColumnarFilePinPageException,
+        InvalidSlotNumberException,
+        HFBufMgrException,
+        heap.InvalidSlotNumberException,
+        IOException,
+        ColumnarFileUnpinPageException, InvalidPageNumberException {
         DirectoryHFPage dirpage = new DirectoryHFPage();
         PageId id = columnarHeader.getHeaderPageId();
         pinPage(id, dirpage);
