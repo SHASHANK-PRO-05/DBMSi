@@ -3,7 +3,14 @@ package columnar;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
+
 import bitmap.BitMapFile;
+import bitmap.BitMapOperations;
+import bitmap.ConstructPageException;
+import bitmap.GetFileEntryException;
+import bitmap.PinPageException;
+import bitmap.UnpinPageException;
 import diskmgr.DiskMgrException;
 import diskmgr.Page;
 import global.AttrType;
@@ -32,6 +39,7 @@ public class ColumnarFile implements GlobalConst {
 	// Question by shashank: I am not sure if it is required
 	// Shashank: I am not sure if it is required
 	private Heapfile heapFileNames[];
+	private HashMap<Long, TID> tids;
 	private int numColumns;
 	private String indexFileName;
 	/*
@@ -106,8 +114,8 @@ public class ColumnarFile implements GlobalConst {
 	 * Deletes whole Database Not completed yet
 	 */
 	public void deleteColumnarFile() throws InvalidSlotNumberException, FileAlreadyDeletedException,
-	InvalidTupleSizeException, HFBufMgrException, HFDiskMgrException, IOException, ColumnarFilePinPageException,
-	ColumnarFileUnpinPageException, HFException, heap.InvalidSlotNumberException {
+			InvalidTupleSizeException, HFBufMgrException, HFDiskMgrException, IOException, ColumnarFilePinPageException,
+			ColumnarFileUnpinPageException, HFException, heap.InvalidSlotNumberException {
 		String fname = this.getColumnarHeader().getHdrFile();
 		PageId pageId = this.getColumnarHeader().getHeaderPageId();
 		HFPage hfPage = new HFPage();
@@ -197,7 +205,7 @@ public class ColumnarFile implements GlobalConst {
 	}
 
 	ValueClass getValue(TID tid, int column) throws InvalidSlotNumberException, InvalidTupleSizeException, HFException,
-	HFDiskMgrException, HFBufMgrException, Exception {
+			HFDiskMgrException, HFBufMgrException, Exception {
 
 		pinPage(this.getColumnarHeader().getHeaderPageId(), this.getColumnarHeader());
 		String fname = this.getColumnarHeader().getHdrFile();
@@ -237,7 +245,7 @@ public class ColumnarFile implements GlobalConst {
 		else
 			return true;
 	}
-	
+
 	boolean markTupleDeleted(TID tid) throws Exception {
 		String fname = this.getColumnarHeader().getHdrFile() + ".del";
 		long totalNumRecords = this.getTupleCount();
@@ -246,6 +254,33 @@ public class ColumnarFile implements GlobalConst {
 			return true;
 		} else
 			return false;
+	}
+
+	public boolean purgeAllDeletedTuples(BitMapFile bitMapFile)
+			throws IOException, DiskMgrException, GetFileEntryException, PinPageException, ConstructPageException,
+			UnpinPageException, ColumnarFilePinPageException, ColumnarFileUnpinPageException {
+		BitMapOperations bitMapOperations = new BitMapOperations();
+		bitMapOperations.init(bitMapFile);
+		int nextPos = Integer.MIN_VALUE;
+		while (nextPos != -1) {
+			nextPos = bitMapOperations.getNextIndexedPostion();
+			// System.out.println(nextPos);
+			// To Do : Use this position of the BitMap file to delete a record.
+			// deleteTupleAtPosition is on hold because of delete of HFPage.
+			// Currently, deleteTupleAtPosition is deleting the record from heap file at a particular position. 
+	}
+
+		return true; // Return type not decided yet as function is not complete. 
+
+	}
+
+	public void deleteTupleAtPosition(Long pos) throws InvalidSlotNumberException, InvalidTupleSizeException,
+			HFException, HFBufMgrException, HFDiskMgrException, Exception {
+		TID delTID = tids.get(pos);
+		for (int i = 0; i < columnarHeader.getColumnCount(); i++) {
+			heapFileNames[i].deleteRecord(delTID.getRecordIDs()[i]);
+		}
+		tids.remove(pos);
 	}
 
 	/*
@@ -296,7 +331,7 @@ public class ColumnarFile implements GlobalConst {
 	}
 
 	public AttrType getColumnInfo(int i) throws ColumnarFilePinPageException, InvalidSlotNumberException,
-	HFBufMgrException, heap.InvalidSlotNumberException, IOException, ColumnarFileUnpinPageException {
+			HFBufMgrException, heap.InvalidSlotNumberException, IOException, ColumnarFileUnpinPageException {
 		DirectoryHFPage dirpage = new DirectoryHFPage();
 		PageId id = columnarHeader.getHeaderPageId();
 		pinPage(id, dirpage);
@@ -338,6 +373,14 @@ public class ColumnarFile implements GlobalConst {
 
 	public void setIndexFileName(String indexFileName) {
 		this.indexFileName = indexFileName;
+	}
+
+	public HashMap<Long, TID> getTids() {
+		return tids;
+	}
+
+	public void setTids(HashMap<Long, TID> tids) {
+		this.tids = tids;
 	}
 
 	/*

@@ -128,6 +128,7 @@ public class BitMapFile implements GlobalConst {
         PageId pageId = new PageId();
         int numPages = 1 + (int) totalTuples / (bmPage.getAvailableMap());
         allocatePage(pageId, numPages);
+        bitMapHeaderPage.setNextPage(pageId);
         pinPage(pageId, bmPage);
         bmPage.init(pageId, bmPage);
         unpinPage(pageId, true);
