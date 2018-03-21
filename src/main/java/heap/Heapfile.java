@@ -1005,26 +1005,44 @@ public class Heapfile implements Filetype, GlobalConst {
 
   } // end of delete_file_entry
 
-  private void purgeRecords(RID[] rids) throws HFBufMgrException {
-    HashMap<Integer, ArrayList<RID>> pageMap = new HashMap<Integer, ArrayList<RID>>();
+  private void purgeRecords(int[] positions) throws HFBufMgrException, IOException, InvalidSlotNumberException {
 
-    for (RID rid : rids) {
-      if (pageMap.containsKey(rid.pageNo.pid)) {
-        pageMap.get(rid.pageNo.pid).add(rid);
-      } else {
-        ArrayList<RID> recordList = new ArrayList<RID>();
-        recordList.add(rid);
-        pageMap.put(rid.pageNo.pid, recordList);
+    /*
+     * Loop through Directory Pages
+     *  -> Loop through data page records
+     *    -> Check positions array and find pages that contain records with those position
+     */
+    HFPage currentDirPage = new HFPage();
+    PageId currentDirPageId = new PageId(_firstDirPageId.pid);
+    RID currentRecord = new RID();
+    int lastPositionPurged = -1;
+    int recordsScanned = 0;
+
+    for (; currentDirPageId != null; currentDirPageId = currentDirPage.getNextPage()) {
+      pinPage(currentDirPageId, currentDirPage, false);
+      for (RID rid = currentDirPage.firstRecord(); rid != null; rid = currentDirPage.nextRecord(currentRecord)) {
+        byte[] data = currentDirPage.getDataAtSlot(rid);
+        DataPageInfo dataPageInfo = new DataPageInfo(data);
+        int currentlyScanningRecords = recordsScanned + dataPageInfo.getRecordCount();
+        HFPage dataPage = new HFPage();
+        boolean dirtyPage = false;
+
+        for (int i = lastPositionPurged + 1; i < lastPositionPurged + dataPageInfo.getRecordCount(); i++) {
+          if (positions[i] >= recordsScanned && positions[i] < currentlyScanningRecords) {
+            pinPage(dataPageInfo.pageId, dataPage, false);
+            dataPage.deleteRecord(new RID(dataPageInfo.pageId, (positions[i] - recordsScanned) % dataPageInfo.getRecordCount()));
+            lastPositionPurged += 1;
+            dirtyPage = true;
+          }
+        }
+
+        if (dirtyPage) {
+          dataPage.purgeRecords();
+          unpinPage(dataPageInfo.pageId, true);
+        }
+
+        recordsScanned = currentlyScanningRecords;
       }
-    }
-
-    for (Object o : pageMap.entrySet()) {
-      HFPage page = new HFPage();
-      Map.Entry entry = (Map.Entry) o;
-      PageId pid = new PageId((Integer) entry.getKey());
-      pinPage(pid, page, false);
-
-      page.purgeRecords((RID[]) entry.getValue());
     }
   }
 

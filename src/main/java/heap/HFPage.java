@@ -703,7 +703,7 @@ public class HFPage extends Page
         }
     }
 
-  public void purgeRecords(RID[] rids) {
+  public void purgeRecords() {
     throw new NotImplementedException();
   }
 
