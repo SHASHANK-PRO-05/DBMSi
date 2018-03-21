@@ -28,11 +28,11 @@ public class THFPage extends Page implements GlobalConst {
   /**
    * Position where record length is stored
    */
-  private final int RECORD_LENGTH = 2;
+  private final int P_RECORD_LENGTH = 2;
   /**
    * Position where free space count is stored
    */
-  private final int FREE_SPACE = 4;
+  private final int P_FREE_SPACE = 4;
   /**
    * Position where the pointer to the previous page is stored
    */
@@ -129,20 +129,20 @@ public class THFPage extends Page implements GlobalConst {
     Convert.setIntValue(nextPage.pid, NEXT_PAGE, data);
 
     freeSpace = (short) (MINIBASE_PAGESIZE - DPFIXED); // amount of space available
-    Convert.setShortValue(freeSpace, FREE_SPACE, data);
+    Convert.setShortValue(freeSpace, P_FREE_SPACE, data);
 
     this.type = (short) attrType.getAttrType();
     Convert.setShortValue(this.type, TYPE, data);
 
     recordLength = (short) attrType.getSize();
-    Convert.setShortValue(recordLength, RECORD_LENGTH, data);
+    Convert.setShortValue(recordLength, P_RECORD_LENGTH, data);
   }
 
   public void readValuesFromData() throws IOException {
     recordCount = Convert.getShortValue(RECORD_COUNT, data);
-    recordLength = Convert.getShortValue(RECORD_LENGTH, data);
+    recordLength = Convert.getShortValue(P_RECORD_LENGTH, data);
     type = Convert.getShortValue(TYPE, data);
-    freeSpace = Convert.getShortValue(FREE_SPACE, data);
+    freeSpace = Convert.getShortValue(P_FREE_SPACE, data);
     nextPage = new PageId(Convert.getIntValue(NEXT_PAGE, data));
     prevPage = new PageId(Convert.getIntValue(PREV_PAGE, data));
     curPage = new PageId(Convert.getIntValue(CUR_PAGE, data));
@@ -166,7 +166,7 @@ public class THFPage extends Page implements GlobalConst {
 
     curPage.pid = Convert.getIntValue(CUR_PAGE, data);
     nextPage.pid = Convert.getIntValue(NEXT_PAGE, data);
-    freeSpace = Convert.getShortValue(FREE_SPACE, data);
+    freeSpace = Convert.getShortValue(P_FREE_SPACE, data);
     recordCount = Convert.getShortValue(RECORD_COUNT, data);
 
     System.out.println("dumpPage");
@@ -276,7 +276,7 @@ public class THFPage extends Page implements GlobalConst {
    * @throws IOException
    */
   public short getRecordLength() throws IOException {
-    recordLength = Convert.getShortValue(RECORD_LENGTH, data);
+    recordLength = Convert.getShortValue(P_RECORD_LENGTH, data);
     return recordLength;
   }
 
@@ -291,7 +291,7 @@ public class THFPage extends Page implements GlobalConst {
   public RID insertRecord(byte[] record) throws IOException {
     RID rid = new RID();
 
-    recordLength = Convert.getShortValue(RECORD_LENGTH, data);
+    recordLength = Convert.getShortValue(P_RECORD_LENGTH, data);
 
 //    if (record.length != recordLength) {
 //      throw new IOException("record.length should be equal to recordLength");
@@ -301,7 +301,7 @@ public class THFPage extends Page implements GlobalConst {
     // This is an upper bound check. May not actually need a slot
     // if we can find an empty one.
 
-    freeSpace = Convert.getShortValue(FREE_SPACE, data);
+    freeSpace = Convert.getShortValue(P_FREE_SPACE, data);
     if (record.length > freeSpace) {
       return null;
     } else {
@@ -309,7 +309,7 @@ public class THFPage extends Page implements GlobalConst {
       recordCount = Convert.getShortValue(RECORD_COUNT, data);
 
       freeSpace -= recordLength;
-      Convert.setShortValue(freeSpace, FREE_SPACE, data);
+      Convert.setShortValue(freeSpace, P_FREE_SPACE, data);
 
       recordCount++;
       Convert.setShortValue(recordCount, RECORD_COUNT, data);
@@ -440,7 +440,7 @@ public class THFPage extends Page implements GlobalConst {
    * @throws IOException I/O errors
    */
   public int available_space() throws IOException {
-    return Convert.getShortValue(FREE_SPACE, data);
+    return Convert.getShortValue(P_FREE_SPACE, data);
   }
 
   /**
@@ -477,7 +477,7 @@ public class THFPage extends Page implements GlobalConst {
 
   private void verifyRID(RID rid) throws InvalidPageNumberException, InvalidSlotNumberException, IOException {
     if (recordLength == 0) {
-      recordLength = Convert.getShortValue(RECORD_LENGTH, data);
+      recordLength = Convert.getShortValue(P_RECORD_LENGTH, data);
     }
 
     if (rid.pageNo.pid != curPage.pid) {
@@ -547,6 +547,21 @@ public class THFPage extends Page implements GlobalConst {
     } catch (Exception e) {
       throw new HFBufMgrException(e, "Heapfile.java: unpinPage() failed");
     }
+  }
 
+  /**
+   * Checks if there is space to insert another record in hfPage
+   * @return boolean value indicating if the hfPage is full
+   * @throws IOException Data read exception
+   */
+  public boolean isFull() throws IOException {
+    freeSpace = Convert.getShortValue(P_FREE_SPACE, data);
+    recordLength = Convert.getShortValue(P_RECORD_LENGTH, data);
+
+    return freeSpace < recordLength;
+  }
+
+  public void purgeRecords(RID[] rids) {
+    throw new NotImplementedException();
   }
 }

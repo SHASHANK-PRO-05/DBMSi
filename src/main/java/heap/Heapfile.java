@@ -5,6 +5,10 @@ import diskmgr.Page;
 import global.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * This heapfile implementation is directory-based. We maintain a
@@ -1006,5 +1010,27 @@ public class Heapfile implements Filetype, GlobalConst {
 
   } // end of delete_file_entry
 
+  private void purgeRecords(RID[] rids) throws HFBufMgrException {
+    HashMap<Integer, ArrayList<RID>> pageMap = new HashMap<Integer, ArrayList<RID>>();
+
+    for (RID rid : rids) {
+      if (pageMap.containsKey(rid.pageNo.pid)) {
+        pageMap.get(rid.pageNo.pid).add(rid);
+      } else {
+        ArrayList<RID> recordList = new ArrayList<RID>();
+        recordList.add(rid);
+        pageMap.put(rid.pageNo.pid, recordList);
+      }
+    }
+
+    for (Object o : pageMap.entrySet()) {
+      THFPage page = new THFPage();
+      Map.Entry entry = (Map.Entry) o;
+      PageId pid = new PageId((Integer) entry.getKey());
+      pinPage(pid, page, false);
+
+      page.purgeRecords((RID[]) entry.getValue());
+    }
+  }
 
 }// End of HeapFile
