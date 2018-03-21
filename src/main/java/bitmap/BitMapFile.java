@@ -3,6 +3,7 @@ package bitmap;
 import java.io.IOException;
 import java.util.Arrays;
 
+
 import bufmgr.HashEntryNotFoundException;
 import bufmgr.InvalidFrameNumberException;
 import bufmgr.PageUnpinnedException;
@@ -12,7 +13,9 @@ import diskmgr.Page;
 import global.*;
 import heap.*;
 
+
 public class BitMapFile implements GlobalConst {
+
 
     private PageId headerPageId;
     private String fileName;
@@ -29,9 +32,10 @@ public class BitMapFile implements GlobalConst {
     /**
      * Access method to data member.
      *
-     * @return Return a BitMapHeaderPage object that is the header page of this
-     * bitmap file.
+     * @return Return a BitMapHeaderPage object that is the header page
+     * of this bitmap file.
      */
+
 
     private PageId getFileEntry(String fileName) throws GetFileEntryException {
         try {
@@ -45,7 +49,7 @@ public class BitMapFile implements GlobalConst {
     private Page pinPage(PageId pageId, Page page) throws PinPageException {
         try {
 
-            SystemDefs.JavabaseBM.pinPage(pageId, page, false/* Rdisk */);
+            SystemDefs.JavabaseBM.pinPage(pageId, page, false/*Rdisk*/);
             return page;
         } catch (Exception e) {
             e.printStackTrace();
@@ -53,7 +57,9 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
-    private void addFileEntry(String fileName, PageId pageId) throws AddFileEntryException {
+
+    private void addFileEntry(String fileName, PageId pageId)
+            throws AddFileEntryException {
         try {
             SystemDefs.JavabaseDB.addFileEntry(fileName, pageId);
         } catch (Exception e) {
@@ -81,7 +87,8 @@ public class BitMapFile implements GlobalConst {
 
     }
 
-    private void deleteFileEntry(String fileName) throws DeleteFileEntryException {
+    private void deleteFileEntry(String fileName)
+            throws DeleteFileEntryException {
         try {
             SystemDefs.JavabaseDB.deleteFileEntry(fileName);
         } catch (Exception e) {
@@ -90,7 +97,8 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
-    private void unpinPage(PageId pageId, boolean dirty) throws UnpinPageException {
+    private void unpinPage(PageId pageId, boolean dirty)
+            throws UnpinPageException {
         try {
             SystemDefs.JavabaseBM.unpinPage(pageId, dirty);
         } catch (Exception e) {
@@ -99,8 +107,9 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
-    public BitMapFile(String fileName)
-            throws GetFileEntryException, PinPageException, ConstructPageException, UnpinPageException {
+
+    public BitMapFile(String fileName) throws GetFileEntryException,
+            PinPageException, ConstructPageException, UnpinPageException {
         headerPageId = getFileEntry(fileName);
         this.fileName = fileName;
         bitMapHeaderPage = new BitMapHeaderPage(true);
@@ -135,9 +144,9 @@ public class BitMapFile implements GlobalConst {
     }
 
     public BitMapFile(String fileName, ColumnarFile columnarFile, int columnNo, ValueClass value)
-            throws GetFileEntryException, ConstructPageException, IOException, AddFileEntryException,
-            UnpinPageException, InvalidTupleSizeException, PinPageException, HFBufMgrException,
-            InvalidSlotNumberException, BitMapFileCreationException {
+            throws GetFileEntryException,
+            ConstructPageException, IOException, AddFileEntryException
+            , UnpinPageException, InvalidTupleSizeException, PinPageException, HFBufMgrException, InvalidSlotNumberException {
 
         headerPageId = getFileEntry(fileName);
         if (headerPageId == null) // file not exist
@@ -149,12 +158,14 @@ public class BitMapFile implements GlobalConst {
             bitMapHeaderPage.setValueType((short) value.getValueType());
 
         } else {
-            throw new BitMapFileCreationException(null, "File already present");
+            //Exception should be thrown
+            return;
         }
         init(value, columnarFile, columnNo);
         this.fileName = fileName;
         unpinPage(headerPageId, true);
     }
+
 
     /*
      * Initialize our bitMap
@@ -181,7 +192,7 @@ public class BitMapFile implements GlobalConst {
     }
 
     private boolean compareValues(int c, int a, int b) {
-        // a must be smaller than b
+        //a must be smaller than b
         if (c >= a && c <= b)
             return true;
         else
@@ -189,7 +200,7 @@ public class BitMapFile implements GlobalConst {
     }
 
     private boolean compareValues(float c, float a, float b) {
-        // a must be smaller than b
+        //a must be smaller than b
         if (c >= a && c <= b)
             return true;
         else
@@ -197,7 +208,7 @@ public class BitMapFile implements GlobalConst {
     }
 
     private boolean compareValues(String c, String a, String b) {
-        // a must be smaller than b
+        //a must be smaller than b
         if (c.compareTo(a) >= 0 && c.compareTo(b) >= 0)
             return true;
         else
@@ -205,8 +216,8 @@ public class BitMapFile implements GlobalConst {
     }
 
     private void init(ValueClass value, ColumnarFile columnarFile, int columnNo)
-            throws IOException, InvalidTupleSizeException, PinPageException, UnpinPageException, HFBufMgrException,
-            InvalidSlotNumberException {
+            throws IOException, InvalidTupleSizeException, PinPageException,
+            UnpinPageException, HFBufMgrException, InvalidSlotNumberException {
         int valType = value.getValueType();
         boolean flag = false;
         int position = 0;
@@ -224,8 +235,8 @@ public class BitMapFile implements GlobalConst {
     }
 
     private void setupStringBitMap(String value, ColumnarFile columnarFile, int columnNo)
-            throws IOException, InvalidTupleSizeException, PinPageException, UnpinPageException, HFBufMgrException,
-            InvalidSlotNumberException {
+            throws IOException, InvalidTupleSizeException
+            , PinPageException, UnpinPageException, HFBufMgrException, InvalidSlotNumberException {
         Scan scan = new Scan(columnarFile, (short) columnNo);
         pinPage(headerPageId, bitMapHeaderPage);
         RID rid = scan.getFirstRID();
@@ -240,8 +251,8 @@ public class BitMapFile implements GlobalConst {
         pinPage(pageId, bmPage);
         bmPage.init(pageId, bmPage);
         while (tuple != null) {
-            String val = Convert.getStringValue(0, tuple.getTupleByteArray(),
-                    columnarFile.getColumnarHeader().getColumns()[columnNo].getSize());
+            String val = Convert.getStringValue(0, tuple.getTupleByteArray()
+                    , columnarFile.getColumnarHeader().getColumns()[columnNo].getSize());
             if (val.equals(value)) {
                 bmPage.setABit(position, 1);
             }
@@ -267,7 +278,8 @@ public class BitMapFile implements GlobalConst {
     }
 
     private void setupIntBitMap(Integer value, ColumnarFile columnarFile, int columnNo)
-            throws IOException, InvalidTupleSizeException, PinPageException, UnpinPageException {
+            throws IOException, InvalidTupleSizeException
+            , PinPageException, UnpinPageException {
         Scan scan = new Scan(columnarFile, (short) columnNo);
         RID rid = scan.getFirstRID();
         BMPage bitmap = new BMPage();
@@ -313,8 +325,9 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
-    public void close()
-            throws PageUnpinnedException, InvalidFrameNumberException, HashEntryNotFoundException, ReplacerException {
+    public void close() throws PageUnpinnedException,
+            InvalidFrameNumberException, HashEntryNotFoundException,
+            ReplacerException {
         /**********************
          * Why do we need this??
          *********************/
@@ -328,7 +341,8 @@ public class BitMapFile implements GlobalConst {
 
     }
 
-    public boolean setBMPagePositions(int position, int bit) throws PinPageException, IOException, UnpinPageException {
+    public boolean setBMPagePositions(int position, int bit) throws PinPageException, IOException
+            , UnpinPageException {
         pinPage(headerPageId, bitMapHeaderPage);
         PageId pageId = bitMapHeaderPage.getNextPage();
         BMPage bmPage = new BMPage();
@@ -353,16 +367,20 @@ public class BitMapFile implements GlobalConst {
         return false;
     }
 
-    public boolean Delete(int position) throws PinPageException, IOException, UnpinPageException {
+    public boolean Delete(int position)
+            throws PinPageException, IOException
+            , UnpinPageException {
         return setBMPagePositions(position, 0);
     }
 
-    public boolean Insert(int position) throws PinPageException, IOException, UnpinPageException {
+    public boolean Insert(int position) throws PinPageException, IOException
+            , UnpinPageException {
         return setBMPagePositions(position, 1);
     }
 
     public PageId getHeaderPageId() {
         return headerPageId;
     }
+
 
 }

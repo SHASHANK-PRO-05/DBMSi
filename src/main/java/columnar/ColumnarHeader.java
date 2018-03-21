@@ -372,8 +372,7 @@ public class ColumnarHeader extends DirectoryHFPage {
             // i> countRecords then the column indexes will start
             if (i >= countRecords) {
                 info = convertIndexByteInfo(page.getDataAtSlot(rid));
-                if (info.getColumnNumber() == columnNum && info.getIndextype().toString()
-                        .equals(indType.toString()) && value.isequal(info.getValue())) {
+                if (info.getColumnNumber() == columnNum && info.getIndextype().toString().equals(indType.toString()) && value.isequal(info.getValue())) {
                     unpinPage(pageId, false);
                     return info;
                 }

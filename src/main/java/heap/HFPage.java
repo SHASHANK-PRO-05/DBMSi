@@ -23,7 +23,6 @@ interface ConstSlot {
  * The design assumes that records are kept compacted when
  * deletions are performed.
  */
-
 public class HFPage extends Page
         implements ConstSlot, GlobalConst {
 

@@ -28,7 +28,7 @@ public class ColumnarFileTest {
 
         ColumnarFile columnarFile = new ColumnarFile("Employee", 20, attrTypes);
         SystemDefs.JavabaseBM.flushAllPages();
-        columnarFile = new ColumnarFile("Employee");
+//        columnarFile = new ColumnarFile("Employee");
         SystemDefs.JavabaseBM.flushAllPages();
         // SystemDefs.JavabaseBM.pinPage(columnarFile.getColumnarHeader().getHeaderPageId()
         // , columnarFile.getColumnarHeader(), false);
