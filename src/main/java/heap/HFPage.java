@@ -7,6 +7,7 @@ import java.lang.*;
 
 import global.*;
 import diskmgr.*;
+import heap.exceptions.NotImplementedException;
 
 
 /**
@@ -702,4 +703,18 @@ public class HFPage extends Page
         }
     }
 
+  public void purgeRecords(RID[] rids) {
+    throw new NotImplementedException();
+  }
+
+  /**
+   * Make sure that the current page is the start page for this
+   *
+   * @param position Tuple Position
+   * @throws HFBufMgrException
+   * @throws IOException
+   */
+  public void setCurPage_forGivenPosition(int position) throws HFBufMgrException, IOException {
+    throw new NotImplementedException();
+  }
 }
