@@ -1,10 +1,10 @@
 package columnar;
 
-import com.sun.deploy.util.ArrayUtil;
 import global.TID;
 import heap.InvalidTupleSizeException;
 import heap.Scan;
 import heap.Tuple;
+import columnar.ByteToTuple;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -97,16 +97,16 @@ public class TupleScan {
      */
     public Tuple getNext(TID tid) throws InvalidTupleSizeException, IOException {
         int noOfColumns = getNoOfColumns();
-
+        ByteToTuple byteToTuple = new ByteToTuple();
         Tuple nextTuples[] = new Tuple[noOfColumns];
         int size = 0;
         for (int i = 0; i < noOfColumns; i++) {
             nextTuples[i] = scans[i].getNext(tid.getRecordIDs()[i]);
             if (nextTuples[i] == null) return null;
-            size += nextTuples[i].getLength();
-        }
+            	size += nextTuples[i].getLength();
+        } 
 
-        return mergeTuples(nextTuples, size);
+        return byteToTuple.mergeTuples(nextTuples, size);
     }
 
     /**
@@ -127,20 +127,4 @@ public class TupleScan {
         return result;
     }
 
-    /**
-     * Private function that merges tuples from different columns into a single tuple
-     *
-     * @param tuples Tuples to be merged
-     * @return Resultant tuple from the merge
-     */
-    private Tuple mergeTuples(Tuple tuples[], int size) {
-        byte[] insert = new byte[size];
-        int pos = 0;
-        for (int i = 0; i < getNoOfColumns(); i++) {
-            System.arraycopy(tuples[i].getTupleByteArray()
-                    , 0, insert, pos, tuples[i].getLength());
-            pos += tuples[i].getLength();
-        }
-        return new Tuple(insert, 0, size);
-    }
 }

@@ -10,6 +10,7 @@ public class IndexType {
     public static final int B_Index = 1;
     public static final int Hash = 2;
     public static final int BitMapIndex = 3;
+    public static final int ColumnScan = 4;
 
     public int indexType;
 
@@ -43,6 +44,8 @@ public class IndexType {
                 return "Hash";
             case BitMapIndex:
                 return "BitMapIndex";
+            case ColumnScan:
+                return "ColumnScan";
         }
         return ("Unexpected IndexType " + indexType);
     }

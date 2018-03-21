@@ -9,13 +9,14 @@ import columnar.ColumnarFile;
 import columnar.TupleScan;
 import global.AttrType;
 import global.RID;
-import global.TID;
 import heap.InvalidTupleSizeException;
 import heap.InvalidTypeException;
+import heap.Scan;
 import heap.Tuple;
 
-public class ColumnarFileScan extends Iterator {
-    private ColumnarFile columnarFile;
+public class ColumnScan extends Iterator{
+	
+	private ColumnarFile columnarFile;
     private CondExpr[] condExprs;
     private FldSpec[] projList;
     private AttrType[] attrTypes;
@@ -23,13 +24,13 @@ public class ColumnarFileScan extends Iterator {
     private int attrLength;
     private int nOutFields;
     private Tuple tuple;
-    private TupleScan tupleScan;
+    private Scan[] scan;
     private int tupleSize;
     private int[] columnNosArray;
     ByteToTuple byteToTuple;
     CondExprEval condExprEval;
 
-    public ColumnarFileScan(String fileName, AttrType[] attrTypes
+    public ColumnScan(String fileName, AttrType[] attrTypes
             , short stringSizes[], int attrLength, int nOutFields
             , FldSpec[] projList, CondExpr[] condExprs) throws ColumnarFileScanException {
         this.attrTypes = attrTypes;
@@ -56,9 +57,14 @@ public class ColumnarFileScan extends Iterator {
             throw new ColumnarFileScanException(e, "Not able to create columnar file");
         }
         try {
-            tupleScan = new TupleScan(columnarFile, columnNosArray);
+            scan = new Scan[attrLength];
+            for (int i = 0; i < attrLength; i++) {
+                scan[i] = new Scan(columnarFile, (short) columnNosArray[i]);
+            }
+            
+            
         } catch (Exception e) {
-            throw new ColumnarFileScanException(e, "Not able to initiate tuplescan");
+            throw new ColumnarFileScanException(e, "Not able to initiate scan");
         }
     }
 
@@ -66,31 +72,46 @@ public class ColumnarFileScan extends Iterator {
         return projList;
     }
 
-
     public Tuple getNext() throws Exception {
-        Tuple projectedTuple = null;
-        RID rids[] = new RID[attrTypes.length];
-        for (int i = 0; i < attrTypes.length; i++) rids[i] = new RID();
-        TID tid = new TID(attrTypes.length, 0, rids);
-        
-        tuple = tupleScan.getNext(tid);
+    	
+    	/*scan will give me one column at a time 
+    	 * I will have a array of tuple running scan one for all the given columns
+    	 * 
+    	 * 
+    	 * 
+    	 */
+    	Tuple projectedTuple = null;
+    	RID rid = new RID();
+    	Tuple[] tuples = new Tuple[attrLength];
+    	ArrayList<byte[]> arrayList = new ArrayList<byte[]>();
+    	for (int i = 0;i < attrLength; i++) {
+    		tuples[i] = scan[i].getNext(rid);
+    		arrayList.add(tuples[i].getTupleByteArray());
+    	}
+    	Tuple  projectTuples[] = new Tuple[projList.length] ;
+    	int sizeOfProjectTuple = 0;
+    	while (arrayList != null) {
+            sizeOfProjectTuple = 0;
+	    	if (condExprEval.isValid(arrayList)) {
+	        	for(int i =0; i<projList.length;i++) {
+                    projectTuples[i] = new Tuple(arrayList.get(i), 0, arrayList.get(i).length);
+                    sizeOfProjectTuple += arrayList.get(i).length;
+                }
+	        	projectedTuple = byteToTuple.mergeTuples(projectTuples, sizeOfProjectTuple);
+	            break;
+	        }
+            arrayList.clear();
+	    	for (int i = 0;i < attrLength; i++) {
+	    		tuples[i] = scan[i].getNext(rid);
+	    		if(tuples[i]!= null)
+	    		    arrayList.add(tuples[i].getTupleByteArray());
+	    		else
+	    		    return null;
+	    	}
+    	
+    	}
+    	return projectedTuple;
 
-        while (tuple != null) {
-            ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
-            Tuple  projectTuples[] = new Tuple[projList.length] ;
-            int sizeOfProjectTuple = 0;
-            if (condExprEval.isValid(arrayList)) {
-            	for(int i =0; i<projList.length;i++) {
-            		projectTuples[i] = new Tuple(arrayList.get(i),0,arrayList.get(i).length);
-            		sizeOfProjectTuple += arrayList.get(i).length;
-            	}
-            	
-            	projectedTuple = byteToTuple.mergeTuples(projectTuples, sizeOfProjectTuple);
-                break;
-            }
-            tuple = tupleScan.getNext(tid);
-        }
-        return projectedTuple;
     }
 
 	
@@ -100,4 +121,19 @@ public class ColumnarFileScan extends Iterator {
 		// TODO Auto-generated method stub
 		
 	}
+
+    	
+    	
+    	
+    	
+    	
+    	
+    	
+    	
+ 
+	
+	
+	
+	
+
 }

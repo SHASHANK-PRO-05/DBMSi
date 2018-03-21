@@ -10,10 +10,12 @@ import columnar.ColumnarFileDoesExistsException;
 import columnar.ColumnarFilePinPageException;
 import columnar.ColumnarFileUnpinPageException;
 import diskmgr.DiskMgrException;
+import iterator.ColumnScan;
 import iterator.ColumnarFileScan;
 import iterator.ColumnarFileScanException;
 import iterator.CondExpr;
 import iterator.FldSpec;
+import iterator.Iterator;
 import iterator.RelSpec;
 import global.AttrOperator;
 import global.AttrType;
@@ -86,7 +88,7 @@ public class Query {
 		attrTypes = columnarFile.getColumnarHeader().getColumns();
 		int columncount = attrTypes.length;
 		int outColumnsSize = targetColumnNames.size();
-		int counterStr=0, counterIn = 0, counterFld = 0;
+		int counterStr = 0, counterIn = 0, counterFld = 0;
 	
 		for (int i = 0; i < columncount; i++) {
 			for (int j = 0; j < outColumnsSize; j++) {
@@ -132,8 +134,11 @@ public class Query {
 		else if (condAttr.getAttrType() == 0)
 			condition[0].operand2.string = value;
 		
-		ColumnarFileScan columnarScan = new ColumnarFileScan(columnarFileName, in, strSizes,counterIn, counterFld, projList, condition);
-		Tuple tuple = columnarScan.getNext();
+		Iterator iter = getIterator(in,strSizes,counterIn, counterFld,projList,condition); 
+		
+		
+		//ColumnarFileScan columnarScan = new ColumnarFileScan(columnarFileName, in, strSizes,counterIn, counterFld, projList, condition);
+		Tuple tuple = iter.getNext();
 		ByteToTuple byteToTuple = new ByteToTuple(proj);
 		for (int i = 0 ; i< proj.length;i++) {
 			System.out.print(proj[i].getAttrName()+"\t");
@@ -154,11 +159,29 @@ public class Query {
         		count++;
         	}
         	System.out.println("\n");
-	        tuple = columnarScan.getNext();
+	        tuple = iter.getNext();
 	        
         }
         
         
+	}
+	
+	private static Iterator getIterator(AttrType[] in, short[] strSizes,int  counterIn, int counterFld, FldSpec[] projList, CondExpr[] condition) 
+			throws ColumnarFileScanException
+	{	Iterator iter = null; 
+		if (indexType.indexType == IndexType.None) {
+			iter =  new ColumnarFileScan(columnarFileName, in, strSizes,counterIn, counterFld, projList, condition);
+		}
+		if(indexType.indexType == IndexType.ColumnScan) {
+			iter = new ColumnScan(columnarFileName, in, strSizes, counterIn, counterFld, projList, condition);
+		}
+		if(indexType.indexType == IndexType.B_Index) {
+			
+		}
+		if(indexType.indexType == IndexType.BitMapIndex) {
+			
+		}
+		return iter;
 	}
 	
 	/*
@@ -176,12 +199,14 @@ public class Query {
 		else
 			return null;
 	}
+	
+	
 	/*
 	 * Functions to parse the operators
 	 */
 	
 	private static AttrOperator parseOperator(String operator) {
-		
+
 		if (operator.equals("=="))
 			return new AttrOperator(0);
 		if (operator.equals("<"))
