@@ -83,7 +83,7 @@ public class Index {
                 keyClass = new StringKey((String) valueClass.getValue());
             } else {
                 valueClass = new IntegerValue(Convert.getIntValue(0, tuple.getTupleByteArray()));
-                keyClass = new IntegerKey((int) valueClass.getValue());
+                keyClass = new IntegerKey((Integer) valueClass.getValue());
             }
             bTreeFile.insert(keyClass, rid);
             tuple = scan.getNext(rid);
