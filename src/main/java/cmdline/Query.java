@@ -1,20 +1,20 @@
 package cmdline;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 
+import btree.ConstructPageException;
+import btree.GetFileEntryException;
+import btree.PinPageException;
 import columnar.ByteToTuple;
 import columnar.ColumnarFile;
-import columnar.ColumnarFileDoesExistsException;
-import columnar.ColumnarFilePinPageException;
-import columnar.ColumnarFileUnpinPageException;
-import diskmgr.DiskMgrException;
+import iterator.BtreeScan;
 import iterator.ColumnScan;
 import iterator.ColumnarFileScan;
 import iterator.ColumnarFileScanException;
 import iterator.CondExpr;
 import iterator.FldSpec;
+import iterator.IndexException;
 import iterator.Iterator;
 import iterator.RelSpec;
 import global.AttrOperator;
@@ -23,8 +23,6 @@ import global.Convert;
 import global.IndexType;
 import global.SystemDefs;
 import heap.HFBufMgrException;
-import heap.HFDiskMgrException;
-import heap.HFException;
 import heap.InvalidSlotNumberException;
 import heap.Tuple;
 
@@ -37,7 +35,6 @@ public class Query {
 	private static String conditonalColumn;
 	private static int numBuf;
 	private static IndexType indexType;
-	private ColumnarFile columnarFile;
 	private static AttrType[] attrTypes;
 	
 	
@@ -167,7 +164,14 @@ public class Query {
 	}
 	
 	private static Iterator getIterator(AttrType[] in, short[] strSizes,int  counterIn, int counterFld, FldSpec[] projList, CondExpr[] condition) 
-			throws ColumnarFileScanException
+			throws ColumnarFileScanException, 
+			HFBufMgrException, 
+			InvalidSlotNumberException, 
+			GetFileEntryException, 
+			PinPageException, 
+			ConstructPageException, 
+			IOException, 
+			IndexException
 	{	Iterator iter = null; 
 		if (indexType.indexType == IndexType.None) {
 			iter =  new ColumnarFileScan(columnarFileName, in, strSizes,counterIn, counterFld, projList, condition);
@@ -176,7 +180,10 @@ public class Query {
 			iter = new ColumnScan(columnarFileName, in, strSizes, counterIn, counterFld, projList, condition);
 		}
 		if(indexType.indexType == IndexType.B_Index) {
-			
+			boolean indexOnly = false;
+			if(counterIn == 2 && in[0].getAttrName().equals(in[1].getAttrName()))
+				indexOnly = true;
+			iter = new BtreeScan(columnarFileName, in, strSizes, counterIn, counterFld, projList, condition, indexOnly);
 		}
 		if(indexType.indexType == IndexType.BitMapIndex) {
 			

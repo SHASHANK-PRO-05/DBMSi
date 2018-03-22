@@ -59,9 +59,9 @@ public class BTreeTest {
             }
         }
         SystemDefs.JavabaseBM.flushAllPages();
-        String fileName = "Employee.3.btree";
+        String fileName = "Employee.1.btree";
         BTreeFile bTreeFile = new BTreeFile(fileName
-                , attrTypes[3].getAttrType(), attrTypes[3].getSize(), 1);
+                , attrTypes[1].getAttrType(), attrTypes[1].getSize(), 1);
         Scan scan = new Scan(columnarFile, (short) 1);
         RID rid = scan.getFirstRID();
         Tuple tuple = scan.getNext(rid);
