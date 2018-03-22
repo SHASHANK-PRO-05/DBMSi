@@ -1001,7 +1001,7 @@ public class Heapfile implements Filetype, GlobalConst {
 
   } // end of delete_file_entry
 
-  private void purgeRecords(int[] positions) throws Exception {
+  public void purgeRecords(int[] positions) throws Exception {
 
     /*
      * Loop through Directory Pages
