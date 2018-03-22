@@ -75,7 +75,7 @@ class DataPageInfo implements GlobalConst {
     data = array;
     offset = 0;
 
-    flushPropertiesToBuffer();
+    readPropertiesFromData();
   }
 
 
@@ -94,11 +94,7 @@ class DataPageInfo implements GlobalConst {
       data = _atuple.returnTupleByteArray();
       offset = _atuple.getOffset();
 
-      availspace = Convert.getIntValue(offset, data);
-      recct = Convert.getIntValue(offset + 4, data);
-      pageId = new PageId();
-      pageId.pid = Convert.getIntValue(offset + 8, data);
-
+      readPropertiesFromData();
     }
   }
 
@@ -142,6 +138,11 @@ class DataPageInfo implements GlobalConst {
     Convert.setIntValue(pageId.pid, offset + P_PAGE_ID, data);
   }
 
+  private void readPropertiesFromData() throws IOException {
+    availspace = Convert.getIntValue(offset + P_AVAILABLE_SPACE, data);
+    recct = Convert.getIntValue(offset + P_RECORD_COUNT, data);
+    pageId.pid = Convert.getIntValue(offset + P_PAGE_ID, data);
+  }
 }
 
 

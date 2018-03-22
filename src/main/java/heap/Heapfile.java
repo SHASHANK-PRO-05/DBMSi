@@ -5,10 +5,6 @@ import diskmgr.Page;
 import global.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 /**
  * This heapfile implementation is directory-based. We maintain a
@@ -110,7 +106,7 @@ public class Heapfile implements Filetype, GlobalConst {
     // try to open the file
 
     Page apage = new Page();
-        _firstDirPageId = null;
+    _firstDirPageId = null;
     if (_ftype == ORDINARY)
       _firstDirPageId = get_file_entry(_fileName);
 
@@ -1005,7 +1001,7 @@ public class Heapfile implements Filetype, GlobalConst {
 
   } // end of delete_file_entry
 
-  private void purgeRecords(int[] positions) throws HFBufMgrException, IOException, InvalidSlotNumberException {
+  private void purgeRecords(int[] positions) throws Exception {
 
     /*
      * Loop through Directory Pages
@@ -1026,6 +1022,7 @@ public class Heapfile implements Filetype, GlobalConst {
         int currentlyScanningRecords = recordsScanned + dataPageInfo.getRecordCount();
         HFPage dataPage = new HFPage();
         boolean dirtyPage = false;
+        int recordsDeleted = 0;
 
         for (int i = lastPositionPurged + 1; i < lastPositionPurged + dataPageInfo.getRecordCount(); i++) {
           if (positions[i] >= recordsScanned && positions[i] < currentlyScanningRecords) {
@@ -1033,11 +1030,15 @@ public class Heapfile implements Filetype, GlobalConst {
             dataPage.deleteRecord(new RID(dataPageInfo.pageId, (positions[i] - recordsScanned) % dataPageInfo.getRecordCount()));
             lastPositionPurged += 1;
             dirtyPage = true;
+            recordsDeleted += 1;
           }
         }
 
         if (dirtyPage) {
-          dataPage.purgeRecords();
+          dataPageInfo.recct -= recordsDeleted;
+          dataPageInfo.flushToTuple();
+          currentDirPage.updateDirRecordCount(rid, dataPageInfo);
+          dataPage.compact_slot_dir();
           unpinPage(dataPageInfo.pageId, true);
         }
 
