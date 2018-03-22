@@ -71,9 +71,11 @@ class DataPageInfo implements GlobalConst {
    *
    * @param array a byte array
    */
-  public DataPageInfo(byte[] array) {
+  public DataPageInfo(byte[] array) throws IOException {
     data = array;
     offset = 0;
+
+    flushPropertiesToBuffer();
   }
 
 
