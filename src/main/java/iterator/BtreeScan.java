@@ -5,8 +5,6 @@ import heap.InvalidSlotNumberException;
 import heap.Scan;
 import heap.Tuple;
 
-import sun.security.util.Length;
-
 import java.io.IOException;
 
 import btree.BTFileScan;
@@ -80,7 +78,7 @@ public class BtreeScan extends Iterator {
 			//"Throws error or print the Btree does not exixst "
 		}
 		//Then we will open the index file.
-		indFile = new BTreeFile(indexinfo.getFileName()); 
+		indFile = new BTreeFile("Employee.1.btree");
 		//this.condExprEval = new CondExprEval(attrTypes, condExprs);
 
 		for (int i = 0; i < attrTypes.length; i++)
@@ -103,13 +101,12 @@ public class BtreeScan extends Iterator {
 			if(indexOnly) {
 				int size  = attrTypes[0].getSize();
 				byte[] byteArray = new byte[size];
-				if(attrTypes[0].getSize() == AttrType.attrInteger)
+				if(attrTypes[0].getAttrType()== AttrType.attrInteger)
 					Convert.setIntValue(((IntegerKey) nextentry.key).getKey().intValue(), 0, byteArray);
-				else if(attrTypes[0].getSize() == AttrType.attrString)
+				else if(attrTypes[0].getAttrType() == AttrType.attrString)
 					Convert.setStringValue(((StringKey) nextentry.key).getKey(), 0, byteArray);
 				tuple = new Tuple(byteArray,0,size);
-				
-				
+				return tuple;
 				
 			}
 			//take the individual rids and 
