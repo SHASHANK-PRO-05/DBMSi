@@ -15,6 +15,7 @@ import btree.ConstructPageException;
 import btree.GetFileEntryException;
 import btree.IndexFile;
 import btree.IndexFileScan;
+import btree.IntegerKey;
 import btree.KeyDataEntry;
 import btree.PinPageException;
 import btree.StringKey;
@@ -22,6 +23,7 @@ import columnar.ByteToTuple;
 import columnar.ColumnarFile;
 import columnar.IndexInfo;
 import global.AttrType;
+import global.Convert;
 import global.IndexType;
 
 
@@ -53,7 +55,8 @@ public class BtreeScan extends Iterator {
 			IOException, 
 			GetFileEntryException, 
 			PinPageException, 
-			ConstructPageException {
+			ConstructPageException,
+			IndexException {
 		this.attrTypes = attrTypes;
 		this.projList = projList;
 		this.columnNosArray = new int[attrTypes.length];
@@ -82,38 +85,32 @@ public class BtreeScan extends Iterator {
 
 		for (int i = 0; i < attrTypes.length; i++)
 			columnNosArray[i] = attrTypes[i].getColumnId();
-		//initialize a scan
-//		try {
-//			indScan = (BTFileScan) IndexUtils.BTree_scan(selects, indFile);
-//		} catch (Exception e) {
-//			throw new IndexException(e,
-//					"IndexScan.java: BTreeFile exceptions caught from IndexUtils.BTree_scan().");
-//		}
-
-		
-
-		// try {
-		// scan = new Scan[attrLength];
-		// for (int i = 0; i < attrLength; i++) {
-		// scan[i] = new Scan(columnarFile, (short) columnNosArray[i]);
-		// }
-		//
-		//
-		// } catch (Exception e) {
-		// throw new ColumnarFileScanException(e, "Not able to initiate scan");
-		// }
+	
+		try {
+			indScan = (BTFileScan) BtreeUtils.BTree_scan(condExprs, indFile);
+		} catch (Exception e) {
+			throw new IndexException(e,
+					"IndexScan.java: BTreeFile exceptions caught from IndexUtils.BTree_scan().");
+		}
 	}
 
 	public Tuple getNext() throws Exception {
 		KeyDataEntry nextentry = null;
-		
+		Tuple tuple;
 		nextentry = indScan.get_next();
 		
 		while (nextentry!=null) {
 			if(indexOnly) {
-				// only need to return the key
-				// taking one attrtype
-				// return the key inserting in the tuple
+				int size  = attrTypes[0].getSize();
+				byte[] byteArray = new byte[size];
+				if(attrTypes[0].getSize() == AttrType.attrInteger)
+					Convert.setIntValue(((IntegerKey) nextentry.key).getKey().intValue(), 0, byteArray);
+				else if(attrTypes[0].getSize() == AttrType.attrString)
+					Convert.setStringValue(((StringKey) nextentry.key).getKey(), 0, byteArray);
+				tuple = new Tuple(byteArray,0,size);
+				
+				
+				
 			}
 			//take the individual rids and 
 			//merge them and return tuple 
