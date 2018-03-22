@@ -33,7 +33,7 @@ public class ColumnarFile implements GlobalConst {
 	// Shashank: I am not sure if it is required
 	private Heapfile heapFileNames[];
 	private int numColumns;
-	private String indexFileName;
+	
 	/*
 	 * Contructor for initialization
 	 * 
@@ -332,13 +332,6 @@ public class ColumnarFile implements GlobalConst {
 		this.numColumns = numColumns;
 	}
 
-	public String getIndexFileName() {
-		return indexFileName;
-	}
-
-	public void setIndexFileName(String indexFileName) {
-		this.indexFileName = indexFileName;
-	}
 
 	/*
 	 * getter-setter ends here
