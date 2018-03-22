@@ -248,18 +248,34 @@ public class ColumnarFile implements GlobalConst {
 	}
 
 	boolean markTupleDeleted(TID tid) throws Exception {
-		String fname = this.getColumnarHeader().getHdrFile() + ".del";
-		long totalNumRecords = this.getTupleCount();
-		BitMapFile bmFile = new BitMapFile(fname, totalNumRecords);
+		String fName = this.getColumnarHeader().getHdrFile() + ".del";
+		PageId headerPageId = getFileEntry(fName);
+        long totalNumRecords = this.getTupleCount();
+		if (headerPageId!=null) {
+		BitMapFile bmFile = new BitMapFile(fName, totalNumRecords);
 		if (bmFile.Insert(tid.getPosition())) {
 			return true;
 		} else
 			return false;
 	}
+	else {
+            BitMapFile bmFile = new BitMapFile(fName, totalNumRecords);
+            if (bmFile.Insert(tid.getPosition())) {
+                return true;
+            } else
+                return false;
+        }
+		
+	}
+	
 
 	public boolean purgeAllDeletedTuples(BitMapFile bitMapFile)
 			throws IOException, DiskMgrException, GetFileEntryException, PinPageException, ConstructPageException,
       UnpinPageException, ColumnarFilePinPageException, ColumnarFileUnpinPageException {
+		String fName = this.getColumnarHeader().getHdrFile() + ".del";
+		PageId headerPageId = getFileEntry(fName);
+		if (headerPageId!=null)
+        {
 		BitMapOperations bitMapOperations = new BitMapOperations();
 		bitMapOperations.init(bitMapFile);
 		int nextPos = Integer.MIN_VALUE;
@@ -270,6 +286,8 @@ public class ColumnarFile implements GlobalConst {
 			// deleteTupleAtPosition is on hold because of delete of HFPage.
 			// Currently, deleteTupleAtPosition is deleting the record from heap file at a particular position.
 	}
+        }
+
 
 		return true; // Return type not decided yet as function is not complete.
 
