@@ -22,7 +22,7 @@ public class DeleteTest extends BaseTest {
 
   @Before
   public void setupDatabase() throws Exception {
-    SystemDefs.staticInit(dbName, numOfPages, bufPoolSize, "LRU");
+    SystemDefs systemDefs = new SystemDefs(dbName, numOfPages, bufPoolSize, "LRU");
     AttrType numType = new AttrType();
     numType.setSize(4);
     numType.setAttrType(AttrType.attrInteger);
@@ -33,7 +33,7 @@ public class DeleteTest extends BaseTest {
 
   @Test
   public void deleteUsingColumnarScan() throws Exception {
-    String[] argv = {dbName, employeeColumnarFile,"Column2", "<", "50", Integer.toString(bufPoolSize), "COLUMNSCAN", Boolean.toString(false)};
+    String[] argv = {dbName, employeeColumnarFile,"Column2", "<", "50", Integer.toString(bufPoolSize), "COLUMNSCAN", Boolean.toString(true)};
     Delete.main(argv);
   }
 

@@ -45,7 +45,7 @@ public class Delete {
     indexType = getIndexType(argv[6]);
     purgeDB = Boolean.parseBoolean(argv[7]);
 
-    SystemDefs.staticInit(columnDBName, 0, numBuf, "LRU");
+    SystemDefs systemDefs = new SystemDefs(columnDBName, 0, numBuf, "LRU");
 
     columnarFile = new ColumnarFile(columnarFileName);
 
@@ -58,8 +58,8 @@ public class Delete {
   private static void deleteUsingColumnarFileScan()
       throws Exception {
 
-    short[] strSizes = new short[2];
     int conditionalColumnId = -1;
+    boolean recordsDeleted = false;
     AttrType condAttr = new AttrType();
 
     attrTypes = columnarFile.getColumnarHeader().getColumns();
@@ -79,9 +79,9 @@ public class Delete {
     condition[1] = null;
     condition[0] = new CondExpr();
     condition[0].next = condition[1];
-    condition[0].operand1.symbol = new FldSpec(new RelSpec(0), conditionalColumnId);
-    condition[0].op = parseOperator(operator);
     condition[0].type1 = new AttrType(AttrType.attrSymbol);
+    condition[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), conditionalColumnId);
+    condition[0].op = parseOperator(operator);
     condition[0].type2 = new AttrType(condAttr.getAttrType());
     if (condAttr.getAttrType() == 1)
       condition[0].operand2.integer = Integer.parseInt(value);
@@ -111,21 +111,19 @@ public class Delete {
     int position = 0;
 
     while (tuple != null) {
-      ArrayList<byte[]> tuples = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
-      System.out.println("\n");
-      tuple = tupleScan.getNext(tid);
-
       ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
       if (condExprEval.isValid(arrayList)) {
         columnarFile.markTupleDeleted(new TID(columnarFile.getNumColumns(), position));
+        recordsDeleted = true;
       }
 
+      tuple = tupleScan.getNext(tid);
       position++;
     }
 
     tupleScan.closeTupleScan();
 
-    if (purgeDB) {
+    if (purgeDB && recordsDeleted) {
       BitMapFile bitMapFile = new BitMapFile(columnarFile.getColumnarHeader().getHdrFile() + ".del");
       columnarFile.purgeAllDeletedTuples(bitMapFile);
     }

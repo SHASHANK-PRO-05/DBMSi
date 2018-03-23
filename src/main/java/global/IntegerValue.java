@@ -12,7 +12,15 @@ public class IntegerValue extends ValueClass {
     @Override
     public int compare(ValueClass valueClass) {
         IntegerValue init = (IntegerValue) valueClass;
-        return this.value = (Integer) init.getValue();
+        if (this.value == (Integer) init.getValue()) {
+            return 0;
+        }
+
+        if (this.value > (Integer) init.getValue()) {
+            return 1;
+        }
+
+        return -1;
     }
 
     public Object getValue() {

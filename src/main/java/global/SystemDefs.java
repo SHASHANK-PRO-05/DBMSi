@@ -36,27 +36,4 @@ public class SystemDefs {
                 Runtime.getRuntime().exit(1);
             }
     }
-
-    public static void staticInit(String dbName, int numPages, int bufPoolSize, String replacementPolicy) {
-        JavabaseBM = new BufMgr(bufPoolSize, replacementPolicy);
-        JavabaseDB = new ColumnDB();
-        if (MINIBASE_RESTART_FLAG || numPages == 0)
-            try {
-                JavabaseDB.openDB(dbName);
-            } catch (Exception e) {
-                System.err.println("" + e);
-                e.printStackTrace();
-                Runtime.getRuntime().exit(1);
-            }
-        else
-
-            try {
-                JavabaseDB.openDB(dbName, numPages);
-                JavabaseBM.flushAllPages();
-            } catch (Exception e) {
-                System.err.println("" + e);
-                e.printStackTrace();
-                Runtime.getRuntime().exit(1);
-            }
-    }
 }
