@@ -6,8 +6,9 @@ import global.Convert;
 import global.GlobalConst;
 import global.SystemDefs;
 
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.util.ArrayList;
 
 
@@ -17,13 +18,22 @@ public class BatchInsert implements GlobalConst {
     private static String columnarFileName;
     private static short numColumns;
 
-    public static void main(String argv[]) throws Exception {
-        initFromArgs(argv);
-    }
 
     /**
-     * TODO: Change this to buffered reader
+     * The main class
+     *
+     * @param argv
+     * @throws Exception
      */
+    public static void main(String argv[]) throws Exception {
+        if (argv.length != 4) {
+            System.out.println("--- Usage of the command ---");
+            System.out.println("batchinsert DATAFILENAME COLUMNDBNAME COLUMNARFILENAME NUMCOLUMNS");
+        } else {
+            initFromArgs(argv);
+        }
+    }
+
     private static BufferedReader bufferedReader;
 
     private static AttrType[] parseHeader() throws Exception {
@@ -41,9 +51,9 @@ public class BatchInsert implements GlobalConst {
             attrTypes[i].setColumnId(i);
             if (columnType.equals("int")) {
                 attrTypes[i].setAttrType(1);
-                attrTypes[i].setSize((short)4);
+                attrTypes[i].setSize((short) 4);
             } else {
-                short sizeOfString = (short)Integer.parseInt(columnType.substring(5
+                short sizeOfString = (short) Integer.parseInt(columnType.substring(5
                         , columnType.length() - 1));
                 attrTypes[i].setAttrType(0);
                 attrTypes[i].setSize(sizeOfString);
@@ -55,7 +65,13 @@ public class BatchInsert implements GlobalConst {
     private static void initFromArgs(String argv[])
             throws Exception {
         String fileName = argv[0];
+        File f = new File(fileName);
+        if (!f.exists() || f.isDirectory()) {
+            System.out.println("** The specfied data file does not exists **");
+            return;
+        }
         bufferedReader = new BufferedReader(new FileReader(fileName));
+
         String columnDBName = argv[1];
         String columnarFileName = argv[2];
         int numberOfColumns = Integer.parseInt(argv[3]);
