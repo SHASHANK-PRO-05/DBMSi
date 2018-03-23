@@ -266,6 +266,7 @@ public class BitMapFile implements GlobalConst {
 
     private void setupIntBitMap(Integer value, ColumnarFile columnarFile, int columnNo)
             throws IOException, InvalidTupleSizeException, PinPageException, UnpinPageException {
+        pinPage(headerPageId, bitMapHeaderPage);
         Scan scan = new Scan(columnarFile, (short) columnNo);
         RID rid = scan.getFirstRID();
         BMPage bitmap = new BMPage();

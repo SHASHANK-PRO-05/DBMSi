@@ -4,10 +4,8 @@ import global.TID;
 import heap.InvalidTupleSizeException;
 import heap.Scan;
 import heap.Tuple;
-import columnar.ByteToTuple;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 public class TupleScan {
     private ColumnarFile cf;
@@ -103,9 +101,9 @@ public class TupleScan {
         for (int i = 0; i < noOfColumns; i++) {
             nextTuples[i] = scans[i].getNext(tid.getRecordIDs()[i]);
             if (nextTuples[i] == null) return null;
-            	size += nextTuples[i].getLength();
+            size += nextTuples[i].getLength();
         }
-
+        
         return byteToTuple.mergeTuples(nextTuples, size);
     }
 

@@ -1,5 +1,6 @@
 package iterator;
 
+
 import heap.HFBufMgrException;
 import heap.HFPage;
 import heap.Heapfile;
@@ -7,18 +8,8 @@ import heap.InvalidSlotNumberException;
 import heap.Scan;
 import heap.Tuple;
 
-import java.io.IOException;
-import btree.BTFileScan;
-import btree.BTreeFile;
-import btree.ConstructPageException;
-import btree.GetFileEntryException;
-import btree.IndexFile;
-import btree.IndexFileScan;
-import btree.IntegerKey;
-import btree.KeyDataEntry;
-import btree.LeafData;
-import btree.PinPageException;
-import btree.StringKey;
+
+import btree.*;
 import columnar.ByteToTuple;
 import columnar.ColumnarFile;
 import columnar.IndexInfo;
@@ -30,8 +21,12 @@ import global.PageId;
 import global.RID;
 import global.SystemDefs;
 import global.TID;
+import heap.*;
+
+import java.io.IOException;
 
 public class BtreeScan extends Iterator {
+
 	private ColumnarFile columnarFile;
 	private CondExpr[] condExprs;
 	private FldSpec[] projList;
@@ -159,5 +154,6 @@ public class BtreeScan extends Iterator {
         } catch (Exception e) {
             throw new HFBufMgrException(e, "Heapfile.java: in Column Header, pinPage() failed");
         }
+
     }
 }
