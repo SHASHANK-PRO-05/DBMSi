@@ -1,10 +1,12 @@
 package heap;
 
-import java.io.*;
+import diskmgr.Page;
+import global.GlobalConst;
+import global.PageId;
+import global.RID;
+import global.SystemDefs;
 
-import diskmgr.*;
-import bufmgr.*;
-import global.*;
+import java.io.IOException;
 
 /**
  * This heapfile implementation is directory-based. We maintain a
@@ -30,8 +32,9 @@ import global.*;
  */
 
 
-/** DataPageInfo class : the type of records stored on a directory page.
- *
+/**
+ * DataPageInfo class : the type of records stored on a directory page.
+ * <p>
  * April 9, 1998
  */
 
@@ -193,14 +196,15 @@ public class Heapfile implements Filetype, GlobalConst {
 
     } // end of _findDatapage
 
-    /** Initialize.  A null name produces a temporary heapfile which will be
+    /**
+     * Initialize.  A null name produces a temporary heapfile which will be
      * deleted by the destructor.  If the name already denotes a file, the
      * file is opened; otherwise, a new empty file is created.
      *
-     * @exception HFException heapfile exception
-     * @exception HFBufMgrException exception thrown from bufmgr layer
-     * @exception HFDiskMgrException exception thrown from diskmgr layer
-     * @exception IOException I/O errors
+     * @throws HFException        heapfile exception
+     * @throws HFBufMgrException  exception thrown from bufmgr layer
+     * @throws HFDiskMgrException exception thrown from diskmgr layer
+     * @throws IOException        I/O errors
      */
     public Heapfile(String name)
             throws HFException,
@@ -276,13 +280,14 @@ public class Heapfile implements Filetype, GlobalConst {
 
     } // end of constructor
 
-    /** Return number of records in file.
+    /**
+     * Return number of records in file.
      *
-     * @exception InvalidSlotNumberException invalid slot number
-     * @exception InvalidTupleSizeException invalid tuple size
-     * @exception HFBufMgrException exception thrown from bufmgr layer
-     * @exception HFDiskMgrException exception thrown from diskmgr layer
-     * @exception IOException I/O errors
+     * @throws InvalidSlotNumberException invalid slot number
+     * @throws InvalidTupleSizeException  invalid tuple size
+     * @throws HFBufMgrException          exception thrown from bufmgr layer
+     * @throws HFDiskMgrException         exception thrown from diskmgr layer
+     * @throws IOException                I/O errors
      */
     public int getRecCnt()
             throws InvalidSlotNumberException,
@@ -331,19 +336,19 @@ public class Heapfile implements Filetype, GlobalConst {
 
         return answer;
     } // end of getRecCnt
-    /** Insert record into file, return its Rid.
+
+    /**
+     * Insert record into file, return its Rid.
      *
      * @param recPtr pointer of the record
-     *
-     * @exception InvalidSlotNumberException invalid slot number
-     * @exception InvalidTupleSizeException invalid tuple size
-     * @exception SpaceNotAvailableException no space left
-     * @exception HFException heapfile exception
-     * @exception HFBufMgrException exception thrown from bufmgr layer
-     * @exception HFDiskMgrException exception thrown from diskmgr layer
-     * @exception IOException I/O errors
-     *
      * @return the rid of the record
+     * @throws InvalidSlotNumberException invalid slot number
+     * @throws InvalidTupleSizeException  invalid tuple size
+     * @throws SpaceNotAvailableException no space left
+     * @throws HFException                heapfile exception
+     * @throws HFBufMgrException          exception thrown from bufmgr layer
+     * @throws HFDiskMgrException         exception thrown from diskmgr layer
+     * @throws IOException                I/O errors
      */
     public RID insertRecord(byte[] recPtr)
             throws InvalidSlotNumberException,
@@ -568,16 +573,16 @@ public class Heapfile implements Filetype, GlobalConst {
         return rid;
     }
 
-    /** Delete record from file with given rid.
-     *
-     * @exception InvalidSlotNumberException invalid slot number
-     * @exception InvalidTupleSizeException invalid tuple size
-     * @exception HFException heapfile exception
-     * @exception HFBufMgrException exception thrown from bufmgr layer
-     * @exception HFDiskMgrException exception thrown from diskmgr layer
-     * @exception Exception other exception
+    /**
+     * Delete record from file with given rid.
      *
      * @return true record deleted  false:record not found
+     * @throws InvalidSlotNumberException invalid slot number
+     * @throws InvalidTupleSizeException  invalid tuple size
+     * @throws HFException                heapfile exception
+     * @throws HFBufMgrException          exception thrown from bufmgr layer
+     * @throws HFDiskMgrException         exception thrown from diskmgr layer
+     * @throws Exception                  other exception
      */
     public boolean deleteRecord(RID rid)
             throws InvalidSlotNumberException,
@@ -707,18 +712,19 @@ public class Heapfile implements Filetype, GlobalConst {
     }
 
 
-    /** Updates the specified record in the heapfile.
-     * @param rid: the record which needs update
-     * @param newtuple: the new content of the record
+    /**
+     * Updates the specified record in the heapfile.
      *
-     * @exception InvalidSlotNumberException invalid slot number
-     * @exception InvalidUpdateException invalid update on record
-     * @exception InvalidTupleSizeException invalid tuple size
-     * @exception HFException heapfile exception
-     * @exception HFBufMgrException exception thrown from bufmgr layer
-     * @exception HFDiskMgrException exception thrown from diskmgr layer
-     * @exception Exception other exception
+     * @param rid:      the record which needs update
+     * @param newtuple: the new content of the record
      * @return ture:update success   false: can't find the record
+     * @throws InvalidSlotNumberException invalid slot number
+     * @throws InvalidUpdateException     invalid update on record
+     * @throws InvalidTupleSizeException  invalid tuple size
+     * @throws HFException                heapfile exception
+     * @throws HFBufMgrException          exception thrown from bufmgr layer
+     * @throws HFDiskMgrException         exception thrown from diskmgr layer
+     * @throws Exception                  other exception
      */
     public boolean updateRecord(RID rid, Tuple newtuple)
             throws InvalidSlotNumberException,
@@ -766,18 +772,18 @@ public class Heapfile implements Filetype, GlobalConst {
     }
 
 
-    /** Read record from file, returning pointer and length.
+    /**
+     * Read record from file, returning pointer and length.
+     *
      * @param rid Record ID
-     *
-     * @exception InvalidSlotNumberException invalid slot number
-     * @exception InvalidTupleSizeException invalid tuple size
-     * @exception SpaceNotAvailableException no space left
-     * @exception HFException heapfile exception
-     * @exception HFBufMgrException exception thrown from bufmgr layer
-     * @exception HFDiskMgrException exception thrown from diskmgr layer
-     * @exception Exception other exception
-     *
      * @return a Tuple. if Tuple==null, no more tuple
+     * @throws InvalidSlotNumberException invalid slot number
+     * @throws InvalidTupleSizeException  invalid tuple size
+     * @throws SpaceNotAvailableException no space left
+     * @throws HFException                heapfile exception
+     * @throws HFBufMgrException          exception thrown from bufmgr layer
+     * @throws HFDiskMgrException         exception thrown from diskmgr layer
+     * @throws Exception                  other exception
      */
     public Tuple getRecord(RID rid)
             throws InvalidSlotNumberException,
@@ -834,14 +840,15 @@ public class Heapfile implements Filetype, GlobalConst {
     }
   */
 
-    /** Delete the file from the database.
+    /**
+     * Delete the file from the database.
      *
-     * @exception InvalidSlotNumberException invalid slot number
-     * @exception InvalidTupleSizeException invalid tuple size
-     * @exception FileAlreadyDeletedException file is deleted already
-     * @exception HFBufMgrException exception thrown from bufmgr layer
-     * @exception HFDiskMgrException exception thrown from diskmgr layer
-     * @exception IOException I/O errors
+     * @throws InvalidSlotNumberException  invalid slot number
+     * @throws InvalidTupleSizeException   invalid tuple size
+     * @throws FileAlreadyDeletedException file is deleted already
+     * @throws HFBufMgrException           exception thrown from bufmgr layer
+     * @throws HFDiskMgrException          exception thrown from diskmgr layer
+     * @throws IOException                 I/O errors
      */
     public void deleteFile()
             throws InvalidSlotNumberException,
@@ -897,36 +904,34 @@ public class Heapfile implements Filetype, GlobalConst {
 
         delete_file_entry(_fileName);
     }
-    
-  /**
-   * short cut to access the pinPage function in bufmgr package.
-   */
-  private void pinPage(PageId pageno, Page page, boolean emptyPage)
-    throws HFBufMgrException {
-    
-    try {
-      SystemDefs.JavabaseBM.pinPage(pageno, page, emptyPage);
-    }
-    catch (Exception e) {
-      throw new HFBufMgrException(e,"Heapfile.java: pinPage() failed");
-    }
-    
-  } // end of pinPage
 
-  /**
-   * short cut to access the unpinPage function in bufmgr package.
-   */
-  private void unpinPage(PageId pageno, boolean dirty)
-    throws HFBufMgrException {
+    /**
+     * short cut to access the pinPage function in bufmgr package.
+     */
+    private void pinPage(PageId pageno, Page page, boolean emptyPage)
+            throws HFBufMgrException {
 
-    try {
-      SystemDefs.JavabaseBM.unpinPage(pageno, dirty);
-    }
-    catch (Exception e) {
-      throw new HFBufMgrException(e,"Heapfile.java: unpinPage() failed");
-    }
-    
-  } // end of unpinPage
+        try {
+            SystemDefs.JavabaseBM.pinPage(pageno, page, emptyPage);
+        } catch (Exception e) {
+            throw new HFBufMgrException(e, "Heapfile.java: pinPage() failed");
+        }
+
+    } // end of pinPage
+
+    /**
+     * short cut to access the unpinPage function in bufmgr package.
+     */
+    private void unpinPage(PageId pageno, boolean dirty)
+            throws HFBufMgrException {
+
+        try {
+            SystemDefs.JavabaseBM.unpinPage(pageno, dirty);
+        } catch (Exception e) {
+            throw new HFBufMgrException(e, "Heapfile.java: unpinPage() failed");
+        }
+
+    } // end of unpinPage
 
     private void freePage(PageId pageno)
             throws HFBufMgrException {
@@ -991,5 +996,45 @@ public class Heapfile implements Filetype, GlobalConst {
 
     } // end of delete_file_entry
 
+    public Tuple getRecordAtPosition(int position) throws InvalidSlotNumberException,
+            InvalidTupleSizeException,
+            HFDiskMgrException,
+            HFBufMgrException,
+            IOException {
+        Tuple tuple;
+
+        PageId currentPageId = new PageId(_firstDirPageId.pid);
+        PageId nextDirPageId = new PageId(0);
+
+        HFPage currentDirPage = new HFPage();
+        Page pageinbuffer = new Page();
+        DataPageInfo dataPageInfo = null;
+        Boolean found = false;
+        while (currentPageId.pid != INVALID_PAGE && !found) {
+            pinPage(currentPageId, currentDirPage, false);
+            RID rid = currentDirPage.firstRecord();
+            while (rid != null && !found) {
+                dataPageInfo = new DataPageInfo(currentDirPage.getRecord(rid));
+                if (dataPageInfo.recct > position) {
+                    found = true;
+                    break;
+                } else {
+                    position = position - dataPageInfo.recct;
+                }
+                rid = currentDirPage.nextRecord(rid);
+            }
+            nextDirPageId = currentDirPage.getNextPage();
+            unpinPage(currentPageId, false);
+            currentPageId.pid = nextDirPageId.pid;
+        }
+        PageId pageId = new PageId(dataPageInfo.pageId.pid);
+        HFPage hfPage = new HFPage();
+        RID rid = new RID(pageId, position);
+        pinPage(pageId, hfPage, false);
+        byte[] byteData = hfPage.getDataAtSlot(rid);
+        tuple = new Tuple(byteData, 0, byteData.length);
+        unpinPage(pageId, false);
+        return tuple;
+    }
 
 }// End of HeapFile

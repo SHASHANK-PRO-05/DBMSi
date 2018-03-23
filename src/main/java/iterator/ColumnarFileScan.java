@@ -1,18 +1,15 @@
 package iterator;
 
-import java.io.IOException;
-import java.util.ArrayList;
-
-import bufmgr.PageNotReadException;
 import columnar.ByteToTuple;
 import columnar.ColumnarFile;
 import columnar.TupleScan;
 import global.AttrType;
 import global.RID;
 import global.TID;
-import heap.InvalidTupleSizeException;
-import heap.InvalidTypeException;
 import heap.Tuple;
+
+import java.io.IOException;
+import java.util.ArrayList;
 
 public class ColumnarFileScan extends Iterator {
     private ColumnarFile columnarFile;
@@ -72,20 +69,17 @@ public class ColumnarFileScan extends Iterator {
         RID rids[] = new RID[attrTypes.length];
         for (int i = 0; i < attrTypes.length; i++) rids[i] = new RID();
         TID tid = new TID(attrTypes.length, 0, rids);
-        
         tuple = tupleScan.getNext(tid);
-
         while (tuple != null) {
             ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
-            Tuple  projectTuples[] = new Tuple[projList.length] ;
+            Tuple projectTuples[] = new Tuple[projList.length];
             int sizeOfProjectTuple = 0;
             if (condExprEval.isValid(arrayList)) {
-            	for(int i =0; i<projList.length;i++) {
-            		projectTuples[i] = new Tuple(arrayList.get(i),0,arrayList.get(i).length);
-            		sizeOfProjectTuple += arrayList.get(i).length;
-            	}
-            	
-            	projectedTuple = byteToTuple.mergeTuples(projectTuples, sizeOfProjectTuple);
+                for (int i = 0; i < projList.length; i++) {
+                    projectTuples[i] = new Tuple(arrayList.get(i), 0, arrayList.get(i).length);
+                    sizeOfProjectTuple += arrayList.get(i).length;
+                }
+                projectedTuple = byteToTuple.mergeTuples(projectTuples, sizeOfProjectTuple);
                 break;
             }
             tuple = tupleScan.getNext(tid);
@@ -93,11 +87,9 @@ public class ColumnarFileScan extends Iterator {
         return projectedTuple;
     }
 
-	
 
-	@Override
-	public void close() throws IOException {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public void close() throws IOException {
+        tupleScan.closeTupleScan();
+    }
 }

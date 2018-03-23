@@ -96,9 +96,9 @@ public class BT implements GlobalConst {
 	 * @exception NodeNotMatchException
 	 *                pageType is neither NodeType.LEAF nor NodeType.INDEX.
 	 */
-	protected final static int getDataLength(short pageType) throws NodeNotMatchException {
+	protected final static int getDataLength(short pageType,TID tid) throws NodeNotMatchException {
 		if (pageType == NodeType.LEAF)
-			return 8;
+			return tid.getsize();
 		else if (pageType == NodeType.INDEX)
 			return 4;
 		else
@@ -120,9 +120,9 @@ public class BT implements GlobalConst {
 	 * @exception IOException
 	 *                error from the lower layer
 	 */
-	protected final static int getKeyDataLength(KeyClass key, short pageType)
+	protected final static int getKeyDataLength(KeyClass key, short pageType, TID tid)
 			throws KeyNotMatchException, NodeNotMatchException, IOException {
-		return getKeyLength(key) + getDataLength(pageType);
+		return getKeyLength(key) + getDataLength(pageType,tid);
 	}
 
 	/**

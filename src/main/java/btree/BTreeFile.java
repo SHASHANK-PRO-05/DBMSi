@@ -602,7 +602,7 @@ public class BTreeFile extends IndexFile
 	
 	// check whether there can still be entries inserted on that page
 	if (currentIndexPage.available_space() >=
-	    BT.getKeyDataLength( upEntry.key, NodeType.INDEX))
+	    BT.getKeyDataLength( upEntry.key, NodeType.INDEX,tid))
 	  {
 	    
 	    // no split has occurred
@@ -773,7 +773,7 @@ public class BTreeFile extends IndexFile
 	  
 	  // check whether there can still be entries inserted on that page
 	  if (currentLeafPage.available_space() >=
-	      BT.getKeyDataLength(key, NodeType.LEAF) )
+	      BT.getKeyDataLength(key, NodeType.LEAF,tid) )
 	    {
 	      // no split has occurred
 	      

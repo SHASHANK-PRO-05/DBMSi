@@ -1,12 +1,11 @@
 package iterator;
-
 import heap.HFBufMgrException;
+import heap.Heapfile;
 import heap.InvalidSlotNumberException;
 import heap.Scan;
 import heap.Tuple;
 
 import java.io.IOException;
-
 import btree.BTFileScan;
 import btree.BTreeFile;
 import btree.ConstructPageException;
@@ -111,31 +110,38 @@ public class BtreeScan extends Iterator {
 				return tuple;
 				
 			}
+			Tuple[] tuples = new Tuple[projList.length];
 			tid = ((LeafData) nextentry.data).getData();
-			System.out.println(tid.getRecordIDs()[0].slotNo);
+			int size = 0;
 			
 			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			nextentry = indScan.get_next();
-			
-			
+			for (int i = 0; i < projList.length; i++) {
+                Heapfile heapfile = columnarFile.getHeapFileNames()[projList[i].offset];
+                tuples[i] = heapfile.getRecordAtPosition(tid.getPosition());
+                size = size + attrTypes[i].getSize();
+            }
+			return byteToTuple.mergeTuples(tuples, size);	
 		}
 		return null;
 	}
-
+	
+	
 	@Override
-	public void close() throws IOException {
+	public void close() throws IOException, iterator.IndexException {
 		// TODO Auto-generated method stub
+		if (!closeFlag) {
+			if (indScan instanceof BTFileScan) {
+				try {
+					((BTFileScan) indScan).DestroyBTreeFileScan();
+				} catch (Exception e) {
+					throw new IndexException(e, "BTree error in destroying index scan.");
+				}
+			}
+
+			closeFlag = true;
+		}
+
+		
 
 	}
 }

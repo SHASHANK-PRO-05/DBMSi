@@ -209,7 +209,7 @@ public class DirectoryHFPage extends Page implements ConstSlot, GlobalConst {
      * @throws IOException I/O errors
      */
     public PageId getNextPage() throws IOException {
-        nextPage.pid = Convert.getIntValue(NEXT_PAGE, data);
+        nextPage.pid = Convert.getIntValue(NEXT_PAGE, this.data);
         return nextPage;
     }
 
@@ -221,7 +221,7 @@ public class DirectoryHFPage extends Page implements ConstSlot, GlobalConst {
      */
     public void setNextPage(PageId pageNo) throws IOException {
         nextPage.pid = pageNo.pid;
-        Convert.setIntValue(nextPage.pid, NEXT_PAGE, data);
+        Convert.setIntValue(nextPage.pid, NEXT_PAGE, this.data);
 
 
     }

@@ -51,7 +51,7 @@ public abstract class Iterator implements Flags {
    *@exception SortException exception Sort class
    */
   public abstract void close() 
-    throws IOException; 
+    throws IOException, IndexException; 
 	 
   
   

@@ -2,7 +2,6 @@ package bitmap;
 
 
 import diskmgr.Page;
-import global.Convert;
 import global.GlobalConst;
 import global.PageId;
 import global.SystemDefs;
@@ -37,7 +36,6 @@ public class BitMapOperations implements GlobalConst {
                         int tempValue = (currentPtr + bytePos)
                                 + numBMPages * (bmPage.getAvailableMap() * 8);
                         positions.add(tempValue);
-                        //System.out.println(tempValue);
                     }
                     valToTraverse = (short) (valToTraverse >> 1);
                     bytePos++;

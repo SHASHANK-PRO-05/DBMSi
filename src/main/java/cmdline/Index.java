@@ -21,6 +21,7 @@ public class Index {
     private static ColumnarFile columnarFile;
     private static AttrType[] attrTypes;
     private static AttrType attrType;
+    private static IndexInfo indexInfo = new IndexInfo();
 
     public static void main(String argv[]) throws Exception {
         initFromArgs(argv);
@@ -52,7 +53,7 @@ public class Index {
     private static void setupIndex() throws Exception {
         long count = columnarFile.getTupleCount();
         Scan scan = new Scan(columnarFile, (short) columnId);
-        IndexInfo indexInfo = new IndexInfo();
+
         indexInfo.setColumnNumber(columnId);
         IndexType indexType = null;
         if (indexMethod.equals("BITMAP")) {
@@ -85,7 +86,8 @@ public class Index {
                 valueClass = new IntegerValue(Convert.getIntValue(0, tuple.getTupleByteArray()));
                 keyClass = new IntegerKey((Integer) valueClass.getValue());
             }
-            //bTreeFile.insert(keyClass, rid);
+            //bTreeFile.insert((IntegerKey)keyClass, rid);
+
             tuple = scan.getNext(rid);
         }
         BT.printAllLeafPages(bTreeFile.getHeaderPage());
@@ -117,16 +119,23 @@ public class Index {
             uniqueClass.add(valueClass);
             tuple = scan.getNext(rid);
         }
+        System.out.println(uniqueClass.size());
         for (Object valueClass : uniqueClass) {
             String indexFileName = columnarFileName + "." + columnId + ".";
             if (attrType.getAttrType() == 0) {
                 StringValue stringValue = (StringValue) valueClass;
                 indexFileName = indexFileName + stringValue.getValue();
                 new BitMapFile(indexFileName, columnarFile, columnId, stringValue);
+                indexInfo.setValue(stringValue);
+                indexInfo.setFileName(indexFileName);
+                columnarFile.getColumnarHeader().setIndex(indexInfo);
             } else {
                 IntegerValue integerValue = (IntegerValue) valueClass;
                 indexFileName = indexFileName + integerValue.getValue();
                 new BitMapFile(indexFileName, columnarFile, columnId, integerValue);
+                indexInfo.setValue(integerValue);
+                indexInfo.setFileName(indexFileName);
+                columnarFile.getColumnarHeader().setIndex(indexInfo);
             }
         }
 

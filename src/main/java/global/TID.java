@@ -59,7 +59,10 @@ public class TID extends java.lang.Object {
     void writeToByteArray(byte[] array, int offset) {
 
     }
-
+    
+    public int getsize() {
+    	return 8+getNumRIDs()*8;
+    }
 
     public int getPosition() {
         return position;
