@@ -1022,7 +1022,7 @@ public class Heapfile implements Filetype, GlobalConst {
         int currentlyScanningRecords = recordsScanned + dataPageInfo.getRecordCount();
         HFPage dataPage = new HFPage();
         boolean dirtyPage = false;
-        int recordsDeleted = 0;
+        int currentPageRecordsDeleted = 0;
 
         for (int i = lastPositionPurged + 1; i < lastPositionPurged + dataPageInfo.getRecordCount(); i++) {
           if (positions[i] >= recordsScanned && positions[i] < currentlyScanningRecords) {
@@ -1030,12 +1030,12 @@ public class Heapfile implements Filetype, GlobalConst {
             dataPage.deleteRecord(new RID(dataPageInfo.pageId, (positions[i] - recordsScanned) % dataPageInfo.getRecordCount()));
             lastPositionPurged += 1;
             dirtyPage = true;
-            recordsDeleted += 1;
+            currentPageRecordsDeleted += 1;
           }
         }
 
         if (dirtyPage) {
-          dataPageInfo.recct -= recordsDeleted;
+          dataPageInfo.recct -= currentPageRecordsDeleted;
           dataPageInfo.flushToTuple();
           currentDirPage.updateDirRecordCount(rid, dataPageInfo);
           dataPage.compact_slot_dir();
