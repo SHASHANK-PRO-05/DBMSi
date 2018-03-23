@@ -270,9 +270,10 @@ public class ColumnarFile implements GlobalConst {
 	
 
 	public boolean purgeAllDeletedTuples(BitMapFile bitMapFile)
-			throws IOException, DiskMgrException, GetFileEntryException, PinPageException, ConstructPageException,
-      UnpinPageException, ColumnarFilePinPageException, ColumnarFileUnpinPageException {
-		String fName = this.getColumnarHeader().getHdrFile() + ".del";
+            throws Exception {
+        int[] posList = null;
+        int posNumber = 0;
+        String fName = this.getColumnarHeader().getHdrFile() + ".del";
 		PageId headerPageId = getFileEntry(fName);
 		if (headerPageId!=null)
         {
@@ -280,12 +281,25 @@ public class ColumnarFile implements GlobalConst {
 		bitMapOperations.init(bitMapFile);
 		int nextPos = Integer.MIN_VALUE;
 		while (nextPos != -1) {
+
 			nextPos = bitMapOperations.getNextIndexedPostion();
+			posList[posNumber] = nextPos;// .add(nextPos);
+            posNumber++;
 			// System.out.println(nextPos);
 			// To Do : Use this position of the BitMap file to delete a record.
 			// deleteTupleAtPosition is on hold because of delete of HFPage.
 			// Currently, deleteTupleAtPosition is deleting the record from heap file at a particular position.
 	}
+            String fname = this.getColumnarHeader().getHdrFile();
+            PageId pageId = this.getColumnarHeader().getHeaderPageId();
+            HFPage hfPage = new HFPage();
+            pinPage(pageId, hfPage);
+            for (int i = 0; i < numColumns; i++) {
+                Heapfile hf = new Heapfile(fname + '.' + i, null);
+                hf.purgeRecords(posList);
+            }
+            unpinPage(pageId, false);
+
         }
 
 
