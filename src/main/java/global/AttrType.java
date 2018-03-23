@@ -11,10 +11,11 @@ public class AttrType {
     public static final int attrReal = 2;
     public static final int attrSymbol = 3;
     public static final int attrNull = 4;
+    public static final int attrDataPage = 5;
 
     private int attrType;
     private String attrName;
-    private short size;
+    private int size;
     private int columnId;
 
     /**
@@ -37,7 +38,6 @@ public class AttrType {
     }
 
     public AttrType() {
-
     }
 
     public String toString() {
@@ -53,6 +53,8 @@ public class AttrType {
                 return "attrSymbol";
             case attrNull:
                 return "attrNull";
+            case attrDataPage:
+                return "attrDataPage";
         }
         return ("Unexpected AttrType " + attrType);
     }
@@ -65,11 +67,16 @@ public class AttrType {
         this.attrName = attrName;
     }
 
-    public short getSize() {
+    public int getSize() {
+
+        if (attrType == attrInteger) {
+          return 4;
+        }
+
         return size;
     }
 
-    public void setSize(short size) {
+    public void setSize(int size) {
         this.size = size;
     }
 

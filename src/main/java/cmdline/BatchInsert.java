@@ -5,10 +5,11 @@ import global.AttrType;
 import global.Convert;
 import global.GlobalConst;
 import global.SystemDefs;
-
+import global.TID;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 
 public class BatchInsert implements GlobalConst {
@@ -78,6 +79,7 @@ public class BatchInsert implements GlobalConst {
             , AttrType[] attrTypes) throws Exception {
         int size = 0;
         int[] position = new int[attrTypes.length];
+        HashMap<Long, TID> tids = new HashMap<Long,TID>();
         int prev = 0;
 
         for (int i = 0; i < attrTypes.length; i++) {
@@ -106,10 +108,11 @@ public class BatchInsert implements GlobalConst {
                 }
             }
 
-            columnarFile.insertTuple(bytes);
+            tids.put(columnarFile.getTupleCount(),columnarFile.insertTuple(bytes));
 
             System.out.println(columnarFile.getTupleCount());
         }
+        columnarFile.setTids(tids);
         double endTime = System.currentTimeMillis();
         double duration = (endTime - startTime);
         System.out.println(duration / 1000);

@@ -6,10 +6,21 @@ import global.*;
 import heap.Scan;
 import heap.Tuple;
 import org.junit.Test;
+import org.junit.Assert;
 
 import java.util.Arrays;
 
 public class ColumnarFileTest {
+    String dbPath;
+    SystemDefs systemDefs;
+    AttrType[] attrTypes;
+    ColumnarFile columnarFile;
+    IndexInfo info2;
+    int[] in=new int[20];
+    int []in1=new int[20];
+    TID tid;
+    Tuple tuple;
+
     @Test
     public void creationColumnar() throws Exception {
         String dbPath = "Minibase.min";
@@ -28,7 +39,7 @@ public class ColumnarFileTest {
 
         ColumnarFile columnarFile = new ColumnarFile("Employee", 20, attrTypes);
         SystemDefs.JavabaseBM.flushAllPages();
-        columnarFile = new ColumnarFile("Employee");
+//        columnarFile = new ColumnarFile("Employee");
         SystemDefs.JavabaseBM.flushAllPages();
         // SystemDefs.JavabaseBM.pinPage(columnarFile.getColumnarHeader().getHeaderPageId()
         // , columnarFile.getColumnarHeader(), false);
@@ -97,6 +108,56 @@ public class ColumnarFileTest {
         // SystemDefs.JavabaseBM.flushAllPages();
         System.out.println(SystemDefs.JavabaseDB.getFileEntry(columnarFile.getColumnarHeader().getHdrFile()));
         SystemDefs.JavabaseBM.flushAllPages();
+
+    }
+
+    @Test
+    public void updateTupleTest() throws Exception{
+
+        dbPath = "Minibase.min";
+        systemDefs = new SystemDefs(dbPath, 3000, 400, "LRU");
+        attrTypes = new AttrType[20];
+
+
+        for (int i = 0; i < 20; i++) {
+            attrTypes[i] = new AttrType();
+            attrTypes[i].setColumnId(i);
+            attrTypes[i].setSize(4);
+            attrTypes[i].setAttrType(0);
+            attrTypes[i].setAttrName("Column" + i);
+            in[i] = (int) (Math.random() * 40);
+            if(i==0){
+                in1[i] = 50;
+            }
+            else {
+                in1[i] = 30;
+            }
+
+        }
+
+        columnarFile = new ColumnarFile("Employee", 20, attrTypes);
+        SystemDefs.JavabaseBM.flushAllPages();
+        columnarFile = new ColumnarFile("Employee");
+        SystemDefs.JavabaseBM.flushAllPages();
+
+        tid=columnarFile.insertTuple(Convert.intAtobyteA(in));
+
+        tuple=new Tuple(Convert.intAtobyteA(in1),0,Convert.intAtobyteA(in1).length);
+        if(columnarFile.updateTuple(tid,tuple)){
+            for(int i=3;i<tuple.getTupleByteArray().length;i=i+4)
+                Assert.assertEquals(30, tuple.getTupleByteArray()[7]);
+            System.out.println("Update Tuple Test Successful");}
+        else
+            System.out.println("Update Tuple Test Failed");
+
+        if(columnarFile.updateColumnOfTuple(tid,tuple,0)){
+            for(int i=3;i<tuple.getTupleByteArray().length;i=i+4)
+                Assert.assertEquals(50, tuple.getTupleByteArray()[3]);
+            System.out.println("Update Tuple Test Successful");}
+        else
+            System.out.println("Update Tuple Test Failed");
+
+
 
     }
 }

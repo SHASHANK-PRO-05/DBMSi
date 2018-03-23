@@ -1,35 +1,49 @@
 package heap;
 
 
-/** File DataPageInfo.java */
+/**
+ * File DataPageInfo.java
+ */
 
 
-import global.*;
-import java.io.*;
+import global.Convert;
+import global.GlobalConst;
+import global.PageId;
 
-/** DataPageInfo class : the type of records stored on a directory page.
-*
-* April 9, 1998
-*/
+import java.io.IOException;
 
-class DataPageInfo implements GlobalConst{
+/**
+ * DataPageInfo class : the type of records stored on a directory page.
+ * <p>
+ * April 9, 1998
+ */
 
+class DataPageInfo implements GlobalConst {
 
-  /** HFPage returns int for avail space, so we use int here */
-  int    availspace; 
-  
-  /** for efficient implementation of getRecCnt() */
-  int    recct;    
-  
-  /** obvious: id of this particular data page (a HFPage) */
-  PageId pageId = new PageId();   
-    
-  /** auxiliary fields of DataPageInfo */
+  /**
+   * auxiliary fields of DataPageInfo
+   */
 
   public static final int size = 12;// size of DataPageInfo object in bytes
+  private static final short P_AVAILABLE_SPACE = 0;
+  private static final short P_RECORD_COUNT = 4;
+  private static final short P_PAGE_ID = 8;
 
-  private byte [] data;  // a data buffer
-  
+  /**
+   * HFPage returns int for avail space, so we use int here
+   */
+  int availspace;
+  /**
+   * for efficient implementation of getRecCnt()
+   */
+  int recct;
+  /**
+   * obvious: id of this particular data page (a HFPage)
+   */
+  PageId pageId = new PageId();
+
+  private byte[] data;  // a data buffer
+
   private int offset;
 
 
@@ -41,96 +55,94 @@ class DataPageInfo implements GlobalConst{
  */
 
 
-  /** Default constructor
+  /**
+   * Default constructor
    */
-  public DataPageInfo()
-  {  
+  public DataPageInfo() {
     data = new byte[12]; // size of datapageinfo
     int availspace = 0;
-    recct =0;
+    recct = 0;
     pageId.pid = INVALID_PAGE;
     offset = 0;
   }
-  
-  /** Constructor 
-   * @param array  a byte array
+
+  /**
+   * Constructor
+   *
+   * @param array a byte array
    */
-  public DataPageInfo(byte[] array)
-  {
+  public DataPageInfo(byte[] array) throws IOException {
     data = array;
     offset = 0;
+
+    readPropertiesFromData();
   }
 
-      
-   public byte [] returnByteArray()
-   {
-     return data;
-   }
-      
-      
-  /** constructor: translate a tuple to a DataPageInfo object
-   *  it will make a copy of the data in the tuple
+
+  /**
+   * constructor: translate a tuple to a DataPageInfo object
+   * it will make a copy of the data in the tuple
+   *
    * @param _atuple: the input tuple
    */
   public DataPageInfo(Tuple _atuple)
-       throws InvalidTupleSizeException, IOException
-  {   
-     // need check _atuple size == this.size ?otherwise, throw new exception
-    if (_atuple.getLength()!=12){
+      throws InvalidTupleSizeException, IOException {
+    // need check _atuple size == this.size ?otherwise, throw new exception
+    if (_atuple.getLength() != 12) {
       throw new InvalidTupleSizeException(null, "HEAPFILE: TUPLE SIZE ERROR");
-    }
-
-    else{
+    } else {
       data = _atuple.returnTupleByteArray();
       offset = _atuple.getOffset();
-      
-      availspace = Convert.getIntValue(offset, data);
-      recct = Convert.getIntValue(offset+4, data);
-      pageId = new PageId();
-      pageId.pid = Convert.getIntValue(offset+8, data);
-      
+
+      readPropertiesFromData();
     }
   }
-  
-  
-  /** convert this class objcet to a tuple(like cast a DataPageInfo to Tuple)
-   *  
-   *
+
+  public byte[] returnByteArray() {
+    return data;
+  }
+
+  public int getRecordCount() throws IOException {
+    return Convert.getIntValue(P_RECORD_COUNT, data);
+  }
+
+
+  /**
+   * convert this class objcet to a tuple(like cast a DataPageInfo to Tuple)
    */
   public Tuple convertToTuple()
-       throws IOException
-  {
-
-    // 1) write availspace, recct, pageId into data []
-    Convert.setIntValue(availspace, offset, data);
-    Convert.setIntValue(recct, offset+4, data);
-    Convert.setIntValue(pageId.pid, offset+8, data);
-
+      throws IOException {
+    flushPropertiesToBuffer();
 
     // 2) creat a Tuple object using this array
-    Tuple atuple = new Tuple(data, offset, size); 
- 
+    Tuple atuple = new Tuple(data, offset, size);
+
     // 3) return tuple object
     return atuple;
 
   }
-  
-    
-  /** write this object's useful fields(availspace, recct, pageId) 
-   *  to the data[](may be in buffer pool)
-   *  
-   */
-  public void flushToTuple() throws IOException
-  {
-     // write availspace, recct, pageId into "data[]"
-    Convert.setIntValue(availspace, offset, data);
-    Convert.setIntValue(recct, offset+4, data);
-    Convert.setIntValue(pageId.pid, offset+8, data);
 
-    // here we assume data[] already points to buffer pool
-  
+
+  /**
+   * write this object's useful fields(availspace, recct, pageId)
+   * to the data[](may be in buffer pool)
+   */
+  public void flushToTuple() throws IOException {
+    flushPropertiesToBuffer();
   }
-  
+
+  private void flushPropertiesToBuffer() throws IOException {
+    // write availspace, recct, pageId into "data[]"
+    Convert.setIntValue(availspace, offset + P_AVAILABLE_SPACE, data);
+    Convert.setIntValue(recct, offset + P_RECORD_COUNT, data);
+    Convert.setIntValue(pageId.pid, offset + P_PAGE_ID, data);
+  }
+
+  private void readPropertiesFromData() throws IOException {
+    availspace = Convert.getIntValue(offset + P_AVAILABLE_SPACE, data);
+    recct = Convert.getIntValue(offset + P_RECORD_COUNT, data);
+    pageId.pid = Convert.getIntValue(offset + P_PAGE_ID, data);
+  }
 }
 
 
