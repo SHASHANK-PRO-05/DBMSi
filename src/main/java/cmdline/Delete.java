@@ -3,6 +3,7 @@ package cmdline;
 import bitmap.BitMapFile;
 import columnar.ByteToTuple;
 import columnar.ColumnarFile;
+import columnar.TupleScan;
 import global.*;
 import heap.Tuple;
 import iterator.*;
@@ -23,91 +24,56 @@ public class Delete {
 
   public static void main(String argv[]) throws Exception {
     initFromArgs(argv);
+
+    if (indexType.toString().equals("ColumnScan")) {
+      deleteUsingColumnarFileScan();
+    }
   }
 
   private static void initFromArgs(String argv[]) throws Exception {
 
-    int lengthOfArgv = argv.length;
+    if (argv.length != 8) {
+      throw new Exception("There should be 8 arguments to this program");
+    }
+
     columnDBName = argv[0];
     columnarFileName = argv[1];
-    indexType = getIndexType(argv[lengthOfArgv - 2]);
-    numBuf = Integer.parseInt(argv[lengthOfArgv - 3]);
-    value = argv[lengthOfArgv - 4];
-    operator = argv[lengthOfArgv - 5];
-    conditionalColumn = argv[lengthOfArgv - 6];
-    purgeDB = Boolean.parseBoolean(argv[lengthOfArgv - 1]);
+    conditionalColumn = argv[2];
+    operator = argv[3];
+    value = argv[4];
+    numBuf = Integer.parseInt(argv[5]);
+    indexType = getIndexType(argv[6]);
+    purgeDB = Boolean.parseBoolean(argv[7]);
 
-    SystemDefs systemDefs = new SystemDefs(columnDBName, 0, 4000, "LRU");
-
+    SystemDefs.staticInit(columnDBName, 0, numBuf, "LRU");
 
     columnarFile = new ColumnarFile(columnarFileName);
 
-    /*attrTypes = columnarFile.getColumnarHeader().getColumns();
-    int columnCount = attrTypes.length;
-    for (int i = 0; i < columnCount; i++) {
-        if (attrTypes[i].getAttrName().equals(columnName)) {
-            attrType = attrTypes[i];
-            columnId = i;
-            break;
-        }
-    }*/
-    for (int i = 0; i < columnarFile.getNumColumns(); i++) {
-      String fileNum = Integer.toString(i);
-      String columnsFileName = columnarFile.getColumnarHeader() + "." + fileNum;
-    }
-
-    setUpFileScan();
+    SystemDefs.JavabaseBM.flushAllPages();
   }
 
   /*
    * Function to get the values of the arguments and then call filescan
    */
-  private static void setUpFileScan()
+  private static void deleteUsingColumnarFileScan()
       throws Exception {
-
-    AttrType[] in = new AttrType[columnarFile.getNumColumns() + 1];
-    AttrType[] proj = new AttrType[columnarFile.getNumColumns()];
 
     short[] strSizes = new short[2];
     int conditionalColumnId = -1;
-    FldSpec[] projList = new FldSpec[columnarFile.getNumColumns()];
     AttrType condAttr = new AttrType();
-    SystemDefs systemDefs = new SystemDefs(columnDBName, 0, numBuf, "LRU");
-    ColumnarFile columnarFile = new ColumnarFile(columnarFileName);
+
     attrTypes = columnarFile.getColumnarHeader().getColumns();
-    int columncount = attrTypes.length;
-    int outColumnsSize = columnarFile.getNumColumns();
-    int counterStr = 0, counterIn = 0, counterFld = 0;
+    int[] columnsToScan = new int[attrTypes.length];
 
-    for (int i = 0; i < columncount; i++) {
-      for (int j = 0; j < outColumnsSize; j++) {
-        if (attrTypes[i].getAttrName().equals(columnarFile.getHeapFileNames()[j].getType().getAttrName())) {
-          in[counterIn] = attrTypes[i];
-          proj[counterFld] = attrTypes[i];
-          projList[counterFld] = new FldSpec(new RelSpec(0), attrTypes[i].getColumnId());
-          counterIn++;
-          counterFld++;
-          if (attrTypes[i].getAttrType() == 0) {
-            //strSizes[counterStr] = attrTypes[i].getSize();
-            counterStr++;
-          }
+    int columnCount = attrTypes.length;
 
-          break;
-        } else if (i == columncount - 1) {
-          //throw exception record not found.
-
-
-        }
-      }
-
+    for (int i = 0; i < columnCount; i++) {
+      columnsToScan[i] = attrTypes[i].getColumnId();
       if (attrTypes[i].getAttrName().equals(conditionalColumn)) {
         condAttr = attrTypes[i];
-        in[counterIn] = attrTypes[i];
-        counterIn++;
         conditionalColumnId = attrTypes[i].getColumnId();
       }
     }
-
 
     CondExpr[] condition = new CondExpr[2];
     condition[1] = null;
@@ -124,11 +90,19 @@ public class Delete {
 
     CondExprEval condExprEval = new CondExprEval(attrTypes, condition);
 
-    ColumnarFileScan columnarScan = new ColumnarFileScan(columnarFileName, in, strSizes, counterIn, counterFld, projList, condition);
-    Tuple tuple = columnarScan.getNext();
-    ByteToTuple byteToTuple = new ByteToTuple(proj);
+    TupleScan tupleScan = new TupleScan(columnarFile, columnsToScan);
+    RID[] rids = new RID[attrTypes.length];
 
-    for (AttrType aProject : proj) {
+    for (int i = 0; i < attrTypes.length; i++){
+      rids[i] = new RID();
+    }
+
+    TID tid = new TID(attrTypes.length, 0, rids);
+
+    Tuple tuple = tupleScan.getNext(tid);
+    ByteToTuple byteToTuple = new ByteToTuple(attrTypes);
+
+    for (AttrType aProject : attrTypes) {
       System.out.print(aProject.getAttrName() + "\t");
     }
 
@@ -139,7 +113,7 @@ public class Delete {
     while (tuple != null) {
       ArrayList<byte[]> tuples = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
       System.out.println("\n");
-      tuple = columnarScan.getNext();
+      tuple = tupleScan.getNext(tid);
 
       ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
       if (condExprEval.isValid(arrayList)) {
@@ -149,10 +123,14 @@ public class Delete {
       position++;
     }
 
+    tupleScan.closeTupleScan();
+
     if (purgeDB) {
       BitMapFile bitMapFile = new BitMapFile(columnarFile.getColumnarHeader().getHdrFile() + ".del");
       columnarFile.purgeAllDeletedTuples(bitMapFile);
     }
+
+    SystemDefs.JavabaseBM.flushAllPages();
   }
 
   /*
