@@ -3,13 +3,13 @@ package iterator;
 
 import heap.HFBufMgrException;
 import heap.HFPage;
-import heap.Heapfile;
 import heap.InvalidSlotNumberException;
-import heap.Scan;
 import heap.Tuple;
-
-
 import btree.*;
+import bufmgr.HashEntryNotFoundException;
+import bufmgr.InvalidFrameNumberException;
+import bufmgr.PageUnpinnedException;
+import bufmgr.ReplacerException;
 import columnar.ByteToTuple;
 import columnar.ColumnarFile;
 import columnar.IndexInfo;
@@ -21,7 +21,6 @@ import global.PageId;
 import global.RID;
 import global.SystemDefs;
 import global.TID;
-import heap.*;
 
 import java.io.IOException;
 
@@ -98,7 +97,6 @@ public class BtreeScan extends Iterator {
 					Convert.setStringValue(((StringKey) nextentry.key).getKey(), 0, byteArray);
 				tuple = new Tuple(byteArray, 0, size);
 				return tuple;
-
 			}
 			Tuple[] tuples = new Tuple[projList.length];
 			tid = ((LeafData) nextentry.data).getData();
@@ -115,14 +113,22 @@ public class BtreeScan extends Iterator {
 				
 			}
 			return byteToTuple.mergeTuples(tuples, size);
+			
 
 		}
 		return null;
 	}
 
 	@Override
-	public void close() throws IOException, iterator.IndexException {
+	public void close() 
+			throws IOException, 
+			iterator.IndexException, 
+			PageUnpinnedException, 
+			InvalidFrameNumberException, 
+			HashEntryNotFoundException, 
+			ReplacerException {
 		// TODO Auto-generated method stub
+		((BTreeFile)indFile).close();
 		if (!closeFlag) {
 			if (indScan instanceof BTFileScan) {
 				try {

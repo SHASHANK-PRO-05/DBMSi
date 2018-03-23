@@ -48,10 +48,14 @@ public abstract class Iterator implements Flags {
    *@exception IOException I/O errors
    *@exception JoinsException some join exception
    *@exception IndexException exception from Index class
+ * @throws ReplacerException 
+ * @throws HashEntryNotFoundException 
+ * @throws InvalidFrameNumberException 
+ * @throws PageUnpinnedException 
    *@exception SortException exception Sort class
    */
   public abstract void close() 
-    throws IOException, IndexException; 
+    throws IOException, IndexException, PageUnpinnedException, InvalidFrameNumberException, HashEntryNotFoundException, ReplacerException; 
 	 
   
   
