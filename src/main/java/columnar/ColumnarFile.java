@@ -247,7 +247,7 @@ public class ColumnarFile implements GlobalConst {
 			return true;
 	}
 
-	boolean markTupleDeleted(TID tid) throws Exception {
+	public boolean markTupleDeleted(TID tid) throws Exception {
 		String fName = this.getColumnarHeader().getHdrFile() + ".del";
 		PageId headerPageId = getFileEntry(fName);
         long totalNumRecords = this.getTupleCount();
