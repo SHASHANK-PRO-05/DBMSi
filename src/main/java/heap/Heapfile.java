@@ -281,44 +281,46 @@ public class Heapfile implements Filetype, GlobalConst {
 
   } // end of _findDatapage
 
-    /** Initialize.  A null name produces a temporary heapfile which will be
-     * deleted by the destructor.  If the name already denotes a file, the
-     * file is opened; otherwise, a new empty file is created.
-     *
-     * @exception HFException heapfile exception
-     * @exception HFBufMgrException exception thrown from bufmgr layer
-     * @exception HFDiskMgrException exception thrown from diskmgr layer
-     * @exception IOException I/O errors
-     */
-    public Heapfile(String name)
-            throws HFException,
-            HFBufMgrException,
-            HFDiskMgrException,
-            IOException
+  /**
+   * Initialize.  A null name produces a temporary heapfile which will be
+   * deleted by the destructor.  If the name already denotes a file, the
+   * file is opened; otherwise, a new empty file is created.
+   *
+   * @throws HFException        heapfile exception
+   * @throws HFBufMgrException  exception thrown from bufmgr layer
+   * @throws HFDiskMgrException exception thrown from diskmgr layer
+   * @throws IOException        I/O errors
+   */
+  public Heapfile(String name)
+      throws HFException,
+      HFBufMgrException,
+      HFDiskMgrException,
+      IOException
 
-    {
-        // Give us a prayer of destructing cleanly if construction fails.
-        _file_deleted = true;
-        _fileName = null;
+  {
+    // Give us a prayer of destructing cleanly if construction fails.
+    _file_deleted = true;
+    _fileName = null;
 
-        if (name == null) {
-            // If the name is NULL, allocate a temporary name
-            // and no logging is required.
-            _fileName = "tempHeapFile";
-            String useId = new String("user.name");
-            String userAccName;
-            userAccName = System.getProperty(useId);
-            _fileName = _fileName + userAccName;
+    if (name == null) {
+      // If the name is NULL, allocate a temporary name
+      // and no logging is required.
+      _fileName = "tempHeapFile";
+      String useId = new String("user.name");
+      String userAccName;
+      userAccName = System.getProperty(useId);
+      _fileName = _fileName + userAccName;
 
-            String filenum = Integer.toString(tempfilecount);
-            _fileName = _fileName + filenum;
-            _ftype = TEMP;
-            tempfilecount++;
+      String filenum = Integer.toString(tempfilecount);
+      _fileName = _fileName + filenum;
+      _ftype = TEMP;
+      tempfilecount++;
 
-        } else {
-            _fileName = name;
-            _ftype = ORDINARY;
-        }
+    } else {
+      _fileName = name;
+      _ftype = ORDINARY;
+    }
+  }
 
   /**
    * Return number of records in file.
@@ -1081,45 +1083,46 @@ public class Heapfile implements Filetype, GlobalConst {
       }
     }
   }
-    public Tuple getRecordAtPosition(int position) throws InvalidSlotNumberException,
-            InvalidTupleSizeException,
-            HFDiskMgrException,
-            HFBufMgrException,
-            IOException {
-        Tuple tuple;
 
-        PageId currentPageId = new PageId(_firstDirPageId.pid);
-        PageId nextDirPageId = new PageId(0);
+  public Tuple getRecordAtPosition(int position) throws InvalidSlotNumberException,
+      InvalidTupleSizeException,
+      HFDiskMgrException,
+      HFBufMgrException,
+      IOException {
+    Tuple tuple;
 
-        HFPage currentDirPage = new HFPage();
-        Page pageinbuffer = new Page();
-        DataPageInfo dataPageInfo = null;
-        Boolean found = false;
-        while (currentPageId.pid != INVALID_PAGE && !found) {
-            pinPage(currentPageId, currentDirPage, false);
-            RID rid = currentDirPage.firstRecord();
-            while (rid != null && !found) {
-                dataPageInfo = new DataPageInfo(currentDirPage.getRecord(rid));
-                if (dataPageInfo.recct > position) {
-                    found = true;
-                    break;
-                } else {
-                    position = position - dataPageInfo.recct;
-                }
-                rid = currentDirPage.nextRecord(rid);
-            }
-            nextDirPageId = currentDirPage.getNextPage();
-            unpinPage(currentPageId, false);
-            currentPageId.pid = nextDirPageId.pid;
+    PageId currentPageId = new PageId(_firstDirPageId.pid);
+    PageId nextDirPageId = new PageId(0);
+
+    HFPage currentDirPage = new HFPage();
+    Page pageinbuffer = new Page();
+    DataPageInfo dataPageInfo = null;
+    Boolean found = false;
+    while (currentPageId.pid != INVALID_PAGE && !found) {
+      pinPage(currentPageId, currentDirPage, false);
+      RID rid = currentDirPage.firstRecord();
+      while (rid != null && !found) {
+        dataPageInfo = new DataPageInfo(currentDirPage.getRecord(rid));
+        if (dataPageInfo.recct > position) {
+          found = true;
+          break;
+        } else {
+          position = position - dataPageInfo.recct;
         }
-        PageId pageId = new PageId(dataPageInfo.pageId.pid);
-        HFPage hfPage = new HFPage();
-        RID rid = new RID(pageId, position);
-        pinPage(pageId, hfPage, false);
-        byte[] byteData = hfPage.getDataAtSlot(rid);
-        tuple = new Tuple(byteData, 0, byteData.length);
-        unpinPage(pageId, false);
-        return tuple;
+        rid = currentDirPage.nextRecord(rid);
+      }
+      nextDirPageId = currentDirPage.getNextPage();
+      unpinPage(currentPageId, false);
+      currentPageId.pid = nextDirPageId.pid;
     }
+    PageId pageId = new PageId(dataPageInfo.pageId.pid);
+    HFPage hfPage = new HFPage();
+    RID rid = new RID(pageId, position);
+    pinPage(pageId, hfPage, false);
+    byte[] byteData = hfPage.getDataAtSlot(rid);
+    tuple = new Tuple(byteData, 0, byteData.length);
+    unpinPage(pageId, false);
+    return tuple;
+  }
 
 }// End of HeapFile

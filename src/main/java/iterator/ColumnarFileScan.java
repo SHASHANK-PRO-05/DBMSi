@@ -12,7 +12,7 @@ import heap.Tuple;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class ColumnarFileScan {
+public class ColumnarFileScan extends Iterator {
     private ColumnarFile columnarFile;
     private CondExpr[] condExprs;
     private FldSpec[] projList;
@@ -91,7 +91,7 @@ public class ColumnarFileScan {
         return projectedTuple;
     }
 
-
+    @Override
     public void close() throws IOException {
         tupleScan.closeTupleScan();
     }
