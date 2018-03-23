@@ -27,7 +27,7 @@ public class IteratorsTest {
         CondExpr[] condExprs = new CondExpr[2];
         condExprs[1] = null;
         condExprs[0] = new CondExpr();
-        condExprs[0].op = new AttrOperator(AttrOperator.aopEQ);
+        condExprs[0].op = new AttrOperator(AttrOperator.aopLE);
         condExprs[0].type1 = new AttrType(AttrType.attrSymbol);
         condExprs[0].type2 = new AttrType(AttrType.attrString);
         condExprs[0].operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer), 2);
@@ -38,7 +38,7 @@ public class IteratorsTest {
         RelSpec relSpec = new RelSpec(RelSpec.outer);
         projectList[0] = new FldSpec(relSpec, 0);
         projectList[1] = new FldSpec(relSpec, 1);
-    
+
 
         AttrType[] attrTypes = new AttrType[3];
         AttrType[] attrTypes1 = columnarFile.getColumnarHeader().getColumns();
@@ -56,10 +56,11 @@ public class IteratorsTest {
                 System.out.print(s + " ");
                 i = i + 12;
             }
-
             System.out.println();
             tuple = columnarFileScan.getNext();
         }
+        columnarFileScan.close();
+        SystemDefs.JavabaseBM.flushAllPages();
     }
 
     @After

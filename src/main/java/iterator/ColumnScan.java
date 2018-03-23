@@ -14,9 +14,9 @@ import heap.InvalidTypeException;
 import heap.Scan;
 import heap.Tuple;
 
-public class ColumnScan extends Iterator{
-	
-	private ColumnarFile columnarFile;
+public class ColumnScan extends Iterator {
+
+    private ColumnarFile columnarFile;
     private CondExpr[] condExprs;
     private FldSpec[] projList;
     private AttrType[] attrTypes;
@@ -61,8 +61,8 @@ public class ColumnScan extends Iterator{
             for (int i = 0; i < attrLength; i++) {
                 scan[i] = new Scan(columnarFile, (short) columnNosArray[i]);
             }
-            
-            
+
+
         } catch (Exception e) {
             throw new ColumnarFileScanException(e, "Not able to initiate scan");
         }
@@ -73,67 +73,55 @@ public class ColumnScan extends Iterator{
     }
 
     public Tuple getNext() throws Exception {
-    	
-    	/*scan will give me one column at a time 
-    	 * I will have a array of tuple running scan one for all the given columns
-    	 * 
-    	 * 
-    	 * 
-    	 */
-    	Tuple projectedTuple = null;
-    	RID rid = new RID();
-    	Tuple[] tuples = new Tuple[attrLength];
-    	ArrayList<byte[]> arrayList = new ArrayList<byte[]>();
-    	for (int i = 0;i < attrLength; i++) {
-    		tuples[i] = scan[i].getNext(rid);
-    		arrayList.add(tuples[i].getTupleByteArray());
-    	}
-    	Tuple  projectTuples[] = new Tuple[projList.length] ;
-    	int sizeOfProjectTuple = 0;
-    	while (arrayList != null) {
+
+        /*scan will give me one column at a time
+         * I will have a array of tuple running scan one for all the given columns
+         *
+         *
+         *
+         */
+        Tuple projectedTuple = null;
+        RID rid = new RID();
+        Tuple[] tuples = new Tuple[attrLength];
+        ArrayList<byte[]> arrayList = new ArrayList<byte[]>();
+        for (int i = 0; i < attrLength; i++) {
+            tuples[i] = scan[i].getNext(rid);
+            arrayList.add(tuples[i].getTupleByteArray());
+        }
+        Tuple projectTuples[] = new Tuple[projList.length];
+        int sizeOfProjectTuple = 0;
+        while (arrayList != null) {
             sizeOfProjectTuple = 0;
-	    	if (condExprEval.isValid(arrayList)) {
-	        	for(int i =0; i<projList.length;i++) {
+            if (condExprEval.isValid(arrayList)) {
+                for (int i = 0; i < projList.length; i++) {
                     projectTuples[i] = new Tuple(arrayList.get(i), 0, arrayList.get(i).length);
                     sizeOfProjectTuple += arrayList.get(i).length;
                 }
-	        	projectedTuple = byteToTuple.mergeTuples(projectTuples, sizeOfProjectTuple);
-	            break;
-	        }
+                projectedTuple = byteToTuple.mergeTuples(projectTuples, sizeOfProjectTuple);
+                break;
+            }
             arrayList.clear();
-	    	for (int i = 0;i < attrLength; i++) {
-	    		tuples[i] = scan[i].getNext(rid);
-	    		if(tuples[i]!= null)
-	    		    arrayList.add(tuples[i].getTupleByteArray());
-	    		else
-	    		    return null;
-	    	}
-    	
-    	}
-    	return projectedTuple;
+            for (int i = 0; i < attrLength; i++) {
+                tuples[i] = scan[i].getNext(rid);
+                if (tuples[i] != null)
+                    arrayList.add(tuples[i].getTupleByteArray());
+                else
+                    return null;
+            }
+
+        }
+        return projectedTuple;
 
     }
 
-	
 
-	@Override
-	public void close() throws IOException {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public void close() throws IOException {
+        for (Scan s : scan) {
+		    s.closeScan();
+        }
 
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
- 
-	
-	
-	
-	
+    }
+
 
 }

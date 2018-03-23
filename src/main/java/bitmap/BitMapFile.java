@@ -1,8 +1,5 @@
 package bitmap;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 import bufmgr.HashEntryNotFoundException;
 import bufmgr.InvalidFrameNumberException;
 import bufmgr.PageUnpinnedException;
@@ -11,6 +8,8 @@ import columnar.ColumnarFile;
 import diskmgr.Page;
 import global.*;
 import heap.*;
+
+import java.io.IOException;
 
 public class BitMapFile implements GlobalConst {
 
@@ -276,6 +275,10 @@ public class BitMapFile implements GlobalConst {
         PageId pageId = new PageId();
         int position = 0;
         allocatePage(pageId, 1);
+
+        bitMapHeaderPage.setNextPage(pageId);
+        unpinPage(headerPageId, true);
+
         pinPage(pageId, bmPage);
         bmPage.init(pageId, bmPage);
 
@@ -300,6 +303,7 @@ public class BitMapFile implements GlobalConst {
             tuple = scan.getNext(rid);
             position++;
         }
+        bmPage.setNextPage(new PageId(-1));
         unpinPage(pageId, true);
         scan.closeScan();
     }

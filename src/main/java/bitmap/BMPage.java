@@ -267,10 +267,10 @@ public class BMPage extends Page implements GlobalConst {
             short tempAns = (short) (1 << positionToUse);
             data[setLocation + DPFIXED] = (byte) (data[setLocation + DPFIXED] | tempAns);
         } else {
-            System.out.println(data[setLocation + DPFIXED]);
+            //System.out.println(data[setLocation + DPFIXED]);
             short tempAns = (short) (~(1 << positionToUse));
             data[setLocation + DPFIXED] = (byte) (data[setLocation + DPFIXED] & tempAns);
-            System.out.println(data[setLocation + DPFIXED]);
+            //System.out.println(data[setLocation + DPFIXED]);
         }
     }
 

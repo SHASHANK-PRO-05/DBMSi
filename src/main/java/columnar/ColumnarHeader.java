@@ -10,12 +10,15 @@
 
 package columnar;
 
-import java.io.IOException;
-
 import diskmgr.FileNameTooLongException;
 import diskmgr.Page;
 import global.*;
-import heap.*;
+import heap.HFBufMgrException;
+import heap.HFDiskMgrException;
+import heap.InvalidSlotNumberException;
+
+import java.io.IOException;
+import java.util.ArrayList;
 
 
 public class ColumnarHeader extends DirectoryHFPage {
@@ -126,6 +129,7 @@ public class ColumnarHeader extends DirectoryHFPage {
                     pinPage(pageId, hfPage);
                     hfPage.setNextPage(nextPageId);
                     page.init(nextPageId, page);
+                    page.setNextPage(new PageId(-1));
                     page.setPrevPage(pageId);
                     rid = page.insertRecord(byteArray);
                     unpinPage(pageId, true);
@@ -151,34 +155,41 @@ public class ColumnarHeader extends DirectoryHFPage {
         Convert.setShortValue((short) info.getColumnNumber(), INDEXMATA_COLUMNID, byteInfo);
         Convert.setShortValue((short) info.getIndextype().indexType, INDEXMATA_INDEXTYPE, byteInfo);
         Convert.setStringValue(info.getFileName(), INDEXMATA_FILENAME, byteInfo);
-        if (info.getValue().getValueType() == 1) {
+        if (info.getValue() instanceof IntegerValue) {
             Convert.setIntValue((Integer) info.getValue().getValue(), INDEXMATA_VALUE, byteInfo);
-        } else if (info.getValue().getValueType() == 2) {
+        } else if (info.getValue() instanceof StringValue) {
             Convert.setStringValue((String) info.getValue().getValue(), INDEXMATA_VALUE, byteInfo);
         }
+
+        pinPage(this.headerPageId, this);
         RID rid = this.insertRecord(byteInfo);
         if (rid == null) {
-            PageId pageId = new PageId(this.getCurPage().pid);
+            PageId pageId = new PageId();
             PageId nextPageId = new PageId(this.getNextPage().pid);
-            ColumnarHeader hfPage = new ColumnarHeader();
+            //unpinPage(this.headerPageId, false);
+            ColumnarHeader columnarHeader = new ColumnarHeader();
             while (nextPageId.pid != INVALID_PAGE && rid == null) {
                 pageId.pid = nextPageId.pid;
-                pinPage(pageId, hfPage);
-
-                rid = hfPage.insertRecord(byteInfo);
-                nextPageId.pid = hfPage.getNextPage().pid;
-                if (rid != null)
+                pinPage(pageId, columnarHeader);
+                rid = columnarHeader.insertRecord(byteInfo);
+                nextPageId.pid = columnarHeader.getNextPage().pid;
+                if (columnarHeader.getNextPage().pid == 0) {
+                    System.out.println("here");
+                }
+                if (rid != null) {
                     unpinPage(pageId, true);
-                else
+                } else {
                     unpinPage(pageId, false);
+                }
             }
             if (rid == null) {
                 ColumnarHeader page = new ColumnarHeader();
                 nextPageId = newPage(page);
-                pinPage(pageId, hfPage);
-                hfPage.setNextPage(nextPageId);
-                page.init(nextPageId, new Page());
+                pinPage(pageId, columnarHeader);
+                columnarHeader.setNextPage(nextPageId);
+                page.init(nextPageId, page);
                 page.setPrevPage(pageId);
+                page.setNextPage(new PageId(-1));
                 rid = page.insertRecord(byteInfo);
                 unpinPage(pageId, true);
                 unpinPage(nextPageId, true);
@@ -187,7 +198,9 @@ public class ColumnarHeader extends DirectoryHFPage {
                 }
             }
         }
-        setCounter(++counter);
+
+        this.setCounter(this.getCounter() + 1);
+        unpinPage(this.headerPageId, true);
         return rid;
     }
 
@@ -198,9 +211,9 @@ public class ColumnarHeader extends DirectoryHFPage {
      */
     private int getlengthforIndexInfo(IndexInfo info) {
         int length = 0;
-        if (info.getValue().getValueType() == 1) {
+        if (info.getValue() instanceof IntegerValue) {
             length += 4;
-        } else if (info.getValue().getValueType() == 2) {
+        } else if (info.getValue() instanceof StringValue) {
             length += 50;
             //to-do change the size
         } else if (info.getValue().getValueType() == -1) {
@@ -241,7 +254,7 @@ public class ColumnarHeader extends DirectoryHFPage {
                     if (rid == null) {
                         nextPageId = page.getNextPage();
                         unpinPage(pageId, false);
-                        pageId = nextPageId;
+                        pageId.pid = nextPageId.pid;
                         if (pageId.pid != INVALID_PAGE)
                             pinPage(pageId, page);
                     }
@@ -310,7 +323,7 @@ public class ColumnarHeader extends DirectoryHFPage {
                     if (rid == null) {
                         nextPageId = page.getNextPage();
                         unpinPage(pageId, false);
-                        pageId = nextPageId;
+                        pageId.pid = nextPageId.pid;
                         if (pageId.pid != INVALID_PAGE)
                             pinPage(pageId, page);
                     }
@@ -328,6 +341,51 @@ public class ColumnarHeader extends DirectoryHFPage {
         }
         unpinPage(pageId, false);
         return null;
+    }
+
+    public ArrayList<IndexInfo> getPartiuclarTypeIndex(int columnNum, IndexType indexType)
+            throws IOException,
+            HFBufMgrException,
+            InvalidSlotNumberException {
+        PageId pageId = new PageId(this.headerPageId.pid);
+        ColumnarHeader page = new ColumnarHeader();
+        ArrayList<IndexInfo> indexInfos = new ArrayList<IndexInfo>();
+        PageId nextPageId;
+        RID prevRID = null;
+        IndexInfo info;
+        pinPage(pageId, page);
+        int indexCount = page.getCounter();
+        int countRecords = page.getColumnCount();
+        for (int i = 0; i < indexCount + countRecords; i++) {
+            RID rid = null;
+
+            while (rid == null && pageId.pid != INVALID_PAGE) {
+                if (prevRID == null) {
+                    rid = page.firstRecord();
+                } else {
+                    rid = page.nextRecord(prevRID);
+                    if (rid == null) {
+                        nextPageId = page.getNextPage();
+                        unpinPage(pageId, false);
+                        pageId.pid = nextPageId.pid;
+                        if (pageId.pid != INVALID_PAGE)
+                            pinPage(pageId, page);
+                    }
+                }
+                prevRID = rid;
+            }
+            // i> countRecords then the column indexes will start
+            if (i >= countRecords) {
+                info = convertIndexByteInfo(page.getDataAtSlot(rid));
+                if (info.getColumnNumber() == columnNum && info.getIndextype().toString()
+                        .equals(indexType.toString())) {
+                    indexInfos.add(info);
+                }
+            }
+        }
+        unpinPage(pageId, false);
+        return indexInfos;
+
     }
 
     /*
@@ -362,7 +420,7 @@ public class ColumnarHeader extends DirectoryHFPage {
                     if (rid == null) {
                         nextPageId = page.getNextPage();
                         unpinPage(pageId, false);
-                        pageId = nextPageId;
+                        pageId.pid = nextPageId.pid;
                         if (pageId.pid != INVALID_PAGE)
                             pinPage(pageId, page);
                     }
