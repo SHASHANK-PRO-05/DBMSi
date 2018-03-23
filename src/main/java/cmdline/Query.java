@@ -28,7 +28,6 @@ public class Query {
 
     public static void main(String argv[])
             throws Exception {
-
         initFromArgs(argv);
     }
 
@@ -91,8 +90,6 @@ public class Query {
                     break;
                 } else if (i == columncount - 1) {
                     //throw exception record not found.
-
-
                 }
             }
             if (attrTypes[i].getAttrName().equals(conditonalColumn)) {
@@ -142,7 +139,7 @@ public class Query {
             }
             System.out.println("\n");
             tuple = iter.getNext();
-            
+
         }
         iter.close();
         SystemDefs.JavabaseBM.flushAllPages();

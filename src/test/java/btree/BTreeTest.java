@@ -1,15 +1,12 @@
 package btree;
 
-import columnar.ByteToTuple;
 import columnar.ColumnarFile;
 import columnar.TupleScan;
 import global.*;
-import heap.Scan;
 import heap.Tuple;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import java.util.*;
 
 public class BTreeTest {
     @Before
@@ -40,7 +37,7 @@ public class BTreeTest {
         for (int i = 0; i < 20; i++) {
             attrTypes[i] = new AttrType();
             attrTypes[i].setColumnId(i);
-            attrTypes[i].setSize((short)12);
+            attrTypes[i].setSize((short) 12);
             attrTypes[i].setAttrType(0);
             attrTypes[i].setAttrName("Column" + i);
             sizes[i] = 12;
@@ -69,9 +66,9 @@ public class BTreeTest {
         //Scan scan = new Scan(columnarFile, (short) 1);
         TupleScan tupleScan = new TupleScan(columnarFile);
         //initialization
-        RID[]  rids = new RID[20];
-        for(int i =0 ;i<20;i++)rids[i]=new RID();
-        TID tid = new TID(20,0,rids);
+        RID[] rids = new RID[20];
+        for (int i = 0; i < 20; i++) rids[i] = new RID();
+        TID tid = new TID(20, 0, rids);
         Tuple tuple = tupleScan.getNext(tid);
 
 
@@ -88,7 +85,7 @@ public class BTreeTest {
             pos++;
             tid.setPosition(pos);
         }
-        BT.printAllLeafPages(bTreeFile.getHeaderPage());
+        //BT.printAllLeafPages(bTreeFile.getHeaderPage());
         bTreeFile.close();
         tupleScan.closeTupleScan();
         SystemDefs.JavabaseBM.flushAllPages();
