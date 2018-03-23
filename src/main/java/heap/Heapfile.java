@@ -1125,7 +1125,7 @@ public class Heapfile implements Filetype, GlobalConst {
     return tuple;
   }
 
-`  public AttrType getType() {
+  public AttrType getType() {
     return type;
   }
 }// End of HeapFile
