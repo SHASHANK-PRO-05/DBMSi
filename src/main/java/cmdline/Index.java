@@ -5,6 +5,7 @@ import bitmap.GetFileEntryException;
 import btree.*;
 import columnar.ColumnarFile;
 import columnar.IndexInfo;
+import columnar.TupleScan;
 import global.*;
 import heap.Scan;
 import heap.Tuple;
@@ -26,7 +27,7 @@ public class Index {
     public static void main(String argv[]) throws Exception {
         initFromArgs(argv);
     }
-
+    
     private static void initFromArgs(String argv[]) throws Exception {
         columnDBName = argv[0];
         columnarFileName = argv[1];
@@ -68,15 +69,21 @@ public class Index {
         scan.closeScan();
         SystemDefs.JavabaseBM.flushAllPages();
     }
+    
 
     private static void setupBTreeIndexes(Scan scan) throws Exception {
         String fileName = columnarFileName + "." + columnId + ".btree";
-        BTreeFile bTreeFile = new BTreeFile(fileName
-                , attrType.getAttrType(), attrType.getSize(), 1);
-        RID rid = scan.getFirstRID();
-        Tuple tuple = scan.getNext(rid);
+        BTreeFile bTreeFile = new BTreeFile(fileName, attrType.getAttrType(), attrType.getSize(), 1);
+        int pos = 0;
+        int colcount = columnarFile.getNumColumns();
+        RID[] rids = new RID[colcount];
+        for(int i =0 ;i<colcount;i++)rids[i]=new RID();
+        TID tid = new TID (colcount,0,rids);
+        TupleScan tupleScan = new TupleScan(columnarFile);
+        Tuple tuple = tupleScan.getNext(tid);
         ValueClass valueClass;
         KeyClass keyClass;
+        
         while (tuple != null) {
             if (attrType.getAttrType() == 0) {
                 valueClass = new StringValue(Convert
@@ -86,14 +93,17 @@ public class Index {
                 valueClass = new IntegerValue(Convert.getIntValue(0, tuple.getTupleByteArray()));
                 keyClass = new IntegerKey((Integer) valueClass.getValue());
             }
-            //bTreeFile.insert((IntegerKey)keyClass, rid);
-
-            tuple = scan.getNext(rid);
+            bTreeFile.insert(keyClass, tid);
+            pos++;
+            tid.setPosition(pos);
+            tuple = tupleScan.getNext(tid);
         }
         BT.printAllLeafPages(bTreeFile.getHeaderPage());
         bTreeFile.close();
     }
-
+    
+    
+    
     private static void setupBitMapIndexes(Scan scan) throws Exception {
 
         //What type of of unique values are required
@@ -141,13 +151,6 @@ public class Index {
 
     }
 
-    private static PageId getFileEntry(String fileName) throws GetFileEntryException {
-        try {
-            return SystemDefs.JavabaseDB.getFileEntry(fileName);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new GetFileEntryException(e, "");
-        }
-    }
+    
 
 }

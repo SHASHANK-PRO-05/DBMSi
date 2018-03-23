@@ -139,10 +139,29 @@ public class ColumnarFile implements GlobalConst {
 			// TODO: of failures
 			rids[i] = heapfile.insertRecord(arrayList.get(i));
 		}
+		
+		
 		long pos = directoryHFPage.getReccnt() + 1;
 		directoryHFPage.setReccnt(pos);
 		unpinPage(this.getColumnarHeader().getHeaderPageId(), true);
-		return new TID(rids.length, (int) pos, rids);
+		TID tid = new TID(rids.length, (int) pos, rids);
+		updateIndex(tid);
+		return tid;
+	}
+
+	private void updateIndex(TID tid) 
+			throws ColumnarFilePinPageException, 
+			ColumnarFileUnpinPageException, 
+			IOException {
+		DirectoryHFPage directoryHFPage = new DirectoryHFPage();
+		pinPage(this.getColumnarHeader().getHeaderPageId(), directoryHFPage);
+		int columnNum = this.getColumnarHeader().getColumnCount();
+		
+		
+		
+		
+		
+		unpinPage(this.getColumnarHeader().getHeaderPageId(), true);	
 	}
 
 	/*

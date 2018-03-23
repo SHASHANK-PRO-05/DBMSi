@@ -131,18 +131,16 @@ public class Query {
             ArrayList<byte[]> tuples = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
             int count = 0;
             for (AttrType type : proj) {
-
                 if (type.getAttrType() == 1) {
                     System.out.print(Convert.getIntValue(0, tuples.get(count)) + "\t	");
                 } else if (type.getAttrType() == 0) {
                     System.out.print(Convert.getStringValue(0, tuples.get(count), tuples.get(count).length) + "\t");
                 }
-
                 count++;
             }
             System.out.println("\n");
             tuple = iter.getNext();
-            
+
         }
         iter.close();
         SystemDefs.JavabaseBM.flushAllPages();

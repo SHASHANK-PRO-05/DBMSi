@@ -10,6 +10,7 @@ package btree;
 import java.io.*;
 import diskmgr.*;
 import bufmgr.*;
+import columnar.IndexInfo;
 import global.*;
 import heap.*;
 
@@ -222,6 +223,7 @@ public class BTreeFile extends IndexFile
 	  headerPage.set_maxKeySize(keysize);
 	  headerPage.set_deleteFashion( delete_fashion );
 	  headerPage.setType(NodeType.BTHEAD);
+	  
 	}
       else {
 	headerPage = new BTreeHeaderPage( headerPageId );  

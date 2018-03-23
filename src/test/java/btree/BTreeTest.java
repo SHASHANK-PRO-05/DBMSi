@@ -71,7 +71,7 @@ public class BTreeTest {
         //initialization
         RID[]  rids = new RID[20];
         for(int i =0 ;i<20;i++)rids[i]=new RID();
-        TID tid = new TID(20,0,rids);
+        TID tid = new TID(rids.length,0,rids);
         Tuple tuple = tupleScan.getNext(tid);
 
 
@@ -88,6 +88,7 @@ public class BTreeTest {
             pos++;
             tid.setPosition(pos);
         }
+        
         BT.printAllLeafPages(bTreeFile.getHeaderPage());
         bTreeFile.close();
         tupleScan.closeTupleScan();

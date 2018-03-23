@@ -1,5 +1,7 @@
 package iterator;
+
 import heap.HFBufMgrException;
+import heap.HFPage;
 import heap.Heapfile;
 import heap.InvalidSlotNumberException;
 import heap.Scan;
@@ -20,11 +22,14 @@ import btree.StringKey;
 import columnar.ByteToTuple;
 import columnar.ColumnarFile;
 import columnar.IndexInfo;
+import diskmgr.Page;
 import global.AttrType;
 import global.Convert;
 import global.IndexType;
+import global.PageId;
+import global.RID;
+import global.SystemDefs;
 import global.TID;
-
 
 public class BtreeScan extends Iterator {
 	private ColumnarFile columnarFile;
@@ -34,28 +39,20 @@ public class BtreeScan extends Iterator {
 	private short[] stringSizes;
 	private int attrLength;
 	private int nOutFields;
-	private Tuple tuple;
-	private Scan[] scan;
-	private int tupleSize;
 	private int[] columnNosArray;
-	private IndexFile     indFile;
+	private IndexFile indFile;
 	private IndexFileScan indScan;
 	private boolean indexOnly;
 	ByteToTuple byteToTuple;
 	CondExprEval condExprEval;
-	
 
 	public BtreeScan(String fileName, AttrType[] attrTypes, short stringSizes[], int attrLength, int nOutFields,
 			FldSpec[] projList, CondExpr[] condExprs, boolean indexOnly)
-			throws 
-			ColumnarFileScanException, 
+			throws ColumnarFileScanException, 
 			HFBufMgrException, 
 			InvalidSlotNumberException, 
-			IOException, 
-			GetFileEntryException, 
-			PinPageException, 
-			ConstructPageException,
-			IndexException {
+			IOException,
+			GetFileEntryException, PinPageException, ConstructPageException, IndexException {
 		this.attrTypes = attrTypes;
 		this.projList = projList;
 		this.columnNosArray = new int[attrTypes.length];
@@ -63,7 +60,6 @@ public class BtreeScan extends Iterator {
 		this.stringSizes = stringSizes;
 		this.attrLength = attrLength;
 		this.nOutFields = nOutFields;
-		this.tuple = new Tuple();
 		this.indexOnly = indexOnly;
 		this.byteToTuple = new ByteToTuple(attrTypes);
 		// Check if the columnar file exist
@@ -75,21 +71,20 @@ public class BtreeScan extends Iterator {
 		// check if the index exist
 		IndexInfo indexinfo = columnarFile.getColumnarHeader().getIndex(attrTypes[attrLength - 1].getColumnId(),
 				new IndexType(3));
-		if (indexinfo == null) {
-			//"Throws error or print the Btree does not exixst "
+		try {
+			indFile = new BTreeFile("Employee.1.btree");
+		}catch(Exception e) {
+			throw new GetFileEntryException(null,"Btree Index does not exist");
 		}
-		//Then we will open the index file.
-		indFile = new BTreeFile("Employee.1.btree");
-		//this.condExprEval = new CondExprEval(attrTypes, condExprs);
+		// this.condExprEval = new CondExprEval(attrTypes, condExprs);
 
 		for (int i = 0; i < attrTypes.length; i++)
 			columnNosArray[i] = attrTypes[i].getColumnId();
-	
+
 		try {
 			indScan = (BTFileScan) BtreeUtils.BTree_scan(condExprs, indFile);
 		} catch (Exception e) {
-			throw new IndexException(e,
-					"IndexScan.java: BTreeFile exceptions caught from IndexUtils.BTree_scan().");
+			throw new IndexException(e, "IndexScan.java: BTreeFile exceptions caught from IndexUtils.BTree_scan().");
 		}
 	}
 
@@ -98,34 +93,38 @@ public class BtreeScan extends Iterator {
 		Tuple tuple;
 		nextentry = indScan.get_next();
 		TID tid;
-		while (nextentry!=null) {
-			if(indexOnly) {
-				int size  = attrTypes[0].getSize();
+		while (nextentry != null) {
+			if (indexOnly) {
+				int size = attrTypes[0].getSize();
 				byte[] byteArray = new byte[size];
-				if(attrTypes[0].getAttrType()== AttrType.attrInteger)
+				if (attrTypes[0].getAttrType() == AttrType.attrInteger)
 					Convert.setIntValue(((IntegerKey) nextentry.key).getKey().intValue(), 0, byteArray);
-				else if(attrTypes[0].getAttrType() == AttrType.attrString)
+				else if (attrTypes[0].getAttrType() == AttrType.attrString)
 					Convert.setStringValue(((StringKey) nextentry.key).getKey(), 0, byteArray);
-				tuple = new Tuple(byteArray,0,size);
+				tuple = new Tuple(byteArray, 0, size);
 				return tuple;
-				
+
 			}
 			Tuple[] tuples = new Tuple[projList.length];
 			tid = ((LeafData) nextentry.data).getData();
 			int size = 0;
-			
+			RID [] rid = new RID[projList.length];
 			
 			for (int i = 0; i < projList.length; i++) {
-                Heapfile heapfile = columnarFile.getHeapFileNames()[projList[i].offset];
-                tuples[i] = heapfile.getRecordAtPosition(tid.getPosition());
-                size = size + attrTypes[i].getSize();
-            }
-			return byteToTuple.mergeTuples(tuples, size);	
+				rid[i] = tid.getRecordIDs()[i];
+				HFPage pg = new HFPage();
+				pinPage(rid[i].pageNo,pg);
+				tuples[i] = pg.returnRecord(rid[i]);
+				unpinPage(rid[i].pageNo, true);
+				size = size + attrTypes[i].getSize();
+				
+			}
+			return byteToTuple.mergeTuples(tuples, size);
+
 		}
 		return null;
 	}
-	
-	
+
 	@Override
 	public void close() throws IOException, iterator.IndexException {
 		// TODO Auto-generated method stub
@@ -141,7 +140,24 @@ public class BtreeScan extends Iterator {
 			closeFlag = true;
 		}
 
-		
-
 	}
+	
+	
+	private void unpinPage(PageId pageno, boolean dirty) throws HFBufMgrException {
+
+        try {
+            SystemDefs.JavabaseBM.unpinPage(pageno, dirty);
+        } catch (Exception e) {
+            throw new HFBufMgrException(e, "Heapfile.java: in Column Header, unpinPage() failed");
+        }
+
+    }
+
+    private void pinPage(PageId pageId, Page page) throws HFBufMgrException {
+        try {
+            SystemDefs.JavabaseBM.pinPage(pageId, page, false);
+        } catch (Exception e) {
+            throw new HFBufMgrException(e, "Heapfile.java: in Column Header, pinPage() failed");
+        }
+    }
 }
