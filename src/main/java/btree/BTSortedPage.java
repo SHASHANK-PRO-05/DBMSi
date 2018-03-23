@@ -126,10 +126,10 @@ public class BTSortedPage  extends HFPage{
 	     
 	     KeyClass key_i, key_iplus1;
 	     
-	     key_i=BT.getEntryFromBytes(getPage(), getSlotOffset(i),
+	     key_i=BT.getEntryFromBytes(getPage(), getSlotOffset(i), 
 					getSlotLength(i), keyType, nType).key;
 	     
-	     key_iplus1=BT.getEntryFromBytes(getPage(), getSlotOffset(i-1),
+	     key_iplus1=BT.getEntryFromBytes(getPage(), getSlotOffset(i-1), 
 					     getSlotLength(i-1), keyType, nType).key;
 	     
 	     if (BT.keyCompare(key_i, key_iplus1) < 0)

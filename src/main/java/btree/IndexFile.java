@@ -40,7 +40,7 @@ public abstract class IndexFile
    * @exception LeafDeleteException delete leaf page failed
    * @exception InsertException insert record failed
    */
-  abstract public void insert(final KeyClass data, final RID rid)
+  abstract public void insert(final KeyClass data, final TID tid)
     throws KeyTooLongException, 
 	   KeyNotMatchException, 
 	   LeafInsertRecException,   
@@ -79,7 +79,7 @@ public abstract class IndexFile
    * @exception DeleteRecException delete record failed
    * @exception IndexSearchException  index search failed
    */
-  abstract public boolean Delete(final KeyClass data, final RID rid)  
+  abstract public boolean Delete(final KeyClass data, final TID tid)  
     throws  DeleteFashionException, 
 	    LeafRedistributeException,
 	    RedistributeException,

@@ -1,7 +1,7 @@
 package btree;
 import global.*;
  
-/**  IndexData: It extends the DataClass.
+/** z IndexData: It extends the DataClass.
  *   It defines the data "pageNo" for index node in B++ tree.
  */
 public class IndexData extends DataClass {

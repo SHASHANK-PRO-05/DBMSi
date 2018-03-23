@@ -2,7 +2,6 @@ package cmdline;
 
 import java.io.IOException;
 import java.util.ArrayList;
-
 import btree.ConstructPageException;
 import btree.GetFileEntryException;
 import btree.PinPageException;
@@ -86,7 +85,7 @@ public class Query {
 		int columncount = attrTypes.length;
 		int outColumnsSize = targetColumnNames.size();
 		int counterStr = 0, counterIn = 0, counterFld = 0;
-	
+	//To-do set the condition column in end bug right now
 		for (int i = 0; i < columncount; i++) {
 			for (int j = 0; j < outColumnsSize; j++) {
 				if (attrTypes[i].getAttrName().equals(targetColumnNames.get(j))) {

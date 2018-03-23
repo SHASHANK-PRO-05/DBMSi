@@ -104,7 +104,7 @@ public class TupleScan {
             nextTuples[i] = scans[i].getNext(tid.getRecordIDs()[i]);
             if (nextTuples[i] == null) return null;
             	size += nextTuples[i].getLength();
-        } 
+        }
 
         return byteToTuple.mergeTuples(nextTuples, size);
     }

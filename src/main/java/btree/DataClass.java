@@ -4,4 +4,6 @@ package btree;
  *  to be IndexData and LeafData.
  */ 
 public abstract class DataClass{ 
+	
+	
 }  

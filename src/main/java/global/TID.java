@@ -22,7 +22,11 @@ public class TID extends java.lang.Object {
         this.recordIDs = recordIDs;
     }
 
-    void copyTid(TID tid) {
+    public TID() {
+		// TODO Auto-generated constructor stub
+	}
+
+	void copyTid(TID tid) {
         this.numRIDs = tid.numRIDs;
         this.position = tid.position;
         this.recordIDs = tid.recordIDs;
@@ -61,7 +65,7 @@ public class TID extends java.lang.Object {
         return position;
     }
 
-    void setPosition(int position) {
+    public void setPosition(int position) {
         this.position = position;
     }
 

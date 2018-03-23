@@ -85,7 +85,7 @@ public class Index {
                 valueClass = new IntegerValue(Convert.getIntValue(0, tuple.getTupleByteArray()));
                 keyClass = new IntegerKey((Integer) valueClass.getValue());
             }
-            bTreeFile.insert(keyClass, rid);
+            //bTreeFile.insert(keyClass, rid);
             tuple = scan.getNext(rid);
         }
         BT.printAllLeafPages(bTreeFile.getHeaderPage());

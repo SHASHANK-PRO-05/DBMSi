@@ -15,6 +15,7 @@ import btree.IndexFile;
 import btree.IndexFileScan;
 import btree.IntegerKey;
 import btree.KeyDataEntry;
+import btree.LeafData;
 import btree.PinPageException;
 import btree.StringKey;
 import columnar.ByteToTuple;
@@ -23,6 +24,7 @@ import columnar.IndexInfo;
 import global.AttrType;
 import global.Convert;
 import global.IndexType;
+import global.TID;
 
 
 public class BtreeScan extends Iterator {
@@ -72,7 +74,7 @@ public class BtreeScan extends Iterator {
 			throw new ColumnarFileScanException(e, "Not able to create columnar file");
 		}
 		// check if the index exist
-		IndexInfo indexinfo = columnarFile.getColumnarHeader().getIndex(attrTypes[attrLength - 2].getColumnId(),
+		IndexInfo indexinfo = columnarFile.getColumnarHeader().getIndex(attrTypes[attrLength - 1].getColumnId(),
 				new IndexType(3));
 		if (indexinfo == null) {
 			//"Throws error or print the Btree does not exixst "
@@ -96,7 +98,7 @@ public class BtreeScan extends Iterator {
 		KeyDataEntry nextentry = null;
 		Tuple tuple;
 		nextentry = indScan.get_next();
-		
+		TID tid;
 		while (nextentry!=null) {
 			if(indexOnly) {
 				int size  = attrTypes[0].getSize();
@@ -109,9 +111,24 @@ public class BtreeScan extends Iterator {
 				return tuple;
 				
 			}
-			//take the individual rids and 
-			//merge them and return tuple 
-
+			tid = ((LeafData) nextentry.data).getData();
+			System.out.println(tid.getRecordIDs()[0].slotNo);
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			nextentry = indScan.get_next();
+			
+			
 		}
 		return null;
 	}

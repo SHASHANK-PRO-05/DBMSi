@@ -1,6 +1,7 @@
 package btree;
 
 import columnar.ColumnarFile;
+import columnar.TupleScan;
 import global.*;
 import heap.Scan;
 import heap.Tuple;
@@ -29,7 +30,7 @@ public class BTreeTest {
     @Test
     public void test() throws Exception {
         String dbPath = "Minibase.min";
-        SystemDefs systemDefs = new SystemDefs(dbPath, 20000, 10, null);
+        SystemDefs systemDefs = new SystemDefs(dbPath, 20000, 10000, null);
         AttrType[] attrTypes = new AttrType[20];
         String[][] in = new String[10000][20];
         int[] sizes = new int[20];
@@ -62,18 +63,24 @@ public class BTreeTest {
         String fileName = "Employee.1.btree";
         BTreeFile bTreeFile = new BTreeFile(fileName
                 , attrTypes[1].getAttrType(), attrTypes[1].getSize(), 1);
-        Scan scan = new Scan(columnarFile, (short) 1);
-        RID rid = scan.getFirstRID();
-        Tuple tuple = scan.getNext(rid);
+        //Scan scan = new Scan(columnarFile, (short) 1);
+        TupleScan tupleScan = new TupleScan(columnarFile);
+
+        RID[]  rids = new RID[20];
+        for(int i =0 ;i<20;i++)rids[i]=new RID();
+        TID tid = new TID(20,0,rids);
+        Tuple tuple = tupleScan.getNext(tid);
+        //Tuple tuple = scan.getNext(rid);
         while (tuple != null) {
             StringValue stringValue = new StringValue(Convert
                     .getStringValue(0, tuple.getTupleByteArray(), attrTypes[3].getSize()));
             StringKey stringKey = new StringKey(stringValue.getValue());
-            bTreeFile.insert(stringKey, rid);
-            tuple = scan.getNext(rid);
+            bTreeFile.insert(stringKey, tid);
+            tuple = tupleScan.getNext(tid);
         }
         BT.printAllLeafPages(bTreeFile.getHeaderPage());
         bTreeFile.close();
+        tupleScan.closeTupleScan();
         SystemDefs.JavabaseBM.flushAllPages();
     }
 
