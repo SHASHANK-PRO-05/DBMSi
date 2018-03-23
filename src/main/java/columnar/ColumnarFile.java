@@ -1,20 +1,18 @@
 package columnar;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-
-import bitmap.*;
-import bufmgr.BufMgr;
+import bitmap.BitMapFile;
+import bitmap.BitMapOperations;
 import diskmgr.DiskMgrException;
-import diskmgr.FileNameTooLongException;
 import diskmgr.InvalidPageNumberException;
 import diskmgr.Page;
 import global.*;
 import heap.*;
 import heap.InvalidTupleSizeException;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class ColumnarFile implements GlobalConst {
 
@@ -267,45 +265,39 @@ public class ColumnarFile implements GlobalConst {
         }
 		
 	}
-	
-
-	public boolean purgeAllDeletedTuples(BitMapFile bitMapFile)
-            throws Exception {
-        int[] posList = null;
-        int posNumber = 0;
-        String fName = this.getColumnarHeader().getHdrFile() + ".del";
-		PageId headerPageId = getFileEntry(fName);
-		if (headerPageId!=null)
-        {
-		BitMapOperations bitMapOperations = new BitMapOperations();
-		bitMapOperations.init(bitMapFile);
-		int nextPos = Integer.MIN_VALUE;
-		while (nextPos != -1) {
-
-			nextPos = bitMapOperations.getNextIndexedPostion();
-			posList[posNumber] = nextPos;// .add(nextPos);
-            posNumber++;
-			// System.out.println(nextPos);
-			// To Do : Use this position of the BitMap file to delete a record.
-			// deleteTupleAtPosition is on hold because of delete of HFPage.
-			// Currently, deleteTupleAtPosition is deleting the record from heap file at a particular position.
-	}
-            String fname = this.getColumnarHeader().getHdrFile();
-            PageId pageId = this.getColumnarHeader().getHeaderPageId();
-            HFPage hfPage = new HFPage();
-            pinPage(pageId, hfPage);
-            for (int i = 0; i < numColumns; i++) {
-                Heapfile hf = new Heapfile(fname + '.' + i, null);
-                hf.purgeRecords(posList);
-            }
-            unpinPage(pageId, false);
-
-        }
 
 
-		return true; // Return type not decided yet as function is not complete.
+  public void purgeAllDeletedTuples(BitMapFile bitMapFile)
+      throws Exception {
+    ArrayList<Integer> posList = new ArrayList<>();
+    String fName = this.getColumnarHeader().getHdrFile() + ".del";
+    PageId headerPageId = getFileEntry(fName);
 
-	}
+    if (headerPageId != null) {
+      BitMapOperations bitMapOperations = new BitMapOperations();
+      bitMapOperations.init(bitMapFile);
+      int nextPos = Integer.MIN_VALUE;
+      while (nextPos != -1) {
+
+        nextPos = bitMapOperations.getNextIndexedPosition();
+        posList.add(nextPos);// .add(nextPos);
+        // System.out.println(nextPos);
+        // To Do : Use this position of the BitMap file to delete a record.
+        // deleteTupleAtPosition is on hold because of delete of HFPage.
+        // Currently, deleteTupleAtPosition is deleting the record from heap file at a particular position.
+      }
+      String fname = this.getColumnarHeader().getHdrFile();
+      PageId pageId = this.getColumnarHeader().getHeaderPageId();
+      HFPage hfPage = new HFPage();
+      pinPage(pageId, hfPage);
+      for (int i = 0; i < numColumns; i++) {
+        Heapfile hf = new Heapfile(fname + '.' + i, null);
+        hf.purgeRecords((Integer[]) posList.toArray());
+      }
+      unpinPage(pageId, false);
+
+    }
+  }
 
 	public void deleteTupleAtPosition(Long pos) throws InvalidSlotNumberException, InvalidTupleSizeException,
 			HFException, HFBufMgrException, HFDiskMgrException, Exception {

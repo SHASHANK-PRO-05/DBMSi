@@ -1,9 +1,6 @@
 package bitmap;
 
-import bufmgr.HashEntryNotFoundException;
-import bufmgr.InvalidFrameNumberException;
-import bufmgr.PageUnpinnedException;
-import bufmgr.ReplacerException;
+import bufmgr.*;
 import columnar.ColumnarFile;
 import diskmgr.Page;
 import global.*;
@@ -331,10 +328,22 @@ public class BitMapFile implements GlobalConst {
 
     }
 
-    public boolean setBMPagePositions(int position, int bit) throws PinPageException, IOException, UnpinPageException {
+    public boolean setBMPagePositions(int position, int bit) throws PinPageException, IOException, UnpinPageException, BufMgrException, ConstructPageException {
+        if (bitMapHeaderPage == null) {
+            bitMapHeaderPage = new BitMapHeaderPage(headerPageId);
+        }
+
         pinPage(headerPageId, bitMapHeaderPage);
         PageId pageId = bitMapHeaderPage.getNextPage();
         BMPage bmPage = new BMPage();
+
+        if (pageId.pid == INVALID_PAGE) {
+            Page aPage = new Page();
+            pageId = SystemDefs.JavabaseBM.newPage(aPage, 1);
+            allocatePage(pageId, 1);
+            bitMapHeaderPage.setNextPage(pageId);
+        }
+
         pinPage(pageId, bmPage);
         int bytes = (position + 8) / 8;
         int locationUntilLoop = bytes / bmPage.getAvailableMap();
@@ -356,11 +365,11 @@ public class BitMapFile implements GlobalConst {
         return false;
     }
 
-    public boolean Delete(int position) throws PinPageException, IOException, UnpinPageException {
+    public boolean Delete(int position) throws PinPageException, IOException, UnpinPageException, BufMgrException, ConstructPageException {
         return setBMPagePositions(position, 0);
     }
 
-    public boolean Insert(int position) throws PinPageException, IOException, UnpinPageException {
+    public boolean Insert(int position) throws PinPageException, IOException, UnpinPageException, BufMgrException, ConstructPageException {
         return setBMPagePositions(position, 1);
     }
 

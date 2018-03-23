@@ -55,7 +55,7 @@ public class BitMapOperations implements GlobalConst {
 		return positions;
 	}
 
-	public int getNextIndexedPostion() throws IOException {
+	public int getNextIndexedPosition() throws IOException {
 
 		while (nPageId.pid != INVALID_PAGE) {
 			int counter = bmPage.getCount();

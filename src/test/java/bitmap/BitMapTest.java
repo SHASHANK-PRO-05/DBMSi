@@ -3,14 +3,12 @@ package bitmap;
 import columnar.ColumnarFile;
 import columnar.ColumnarFilePinPageException;
 import columnar.ColumnarFileUnpinPageException;
-import columnar.ColumnarHeader;
 import diskmgr.Page;
 import global.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.ArrayList;
 
 public class BitMapTest {
@@ -129,7 +127,7 @@ public class BitMapTest {
 		bitMapOperations.init(bitMapFile);
 		int resultVal = Integer.MIN_VALUE;
 		while (resultVal != -1) {
-			resultVal = bitMapOperations.getNextIndexedPostion();
+			resultVal = bitMapOperations.getNextIndexedPosition();
 			outPutarrList.add(resultVal);
 		}
 		boolean result = inPutarrList.equals(outPutarrList);
