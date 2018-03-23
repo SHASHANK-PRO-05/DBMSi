@@ -66,10 +66,10 @@ public class CondExprEval {
                     if (op == 0) return false;
                     break;
                 case AttrOperator.aopLE:
-                    if (op > 0) return false;
+                    if (op >= 0) return false;
                     break;
                 case AttrOperator.aopGE:
-                    if (op < 0) return false;
+                    if (op <= 0) return false;
                     break;
                 default:
                     break;

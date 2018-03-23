@@ -73,13 +73,6 @@ public class ColumnScan extends Iterator {
     }
 
     public Tuple getNext() throws Exception {
-
-        /*scan will give me one column at a time
-         * I will have a array of tuple running scan one for all the given columns
-         *
-         *
-         *
-         */
         Tuple projectedTuple = null;
         RID rid = new RID();
         Tuple[] tuples = new Tuple[attrLength];
