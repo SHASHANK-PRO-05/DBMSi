@@ -6,12 +6,13 @@ import columnar.TupleScan;
 import global.AttrType;
 import global.RID;
 import global.TID;
+import heap.InvalidTupleSizeException;
 import heap.Tuple;
 
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class ColumnarFileScan extends Iterator {
+public class ColumnarFileScan {
     private ColumnarFile columnarFile;
     private CondExpr[] condExprs;
     private FldSpec[] projList;
@@ -69,17 +70,20 @@ public class ColumnarFileScan extends Iterator {
         RID rids[] = new RID[attrTypes.length];
         for (int i = 0; i < attrTypes.length; i++) rids[i] = new RID();
         TID tid = new TID(attrTypes.length, 0, rids);
+
         tuple = tupleScan.getNext(tid);
+
         while (tuple != null) {
             ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
-            Tuple projectTuples[] = new Tuple[projList.length];
+            Tuple  projectTuples[] = new Tuple[projList.length] ;
             int sizeOfProjectTuple = 0;
             if (condExprEval.isValid(arrayList)) {
-                for (int i = 0; i < projList.length; i++) {
-                    projectTuples[i] = new Tuple(arrayList.get(i), 0, arrayList.get(i).length);
-                    sizeOfProjectTuple += arrayList.get(i).length;
-                }
-                projectedTuple = byteToTuple.mergeTuples(projectTuples, sizeOfProjectTuple);
+            	for(int i =0; i<projList.length;i++) {
+            		projectTuples[i] = new Tuple(arrayList.get(i),0,arrayList.get(i).length);
+            		sizeOfProjectTuple += arrayList.get(i).length;
+            	}
+
+            	projectedTuple = byteToTuple.mergeTuples(projectTuples, sizeOfProjectTuple);
                 break;
             }
             tuple = tupleScan.getNext(tid);
@@ -88,8 +92,28 @@ public class ColumnarFileScan extends Iterator {
     }
 
 
-    @Override
     public void close() throws IOException {
         tupleScan.closeTupleScan();
+    }
+
+    public Integer[] getPositions() throws IOException, InvalidTupleSizeException {
+        Tuple projectedTuple = null;
+        RID rids[] = new RID[attrTypes.length];
+        for (int i = 0; i < attrTypes.length; i++) rids[i] = new RID();
+        TID tid = new TID(attrTypes.length, 0, rids);
+        ArrayList<Integer> positions = new ArrayList<Integer>();
+
+        tuple = tupleScan.getNext(tid);
+        int currentPosition = 0;
+        while (tuple != null) {
+            ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
+            if (condExprEval.isValid(arrayList)) {
+                positions.add(currentPosition);
+            }
+
+            tuple = tupleScan.getNext(tid);
+        }
+
+        return (Integer[]) positions.toArray();
     }
 }
