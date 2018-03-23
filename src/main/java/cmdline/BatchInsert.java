@@ -1,15 +1,13 @@
 package cmdline;
 
 import columnar.ColumnarFile;
-import global.AttrType;
-import global.Convert;
-import global.GlobalConst;
-import global.SystemDefs;
+import global.*;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 
 public class BatchInsert implements GlobalConst {
@@ -17,7 +15,7 @@ public class BatchInsert implements GlobalConst {
     private static String columnDBName;
     private static String columnarFileName;
     private static short numColumns;
-
+    private static BufferedReader bufferedReader;
 
     /**
      * The main class
@@ -34,7 +32,6 @@ public class BatchInsert implements GlobalConst {
         }
     }
 
-    private static BufferedReader bufferedReader;
 
     private static AttrType[] parseHeader() throws Exception {
 
@@ -62,32 +59,78 @@ public class BatchInsert implements GlobalConst {
         return attrTypes;
     }
 
+    /**
+     * @param argv parameters to run the system
+     * @throws Exception
+     */
     private static void initFromArgs(String argv[])
             throws Exception {
         String fileName = argv[0];
-        File f = new File(fileName);
-        if (!f.exists() || f.isDirectory()) {
+        File file = new File(fileName);
+
+
+        //Check if file exists which needs to be inserted
+        if (!file.exists() || file.isDirectory()) {
             System.out.println("** The specfied data file does not exists **");
             return;
         }
         bufferedReader = new BufferedReader(new FileReader(fileName));
+        AttrType[] attrTypes;
 
+
+        //Collecting the header for the insert
+        try {
+            attrTypes = parseHeader();
+        } catch (Exception e) {
+            throw new Exception("Not able to parse the header. Please check your file");
+        }
         String columnDBName = argv[1];
+        boolean override = true;
+        if (new File(columnDBName).isFile()) {
+            //If file exists take permission to overwrite or insert
+            Scanner scanner = new Scanner(System.in);
+            System.out.print("DB already exists. Do you want to overwrite it? (yes/no)");
+            String choice = scanner.next();
+            if (choice.toLowerCase().equals("yes"))
+                override = true;
+            else
+                override = false;
+        }
+
+        //checking number of columns required for batchinsert
+        int numberOfColumns = 0;
+        try {
+            numberOfColumns = Integer.parseInt(argv[3]);
+        } catch (Exception e) {
+            throw new Exception("Integer value required for number of columns");
+        }
+
+        //If length is not the same for the header.
+        if (numberOfColumns != attrTypes.length) throw new Exception("Number of columns " +
+                "do not match with the number of columns in header");
+
+
+        //If it is override change the entire db
+        int pageSizeRequired = 0;
+        if (override)
+            pageSizeRequired = (int) (file.length() / MINIBASE_PAGESIZE) * 100;
+        int bufferSize = 4000;
+        SystemDefs systemDefs = new SystemDefs(columnDBName, pageSizeRequired
+                , bufferSize, "LRU" +
+                "");
+
         String columnarFileName = argv[2];
-        int numberOfColumns = Integer.parseInt(argv[3]);
-        File file = new File(fileName);
-        int pageSizeRequired = (int) (file
-                .length() / MINIBASE_PAGESIZE) * 4;
+        PageId pageId = SystemDefs.JavabaseDB.getFileEntry(columnarFileName);
 
-        int bufferSize = pageSizeRequired / 3;
-        if (bufferSize < 10) bufferSize = 10;
-        SystemDefs systemDefs = new SystemDefs(columnDBName, 0
-                , bufferSize, "LRU");
-        AttrType[] attrTypes = parseHeader();
-        ColumnarFile columnarFile = new ColumnarFile(columnarFileName, numberOfColumns, attrTypes);
-        SystemDefs.JavabaseBM.flushAllPages();
+        ColumnarFile columnarFile;
+        if (pageId == null) {
+            columnarFile = new ColumnarFile(columnarFileName, numberOfColumns, attrTypes);
+        } else {
+            columnarFile = new ColumnarFile(columnarFileName);
+        }
+
         insertRecords(columnarFile, attrTypes);
-
+        SystemDefs.JavabaseBM.flushAllPages();
     }
 
     public static void insertRecords(ColumnarFile columnarFile
@@ -95,7 +138,6 @@ public class BatchInsert implements GlobalConst {
         int size = 0;
         int[] position = new int[attrTypes.length];
         int prev = 0;
-
         for (int i = 0; i < attrTypes.length; i++) {
             size += attrTypes[i].getSize();
             position[i] = prev;
@@ -111,7 +153,7 @@ public class BatchInsert implements GlobalConst {
         int count = 0;
         double startTime = System.currentTimeMillis();
         for (int j = 0; j < arrayList.size(); j++) {
-            String[] strings = arrayList.get(j).toString().split("\n");
+            String[] strings = arrayList.get(j).toString().split("\t");
             byte[] bytes = new byte[size];
             for (int i = 0; i < strings.length; i++) {
                 if (attrTypes[i].getAttrType() == 1) {
@@ -123,13 +165,13 @@ public class BatchInsert implements GlobalConst {
             }
 
             columnarFile.insertTuple(bytes);
-
-            System.out.println(columnarFile.getTupleCount());
         }
         double endTime = System.currentTimeMillis();
         double duration = (endTime - startTime);
-        System.out.println(duration / 1000);
-        System.out.println(SystemDefs.pCounter.getwCounter());
+        System.out.println("Time taken (Seconds)" + duration / 1000);
+        System.out.println("Tuples in the table now:" + columnarFile.getColumnarHeader().getReccnt());
         SystemDefs.JavabaseBM.flushAllPages();
+        System.out.println("Write count: " + SystemDefs.pCounter.getwCounter());
+        System.out.println("Read count: " + SystemDefs.pCounter.getrCounter());
     }
 }
