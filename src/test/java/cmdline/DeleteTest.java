@@ -48,7 +48,7 @@ public class DeleteTest extends BaseTest {
         TID tid = new TID(attrTypes.length, 0, rids);
 
         Tuple tuple = tupleScan.getNext(tid);
-        int resultingTupleCount = 0;
+        long resultingTupleCount = 0;
 
         while (tuple != null) {
             System.out.println(Arrays.toString(tuple.getTupleByteArray()));
@@ -56,7 +56,12 @@ public class DeleteTest extends BaseTest {
             resultingTupleCount += 1;
         }
 
-        System.out.println(resultingTupleCount);
+        SystemDefs.JavabaseBM.pinPage(columnarFile.getColumnarHeader().getHeaderPageId(), columnarFile.getColumnarHeader(), false);
+        SystemDefs.JavabaseBM.unpinPage(columnarFile.getColumnarHeader().getHeaderPageId(), false);
+
+        long currentTupleCount = columnarFile.getColumnarHeader().getReccnt();
+
+        assert resultingTupleCount == currentTupleCount;
     }
 
     @After
