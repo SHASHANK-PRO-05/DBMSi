@@ -160,7 +160,7 @@ public class Query {
         double endTime = System.currentTimeMillis();
         double duration = (endTime - startTime);
         System.out.println("Time taken (Seconds)" + duration / 1000);
-        System.out.println("Tuples in the table now:" + columnarFile.getColumnarHeader().getReccnt());
+        System.out.println("Tuples in the table now:" + columnarFile.getTupleCount());
         System.out.println("Write count: " + SystemDefs.pCounter.getwCounter());
         System.out.println("Read count: " + SystemDefs.pCounter.getrCounter());
         SystemDefs.JavabaseBM.flushAllPages();
