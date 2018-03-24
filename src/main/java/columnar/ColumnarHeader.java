@@ -382,7 +382,7 @@ public class ColumnarHeader extends DirectoryHFPage {
         return indexInfos;
     }
 
-    public ArrayList<IndexInfo> getPartiuclarTypeIndex(int columnNum, IndexType indexType)
+    public ArrayList<IndexInfo> getParticularTypeIndex(int columnNum, IndexType indexType)
             throws IOException,
             HFBufMgrException,
             InvalidSlotNumberException {

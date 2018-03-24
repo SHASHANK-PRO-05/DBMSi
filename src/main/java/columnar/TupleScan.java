@@ -98,13 +98,12 @@ public class TupleScan {
         ByteToTuple byteToTuple = new ByteToTuple();
         Tuple nextTuples[] = new Tuple[noOfColumns];
         int size = 0;
-        System.out.println(tid.getRecordIDs().length);
         for (int i = 0; i < noOfColumns; i++) {
             nextTuples[i] = scans[i].getNext(tid.getRecordIDs()[i]);
             if (nextTuples[i] == null) return null;
             size += nextTuples[i].getLength();
         }
-        
+
         return byteToTuple.mergeTuples(nextTuples, size);
     }
 

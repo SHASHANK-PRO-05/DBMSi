@@ -85,7 +85,7 @@ public class Index {
             indexInfo.setIndexType(indexType);
             setupBitMapIndexes(scan);
         } else if (indexMethod.equals("BTREE")) {
-            indexType = new IndexType(2);
+            indexType = new IndexType(1);
             indexInfo.setIndexType(indexType);
             setupBTreeIndexes(scan);
         }
@@ -106,9 +106,16 @@ public class Index {
         String fileName = columnarFileName + "." + columnId + ".btree";
         BTreeFile bTreeFile = new BTreeFile(fileName, attrType.getAttrType(), attrType.getSize(), 1);
         int pos = 0;
-        int colcount = columnarFile.getNumColumns();
+        AttrType attrTypes[] = columnarFile.getColumnarHeader().getColumns();
+        int colcount = attrTypes.length;
         RID[] rids = new RID[colcount];
-        for (int i = 0; i < colcount; i++) rids[i] = new RID();
+        int[] posArray = new int[colcount];
+        int position = 0;
+        for (int i = 0; i < colcount; i++) {
+            rids[i] = new RID();
+            posArray[i] = position;
+            position = position + attrTypes[i].getSize();
+        }
         TID tid = new TID(colcount, 0, rids);
         TupleScan tupleScan = new TupleScan(columnarFile);
         Tuple tuple = tupleScan.getNext(tid);
@@ -118,19 +125,20 @@ public class Index {
         while (tuple != null) {
             if (attrType.getAttrType() == 0) {
                 valueClass = new StringValue(Convert
-                        .getStringValue(0, tuple.getTupleByteArray(), attrType.getSize()));
+                        .getStringValue(posArray[attrType.getColumnId()], tuple.getTupleByteArray(), attrType.getSize()));
                 keyClass = new StringKey((String) valueClass.getValue());
             } else {
-                valueClass = new IntegerValue(Convert.getIntValue(0, tuple.getTupleByteArray()));
+                valueClass = new IntegerValue(Convert.getIntValue(posArray[attrType.getColumnId()], tuple.getTupleByteArray()));
                 keyClass = new IntegerKey((Integer) valueClass.getValue());
             }
-            System.out.println(((IntegerKey) keyClass).getKey());
+            //System.out.println(valueClass.getValue());
             bTreeFile.insert(keyClass, tid);
             pos++;
             tid.setPosition(pos);
             tuple = tupleScan.getNext(tid);
         }
         bTreeFile.close();
+        tupleScan.closeTupleScan();
         indexInfo.setValue(valueClass);
         indexInfo.setFileName(fileName);
         columnarFile.getColumnarHeader().setIndex(indexInfo);
@@ -191,6 +199,4 @@ public class Index {
             throw new GetFileEntryException(e, "");
         }
     }
-
-
 }

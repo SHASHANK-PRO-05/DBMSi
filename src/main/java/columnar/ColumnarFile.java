@@ -159,10 +159,12 @@ public class ColumnarFile implements GlobalConst {
                 valueClass = new IntegerValue(temp);
                 keyClass = new IntegerKey(temp);
             }
+            //System.out.println(indexInfos.get(i).getIndextype().indexType);
             switch (indexInfos.get(i).getIndextype().indexType) {
                 case IndexType.B_Index:
                     BTreeFile bTreeFile = new BTreeFile(indexInfos.get(i).getFileName());
                     bTreeFile.insert(keyClass, tid);
+                    bTreeFile.close();
                     break;
                 case IndexType.BitMapIndex:
                     BitMapFile bitMapFile = new BitMapFile(indexInfos.get(i).getFileName());
@@ -171,6 +173,7 @@ public class ColumnarFile implements GlobalConst {
                     } else {
                         bitMapFile.Delete(position);
                     }
+                    bitMapFile.close();
                     break;
             }
         }

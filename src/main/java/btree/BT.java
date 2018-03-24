@@ -389,12 +389,12 @@ public class BT implements GlobalConst {
 		if (sortedPage.getType() == NodeType.INDEX) {
 			BTIndexPage indexPage = new BTIndexPage((Page) sortedPage, keyType);
 
-			System.out.println(i + prefix + indexPage.getPrevPage());
+
 			_printTree(indexPage.getPrevPage(), prefix, i, keyType);
 
 			RID rid = new RID();
 			for (KeyDataEntry entry = indexPage.getFirst(rid); entry != null; entry = indexPage.getNext(rid)) {
-				System.out.println(i + prefix + (IndexData) entry.data);
+
 				_printTree(((IndexData) entry.data).getData(), prefix, i, keyType);
 			}
 		}

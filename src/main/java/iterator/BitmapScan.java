@@ -53,7 +53,7 @@ public class BitmapScan extends Iterator {
 
         for (int i = 0; i < condExprs.length - 1; i++) {
             ArrayList<IndexInfo> indexInfos = columnarFile.getColumnarHeader()
-                    .getPartiuclarTypeIndex(condExprs[i].operand1.symbol.offset, new IndexType(3));
+                    .getParticularTypeIndex(condExprs[i].operand1.symbol.offset, new IndexType(3));
             for (IndexInfo indexInfo : indexInfos) {
                 if (indexInfo.getValue() instanceof StringValue) {
                     switch (condExprs[i].op.attrOperator) {

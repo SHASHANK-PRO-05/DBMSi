@@ -58,7 +58,7 @@ public class BtreeScan extends Iterator {
         }
         // check if the index exist
         IndexInfo indexinfo = columnarFile.getColumnarHeader().getIndex(attrTypes[attrLength - 1].getColumnId(),
-                new IndexType(3));
+                new IndexType(1));
         try {
             indFile = new BTreeFile(indexinfo.getFileName());
         } catch (Exception e) {
