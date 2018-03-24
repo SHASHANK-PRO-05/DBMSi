@@ -112,7 +112,7 @@ public class BatchInsert implements GlobalConst {
         //If it is override change the entire db
         int pageSizeRequired = 0;
         if (override)
-            pageSizeRequired = (int) (file.length() / MINIBASE_PAGESIZE) * 100;
+            pageSizeRequired = Math.max((int) (file.length() / MINIBASE_PAGESIZE) * 100, 2000);
         int bufferSize = 4000;
         SystemDefs systemDefs = new SystemDefs(columnDBName, pageSizeRequired
                 , bufferSize, "LRU" +
