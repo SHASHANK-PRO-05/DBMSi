@@ -98,12 +98,28 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
+    public BitMapFile(String bitMapFileName, boolean start)
+            throws PinPageException, UnpinPageException, ConstructPageException, IOException, AddFileEntryException {
+        bitMapHeaderPage = new BitMapHeaderPage(false);
+        headerPageId = bitMapHeaderPage.getCurrPage();
+        addFileEntry(bitMapFileName, headerPageId);
+        PageId startingPage = new PageId();
+        BMPage bmPage = new BMPage();
+        allocatePage(startingPage, 1);
+        pinPage(startingPage, bmPage);
+        bmPage.init(startingPage, bmPage);
+        bitMapHeaderPage.setNextPage(startingPage);
+        unpinPage(startingPage, true);
+        unpinPage(headerPageId, true);
+    }
+
     public BitMapFile(String fileName)
             throws GetFileEntryException, PinPageException, ConstructPageException, UnpinPageException {
         headerPageId = getFileEntry(fileName);
         this.fileName = fileName;
         bitMapHeaderPage = new BitMapHeaderPage(true);
         pinPage(headerPageId, bitMapHeaderPage);
+        unpinPage(headerPageId, false);
         unpinPage(headerPageId, false);
     }
 
@@ -121,6 +137,7 @@ public class BitMapFile implements GlobalConst {
         }
 
     }
+
 
     private void init(long totalTuples) throws PinPageException, UnpinPageException, IOException {
         BMPage bmPage = new BMPage();

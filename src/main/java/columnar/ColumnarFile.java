@@ -40,7 +40,7 @@ public class ColumnarFile implements GlobalConst {
                 String columnsFileName = fileName + "." + fileNum;
                 heapFileNames[i] = new Heapfile(columnsFileName);
             }
-
+            BitMapFile bitMapFile = new BitMapFile(fileName + ".del", false);
         } catch (Exception e) {
             e.printStackTrace();
             for (int i = 0; i < numColumns; i++) {
@@ -325,8 +325,6 @@ public class ColumnarFile implements GlobalConst {
 
         }
     }
-
-
 
 
     /*
