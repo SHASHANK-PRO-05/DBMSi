@@ -113,13 +113,13 @@ public class Query {
 
         String ans2 = "Count";
         System.out.print(ans2);
-        int temp2 = 20 - ans2.length();
+        int temp2 = 25 - ans2.length();
         for (int j = 0; j < temp2; j++)
             System.out.print(" ");
         for (int i = 0; i < projectionBreak.length; i++) {
             String ans = projectionBreak[i].getAttrName();
             System.out.print(ans);
-            int temp = 20 - ans.length();
+            int temp = 25 - ans.length();
             for (int j = 0; j < temp; j++)
                 System.out.print(" ");
 
@@ -130,7 +130,7 @@ public class Query {
             ArrayList<byte[]> tuples = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
             String ans1 = counter + "";
             System.out.print(ans1);
-            int temp1 = 20 - ans1.length();
+            int temp1 = 25 - ans1.length();
             for (int j = 0; j < temp1; j++)
                 System.out.print(" ");
 
@@ -139,13 +139,13 @@ public class Query {
                 if (projectionBreak[i].getAttrType() == AttrType.attrString) {
                     String ans = Convert.getStringValue(0, tuples.get(i), projectionBreak[i].getSize());
                     System.out.print(ans);
-                    int temp = 20 - ans.length();
+                    int temp = 25 - ans.length();
                     for (int j = 0; j < temp; j++)
                         System.out.print(" ");
                 } else {
                     int ans = Convert.getIntValue(0, tuples.get(i));
                     System.out.print(ans);
-                    int temp = 20 - (ans + "").length();
+                    int temp = 25 - (ans + "").length();
                     for (int j = 0; j < temp; j++)
                         System.out.print(" ");
                 }

@@ -168,10 +168,10 @@ public class ColumnarFile implements GlobalConst {
                     break;
                 case IndexType.BitMapIndex:
                     BitMapFile bitMapFile = new BitMapFile(indexInfos.get(i).getFileName());
-                    if (indexInfos.get(i).getValue().getValue().toString().equals(valueClass.toString())) {
-                        bitMapFile.Insert(position);
+                    if (indexInfos.get(i).getValue().getValue().toString().equals(valueClass.getValue().toString())) {
+                        bitMapFile.Insert(position - 1);
                     } else {
-                        bitMapFile.Delete(position);
+                        bitMapFile.Delete(position - 1);
                     }
                     break;
             }
