@@ -163,7 +163,6 @@ public class BatchInsert implements GlobalConst {
                     Convert.setStringValue(strings[i], position[i], bytes);
                 }
             }
-
             columnarFile.insertTuple(bytes);
         }
         double endTime = System.currentTimeMillis();

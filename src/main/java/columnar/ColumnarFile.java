@@ -1,6 +1,7 @@
 package columnar;
 
 import bitmap.BitMapFile;
+import btree.*;
 import diskmgr.DiskMgrException;
 import diskmgr.Page;
 import global.*;
@@ -14,8 +15,7 @@ import java.util.ArrayList;
 public class ColumnarFile implements GlobalConst {
 
     private ColumnarHeader columnarHeader;
-    // Question by shashank: I am not sure if it is required
-    // Shashank: I am not sure if it is required
+
     private Heapfile heapFileNames[];
     private int numColumns;
 
@@ -123,10 +123,13 @@ public class ColumnarFile implements GlobalConst {
             Heapfile heapfile = new Heapfile(this.getColumnarHeader().getHdrFile() + "." + i);
             rids[i] = heapfile.insertRecord(arrayList.get(i));
         }
+
         long pos = directoryHFPage.getReccnt() + 1;
         directoryHFPage.setReccnt(pos);
+        TID tid = new TID(rids.length, (int) pos, rids);
+        updateIndex(tid, arrayList, (int) pos);
         unpinPage(this.getColumnarHeader().getHeaderPageId(), true);
-        return new TID(rids.length, (int) pos, rids);
+        return tid;
     }
 
 
@@ -134,10 +137,42 @@ public class ColumnarFile implements GlobalConst {
             throws ColumnarFilePinPageException,
             ColumnarFileUnpinPageException,
             IOException
-            , HFBufMgrException, InvalidSlotNumberException {
+            , HFBufMgrException, InvalidSlotNumberException
+            , ConstructPageException, GetFileEntryException
+            , btree.PinPageException, Exception {
         AttrType[] attrTypes = this.getColumnarHeader().getColumns();
-        for (int i = 0; i < attrTypes.length; i++) {
+        ArrayList<IndexInfo> indexInfos = this.getColumnarHeader().getAllIndexes();
+        for (int i = 0; i < indexInfos.size(); i++) {
+            int columnNumber = indexInfos.get(i).getColumnNumber();
+            AttrType attrType = attrTypes[columnNumber];
 
+            ValueClass valueClass;
+            KeyClass keyClass;
+            if (attrType.getAttrType() == AttrType.attrString) {
+                String temp = Convert.getStringValue(0
+                        , arrayList.get(columnNumber), attrType.getSize());
+                valueClass = new StringValue(temp);
+                keyClass = new StringKey(temp);
+            } else {
+                int temp = Convert
+                        .getIntValue(0, arrayList.get(columnNumber));
+                valueClass = new IntegerValue(temp);
+                keyClass = new IntegerKey(temp);
+            }
+            switch (indexInfos.get(i).getIndextype().indexType) {
+                case IndexType.B_Index:
+                    BTreeFile bTreeFile = new BTreeFile(indexInfos.get(i).getFileName());
+                    bTreeFile.insert(keyClass, tid);
+                    break;
+                case IndexType.BitMapIndex:
+                    BitMapFile bitMapFile = new BitMapFile(indexInfos.get(i).getFileName());
+                    if (indexInfos.get(i).getValue().getValue().toString().equals(valueClass.toString())) {
+                        bitMapFile.Insert(position);
+                    } else {
+                        bitMapFile.Delete(position);
+                    }
+                    break;
+            }
         }
     }
 
@@ -320,8 +355,8 @@ public class ColumnarFile implements GlobalConst {
         this.heapFileNames = heapFileNames;
     }
 
-    public int getNumColumns() {
-        return numColumns;
+    public int getNumColumns() throws IOException {
+        return this.getColumnarHeader().getColumnCount();
     }
 
     public void setNumColumns(int numColumns) {

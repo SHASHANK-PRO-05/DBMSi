@@ -36,7 +36,7 @@ public class Index {
             initFromArgs(argv);
         }
     }
-    
+
     private static void initFromArgs(String argv[]) throws Exception {
         columnDBName = argv[0];
 
@@ -45,20 +45,12 @@ public class Index {
             throw new Exception("The DB does not exists");
         }
         SystemDefs systemDefs = new SystemDefs(columnDBName, 0, 4000, "LRU");
-
-
         columnarFileName = argv[1];
-
         if (getFileEntry(columnarFileName) == null)
             throw new Exception("The specified table does not exists");
-
-
         columnName = argv[2];
         indexMethod = argv[3];
-
-
         columnarFile = new ColumnarFile(columnarFileName);
-
         attrTypes = columnarFile.getColumnarHeader().getColumns();
         int columnCount = attrTypes.length;
         for (int i = 0; i < columnCount; i++) {
@@ -82,6 +74,7 @@ public class Index {
 
     private static void setupIndex() throws Exception {
         long count = columnarFile.getTupleCount();
+
         Scan scan = new Scan(columnarFile, (short) columnId);
 
         indexInfo.setColumnNumber(columnId);
@@ -97,16 +90,17 @@ public class Index {
             setupBTreeIndexes(scan);
         }
         scan.closeScan();
+
         SystemDefs.JavabaseBM.flushAllPages();
         double endTime = System.currentTimeMillis();
         double duration = (endTime - startTime);
         System.out.println("Time taken (Seconds)" + duration / 1000);
         System.out.println("Tuples in the table now:" + columnarFile.getColumnarHeader().getReccnt());
-        SystemDefs.JavabaseBM.flushAllPages();
         System.out.println("Write count: " + SystemDefs.pCounter.getwCounter());
         System.out.println("Read count: " + SystemDefs.pCounter.getrCounter());
+        SystemDefs.JavabaseBM.flushAllPages();
     }
-    
+
 
     private static void setupBTreeIndexes(Scan scan) throws Exception {
         String fileName = columnarFileName + "." + columnId + ".btree";
@@ -114,13 +108,13 @@ public class Index {
         int pos = 0;
         int colcount = columnarFile.getNumColumns();
         RID[] rids = new RID[colcount];
-        for(int i =0 ;i<colcount;i++)rids[i]=new RID();
-        TID tid = new TID (colcount,0,rids);
+        for (int i = 0; i < colcount; i++) rids[i] = new RID();
+        TID tid = new TID(colcount, 0, rids);
         TupleScan tupleScan = new TupleScan(columnarFile);
         Tuple tuple = tupleScan.getNext(tid);
-        ValueClass valueClass;
+        ValueClass valueClass = null;
         KeyClass keyClass;
-        
+
         while (tuple != null) {
             if (attrType.getAttrType() == 0) {
                 valueClass = new StringValue(Convert
@@ -130,18 +124,19 @@ public class Index {
                 valueClass = new IntegerValue(Convert.getIntValue(0, tuple.getTupleByteArray()));
                 keyClass = new IntegerKey((Integer) valueClass.getValue());
             }
-
+            System.out.println(((IntegerKey) keyClass).getKey());
             bTreeFile.insert(keyClass, tid);
             pos++;
             tid.setPosition(pos);
             tuple = tupleScan.getNext(tid);
-
         }
         bTreeFile.close();
+        indexInfo.setValue(valueClass);
+        indexInfo.setFileName(fileName);
+        columnarFile.getColumnarHeader().setIndex(indexInfo);
     }
-    
-    
-    
+
+
     private static void setupBitMapIndexes(Scan scan) throws Exception {
 
         //What type of of unique values are required
@@ -187,6 +182,7 @@ public class Index {
         }
 
     }
+
     private static PageId getFileEntry(String fileName) throws GetFileEntryException {
         try {
             return SystemDefs.JavabaseDB.getFileEntry(fileName);
@@ -194,7 +190,7 @@ public class Index {
             e.printStackTrace();
             throw new GetFileEntryException(e, "");
         }
-}
-    
+    }
+
 
 }

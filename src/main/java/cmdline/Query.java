@@ -140,7 +140,7 @@ public class Query {
 
         }
         iter.close();
-        
+
         SystemDefs.JavabaseBM.flushAllPages();
     }
 

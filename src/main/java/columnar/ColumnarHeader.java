@@ -164,7 +164,7 @@ public class ColumnarHeader extends DirectoryHFPage {
         pinPage(this.headerPageId, this);
         RID rid = this.insertRecord(byteInfo);
         if (rid == null) {
-            PageId pageId = new PageId();
+            PageId pageId = new PageId(this.headerPageId.pid);
             PageId nextPageId = new PageId(this.getNextPage().pid);
             //unpinPage(this.headerPageId, false);
             ColumnarHeader columnarHeader = new ColumnarHeader();
@@ -341,6 +341,45 @@ public class ColumnarHeader extends DirectoryHFPage {
         }
         unpinPage(pageId, false);
         return null;
+    }
+
+    public ArrayList<IndexInfo> getAllIndexes()
+            throws IOException,
+            HFBufMgrException,
+            InvalidSlotNumberException {
+        PageId pageId = new PageId(this.headerPageId.pid);
+        ColumnarHeader page = new ColumnarHeader();
+        ArrayList<IndexInfo> indexInfos = new ArrayList<IndexInfo>();
+        PageId nextPageId;
+        RID prevRID = null;
+        IndexInfo info;
+        pinPage(pageId, page);
+        int indexCount = page.getCounter();
+        int countRecords = page.getColumnCount();
+        for (int i = 0; i < indexCount + countRecords; i++) {
+            RID rid = null;
+            while (rid == null && pageId.pid != INVALID_PAGE) {
+                if (prevRID == null) {
+                    rid = page.firstRecord();
+                } else {
+                    rid = page.nextRecord(prevRID);
+                    if (rid == null) {
+                        nextPageId = page.getNextPage();
+                        unpinPage(pageId, false);
+                        pageId.pid = nextPageId.pid;
+                        if (pageId.pid != INVALID_PAGE)
+                            pinPage(pageId, page);
+                    }
+                }
+                prevRID = rid;
+            }
+            if (i >= countRecords) {
+                info = convertIndexByteInfo(page.getDataAtSlot(rid));
+                indexInfos.add(info);
+            }
+        }
+        unpinPage(pageId, false);
+        return indexInfos;
     }
 
     public ArrayList<IndexInfo> getPartiuclarTypeIndex(int columnNum, IndexType indexType)

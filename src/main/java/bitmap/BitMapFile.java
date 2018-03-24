@@ -346,13 +346,18 @@ public class BitMapFile implements GlobalConst {
             if (nextPageId.pid == INVALID_PAGE) {
                 allocatePage(nextPageId, 1);
                 bmPage.setNextPage(nextPageId);
+                BMPage tempPage = new BMPage();
+                pinPage(nextPageId, tempPage);
+                tempPage.setNextPage(new PageId(-1));
+                unpinPage(nextPageId, true);
             }
             unpinPage(pageId);
-            pageId = nextPageId;
+            pageId.pid = nextPageId.pid;
             pinPage(pageId, bmPage);
         }
-        unpinPage(pageId, true);
+
         bmPage.setABit(position, bit);
+        unpinPage(pageId, true);
         unpinPage(headerPageId, false);
         return false;
     }
