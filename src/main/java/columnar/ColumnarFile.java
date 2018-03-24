@@ -276,15 +276,12 @@ public class ColumnarFile implements GlobalConst {
             return true;
     }
 
-    public boolean markTupleDeleted(TID tid) throws Exception {
-        String fName = columnarHeader.getHdrFile() + ".del";
-        PageId bmPageId = getFileEntry(fName);
-        BitMapFile bmFile = new BitMapFile(fName);
-        //pinPage(bmPageId, bmFile);
+    public void markTupleDeleted(TID tid) throws Exception {
+        deleteBitMapFile.Insert(tid.getPosition());
+    }
 
-        bmFile.Insert(tid.getPosition());
-
-        return true;
+    public boolean isTupleDeletedAtPosition(long position) throws bitmap.UnpinPageException, IOException, bitmap.PinPageException {
+        return deleteBitMapFile.Get(position);
     }
 
 

@@ -274,5 +274,16 @@ public class BMPage extends Page implements GlobalConst {
         }
     }
 
+    /**
+     *
+     * @param position
+     * @return
+     * @throws IOException
+     */
+    public int getABit(long position) throws IOException {
+        long recordToUse = (position / 8) % availableMap;
+        long recordPositionToUse = position % 8;
 
+        return (data[(int) (DPFIXED + recordToUse)] >> recordPositionToUse) & 1;
+    }
 }

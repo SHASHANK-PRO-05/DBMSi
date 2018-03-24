@@ -4,6 +4,7 @@ import columnar.ColumnClassCreationException;
 import columnar.ColumnarFile;
 import global.AttrType;
 import global.Convert;
+import global.SystemDefs;
 import heap.HFDiskMgrException;
 
 import java.io.IOException;
@@ -29,6 +30,7 @@ public class BaseTest implements ITestConstants {
             sizes[i] = (short) attrType.getSize();
         }
 
+        SystemDefs systemDefs = new SystemDefs(dbName, numOfPages, bufPoolSize, "LRU");
         columnarFile = new ColumnarFile(employeeColumnarFile, numOfColumns, attrTypes);
     }
 

@@ -21,7 +21,6 @@ public class DeleteTest extends BaseTest {
 
     @Before
     public void setupDatabase() throws Exception {
-        SystemDefs systemDefs = new SystemDefs(dbName, numOfPages, bufPoolSize, "LRU");
         AttrType numType = new AttrType();
         numType.setSize((short) 4);
         numType.setAttrType(AttrType.attrInteger);
