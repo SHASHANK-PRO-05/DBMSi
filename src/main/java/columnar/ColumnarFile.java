@@ -8,7 +8,6 @@ import global.*;
 import heap.*;
 import heap.InvalidTupleSizeException;
 import iterator.BitMapUtils;
-import iterator.BitmapScan;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -20,6 +19,7 @@ public class ColumnarFile implements GlobalConst {
 
     private Heapfile heapFileNames[];
     private int numColumns;
+    BitMapFile deleteBitmapFile;
 
     /*
      * Contructor for initialization
@@ -42,7 +42,8 @@ public class ColumnarFile implements GlobalConst {
                 String columnsFileName = fileName + "." + fileNum;
                 heapFileNames[i] = new Heapfile(columnsFileName);
             }
-            BitMapFile bitMapFile = new BitMapFile(fileName + ".del", false);
+
+            deleteBitmapFile = new BitMapFile(fileName + ".del", false);
         } catch (Exception e) {
             e.printStackTrace();
             for (int i = 0; i < numColumns; i++) {
@@ -67,7 +68,7 @@ public class ColumnarFile implements GlobalConst {
 
     public ColumnarFile(String fileName)
         throws IOException, DiskMgrException, ColumnarFileDoesExistsException, ColumnarFilePinPageException,
-        HFException, HFBufMgrException, HFDiskMgrException, ColumnarFileUnpinPageException {
+        HFException, HFBufMgrException, HFDiskMgrException, ColumnarFileUnpinPageException, bitmap.PinPageException, bitmap.AddFileEntryException, bitmap.UnpinPageException, bitmap.ConstructPageException {
         PageId pageId = getFileEntry(fileName);
         if (pageId != null) {
             columnarHeader = new ColumnarHeader(pageId, fileName);
@@ -80,6 +81,8 @@ public class ColumnarFile implements GlobalConst {
         } else {
             throw new ColumnarFileDoesExistsException(null, "Columnar File Does not exists");
         }
+
+        deleteBitmapFile = new BitMapFile(fileName + ".del", false);
     }
 
     // TODO: change the throwing exceptions
@@ -105,7 +108,6 @@ public class ColumnarFile implements GlobalConst {
         }
         unpinPage(pageId, false);
         deleteFileEntry(columnarHeader.getHdrFile());
-
     }
 
 
@@ -288,13 +290,12 @@ public class ColumnarFile implements GlobalConst {
     public void purgeAllDeletedTuples()
         throws Exception {
         ArrayList<Integer> posList = new ArrayList<Integer>();
-        String fName = this.getColumnarHeader().getHdrFile() + ".del";
-        BitMapFile bitMapFile = new BitMapFile(fName);
+        String fName = this.getColumnarHeader().getHdrFile();
         PageId headerPageId = getFileEntry(fName);
 
         if (headerPageId != null) {
             ArrayList<BitMapFile> arrayList = new ArrayList<BitMapFile>();
-            arrayList.add(bitMapFile);
+            arrayList.add(deleteBitmapFile);
 
             BitMapUtils bitMapUtils = new BitMapUtils(arrayList);
 
@@ -305,12 +306,11 @@ public class ColumnarFile implements GlobalConst {
                 position = bitMapUtils.getNextOrPosition();
             }
 
-            String fname = this.getColumnarHeader().getHdrFile();
             PageId pageId = this.getColumnarHeader().getHeaderPageId();
             HFPage hfPage = new HFPage();
             pinPage(pageId, hfPage);
             for (int i = 0; i < getColumnarHeader().getColumnCount(); i++) {
-                Heapfile hf = new Heapfile(fname + '.' + i);
+                Heapfile hf = new Heapfile(fName + '.' + i);
                 hf.purgeRecords(posList);
             }
 
