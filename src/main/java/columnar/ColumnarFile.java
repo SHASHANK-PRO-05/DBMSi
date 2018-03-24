@@ -282,7 +282,9 @@ public class ColumnarFile implements GlobalConst {
         BitMapFile bmFile = new BitMapFile(fName);
         //pinPage(bmPageId, bmFile);
 
-        return bmFile.Insert(tid.getPosition());
+        bmFile.Insert(tid.getPosition());
+
+        return true;
     }
 
 

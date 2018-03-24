@@ -61,7 +61,6 @@ public class Delete {
         throws Exception {
 
         int conditionalColumnId = -1;
-        boolean recordsDeleted = false;
         AttrType condAttr = new AttrType();
 
         attrTypes = columnarFile.getColumnarHeader().getColumns();
@@ -111,22 +110,28 @@ public class Delete {
         System.out.print("\n");
 
         int position = 0;
+        int totalRecordsDeleted = 0;
 
         while (tuple != null) {
             ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
             if (condExprEval.isValid(arrayList)) {
                 columnarFile.markTupleDeleted(new TID(columnarFile.getNumColumns(), position));
-                recordsDeleted = true;
+                totalRecordsDeleted += 1;
             }
 
             tuple = tupleScan.getNext(tid);
             position++;
         }
 
+
         tupleScan.closeTupleScan();
 
-        if (purgeDB && recordsDeleted) {
-            columnarFile.purgeAllDeletedTuples();
+        if (totalRecordsDeleted > 0) {
+            if (purgeDB) columnarFile.purgeAllDeletedTuples();
+
+            SystemDefs.JavabaseBM.pinPage(columnarFile.getColumnarHeader().getHeaderPageId(), columnarFile.getColumnarHeader(), false);
+            columnarFile.getColumnarHeader().setReccnt(columnarFile.getColumnarHeader().getReccnt() - totalRecordsDeleted);
+            SystemDefs.JavabaseBM.unpinPage(columnarFile.getColumnarHeader().getHeaderPageId(), true);
         }
 
         SystemDefs.JavabaseBM.flushAllPages();
