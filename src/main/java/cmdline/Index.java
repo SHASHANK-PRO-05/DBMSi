@@ -99,6 +99,7 @@ public class Index {
         System.out.println("Write count: " + SystemDefs.pCounter.getwCounter());
         System.out.println("Read count: " + SystemDefs.pCounter.getrCounter());
         SystemDefs.JavabaseBM.flushAllPages();
+        SystemDefs.JavabaseDB.closeDB();
     }
 
 

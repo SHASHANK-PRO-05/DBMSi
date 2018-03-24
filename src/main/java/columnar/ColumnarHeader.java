@@ -333,7 +333,6 @@ public class ColumnarHeader extends DirectoryHFPage {
             if (i >= countRecords) {
                 info = convertIndexByteInfo(page.getDataAtSlot(rid));
                 if (info.getColumnNumber() == columnNum && info.getIndextype().toString().equals(indType.toString())) {
-                    System.out.println(info.getValue());
                     unpinPage(pageId, false);
                     return info;
                 }

@@ -37,7 +37,7 @@ public class CondExprEval {
     }
 
     public boolean isValid(ArrayList<byte[]> arrayList) throws IOException {
-        for (int i = 0; i < condExprs.length-1; i++) {
+        for (int i = 0; i < condExprs.length - 1; i++) {
             AttrType attrType = attrTypes[relativeColumnIndexs[i]];
             int op = 0;
             switch (attrType.getAttrType()) {
@@ -54,27 +54,27 @@ public class CondExprEval {
 
             switch (condExprs[i].op.attrOperator) {
                 case AttrOperator.aopEQ:
-                    if (op != 0) return false;
+                    if (op == 0) return true;
                     break;
                 case AttrOperator.aopLT:
-                    if (op > 0) return false;
+                    if (op < 0) return true;
                     break;
                 case AttrOperator.aopGT:
-                    if (op < 0) return false;
+                    if (op > 0) return true;
                     break;
                 case AttrOperator.aopNE:
-                    if (op == 0) return false;
+                    if (op != 0) return true;
                     break;
                 case AttrOperator.aopLE:
-                    if (op >= 0) return false;
+                    if (op <= 0) return true;
                     break;
                 case AttrOperator.aopGE:
-                    if (op <= 0) return false;
+                    if (op >= 0) return true;
                     break;
                 default:
                     break;
             }
         }
-        return true;
+        return false;
     }
 }
