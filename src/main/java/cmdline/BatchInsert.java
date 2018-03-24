@@ -34,7 +34,6 @@ public class BatchInsert implements GlobalConst {
 
 
     private static AttrType[] parseHeader() throws Exception {
-
         String header = bufferedReader.readLine();
         String columnsString[] = header.split("\t");
         AttrType[] attrTypes = new AttrType[columnsString.length];

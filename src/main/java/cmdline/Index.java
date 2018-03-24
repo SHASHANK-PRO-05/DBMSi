@@ -141,6 +141,7 @@ public class Index {
         tupleScan.closeTupleScan();
         indexInfo.setValue(valueClass);
         indexInfo.setFileName(fileName);
+        System.out.println(indexInfo.getFileName());
         columnarFile.getColumnarHeader().setIndex(indexInfo);
     }
 

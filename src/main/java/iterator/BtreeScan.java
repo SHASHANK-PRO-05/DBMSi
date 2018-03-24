@@ -57,7 +57,8 @@ public class BtreeScan extends Iterator {
             throw new ColumnarFileScanException(e, "Not able to create columnar file");
         }
         // check if the index exist
-        IndexInfo indexinfo = columnarFile.getColumnarHeader().getIndex(attrTypes[attrLength - 1].getColumnId(),
+        int indexColumnId = condExprs[0].operand1.symbol.offset;
+        IndexInfo indexinfo = columnarFile.getColumnarHeader().getIndex(indexColumnId,
                 new IndexType(1));
         try {
             indFile = new BTreeFile(indexinfo.getFileName());
