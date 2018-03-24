@@ -1,6 +1,5 @@
 package cmdline;
 
-import bitmap.BitMapFile;
 import columnar.ByteToTuple;
 import columnar.ColumnarFile;
 import columnar.TupleScan;
@@ -59,7 +58,7 @@ public class Delete {
      * Function to get the values of the arguments and then call filescan
      */
     private static void deleteUsingColumnarFileScan()
-            throws Exception {
+        throws Exception {
 
         int conditionalColumnId = -1;
         boolean recordsDeleted = false;
@@ -127,8 +126,7 @@ public class Delete {
         tupleScan.closeTupleScan();
 
         if (purgeDB && recordsDeleted) {
-            BitMapFile bitMapFile = new BitMapFile(columnarFile.getColumnarHeader().getHdrFile() + ".del");
-            columnarFile.purgeAllDeletedTuples(bitMapFile);
+            columnarFile.purgeAllDeletedTuples();
         }
 
         SystemDefs.JavabaseBM.flushAllPages();

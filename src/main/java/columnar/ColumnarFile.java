@@ -7,6 +7,8 @@ import diskmgr.Page;
 import global.*;
 import heap.*;
 import heap.InvalidTupleSizeException;
+import iterator.BitMapUtils;
+import iterator.BitmapScan;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,7 +32,7 @@ public class ColumnarFile implements GlobalConst {
      */
 
     public ColumnarFile(String fileName, int numColumns, AttrType[] type)
-            throws ColumnClassCreationException, HFDiskMgrException, IOException {
+        throws ColumnClassCreationException, HFDiskMgrException, IOException {
 
         try {
             columnarHeader = new ColumnarHeader(fileName, numColumns, type);
@@ -64,8 +66,8 @@ public class ColumnarFile implements GlobalConst {
      */
 
     public ColumnarFile(String fileName)
-            throws IOException, DiskMgrException, ColumnarFileDoesExistsException, ColumnarFilePinPageException,
-            HFException, HFBufMgrException, HFDiskMgrException, ColumnarFileUnpinPageException {
+        throws IOException, DiskMgrException, ColumnarFileDoesExistsException, ColumnarFilePinPageException,
+        HFException, HFBufMgrException, HFDiskMgrException, ColumnarFileUnpinPageException {
         PageId pageId = getFileEntry(fileName);
         if (pageId != null) {
             columnarHeader = new ColumnarHeader(pageId, fileName);
@@ -91,8 +93,8 @@ public class ColumnarFile implements GlobalConst {
      * Deletes whole Database Not completed yet
      */
     public void deleteColumnarFile() throws InvalidSlotNumberException, FileAlreadyDeletedException,
-            InvalidTupleSizeException, HFBufMgrException, HFDiskMgrException, IOException, ColumnarFilePinPageException,
-            ColumnarFileUnpinPageException, HFException, heap.InvalidSlotNumberException {
+        InvalidTupleSizeException, HFBufMgrException, HFDiskMgrException, IOException, ColumnarFilePinPageException,
+        ColumnarFileUnpinPageException, HFException, heap.InvalidSlotNumberException {
         String fname = this.getColumnarHeader().getHdrFile();
         PageId pageId = this.getColumnarHeader().getHeaderPageId();
         HFPage hfPage = new HFPage();
@@ -134,12 +136,12 @@ public class ColumnarFile implements GlobalConst {
 
 
     private void updateIndex(TID tid, ArrayList<byte[]> arrayList, int position)
-            throws ColumnarFilePinPageException,
-            ColumnarFileUnpinPageException,
-            IOException
-            , HFBufMgrException, InvalidSlotNumberException
-            , ConstructPageException, GetFileEntryException
-            , btree.PinPageException, Exception {
+        throws ColumnarFilePinPageException,
+        ColumnarFileUnpinPageException,
+        IOException
+        , HFBufMgrException, InvalidSlotNumberException
+        , ConstructPageException, GetFileEntryException
+        , btree.PinPageException, Exception {
         AttrType[] attrTypes = this.getColumnarHeader().getColumns();
         ArrayList<IndexInfo> indexInfos = this.getColumnarHeader().getAllIndexes();
         for (int i = 0; i < indexInfos.size(); i++) {
@@ -150,12 +152,12 @@ public class ColumnarFile implements GlobalConst {
             KeyClass keyClass;
             if (attrType.getAttrType() == AttrType.attrString) {
                 String temp = Convert.getStringValue(0
-                        , arrayList.get(columnNumber), attrType.getSize());
+                    , arrayList.get(columnNumber), attrType.getSize());
                 valueClass = new StringValue(temp);
                 keyClass = new StringKey(temp);
             } else {
                 int temp = Convert
-                        .getIntValue(0, arrayList.get(columnNumber));
+                    .getIntValue(0, arrayList.get(columnNumber));
                 valueClass = new IntegerValue(temp);
                 keyClass = new IntegerKey(temp);
             }
@@ -210,7 +212,7 @@ public class ColumnarFile implements GlobalConst {
     }
 
     boolean updateTuple(TID tid, Tuple newTuple)
-            throws InvalidSlotNumberException, InvalidTupleSizeException, Exception {
+        throws InvalidSlotNumberException, InvalidTupleSizeException, Exception {
 
         int length = newTuple.getLength() - newTuple.getOffset();
         pinPage(this.getColumnarHeader().getHeaderPageId(), this.getColumnarHeader());
@@ -232,7 +234,7 @@ public class ColumnarFile implements GlobalConst {
     }
 
     ValueClass getValue(TID tid, int column) throws InvalidSlotNumberException, InvalidTupleSizeException, HFException,
-            HFDiskMgrException, HFBufMgrException, Exception {
+        HFDiskMgrException, HFBufMgrException, Exception {
 
         pinPage(this.getColumnarHeader().getHeaderPageId(), this.getColumnarHeader());
         String fname = this.getColumnarHeader().getHdrFile();
@@ -255,7 +257,7 @@ public class ColumnarFile implements GlobalConst {
     }
 
     boolean updateColumnOfTuple(TID tid, Tuple newTuple, int column)
-            throws InvalidSlotNumberException, InvalidUpdateException, InvalidTupleSizeException, Exception {
+        throws InvalidSlotNumberException, InvalidUpdateException, InvalidTupleSizeException, Exception {
         pinPage(this.getColumnarHeader().getHeaderPageId(), this.getColumnarHeader());
         String fname = this.getColumnarHeader().getHdrFile();
         Heapfile heapFile = new Heapfile(fname + "." + column);
@@ -274,55 +276,45 @@ public class ColumnarFile implements GlobalConst {
     }
 
     public boolean markTupleDeleted(TID tid) throws Exception {
-        String fName = this.getColumnarHeader().getHdrFile() + ".del";
-        PageId headerPageId = getFileEntry(fName);
-        long totalNumRecords = this.getTupleCount();
-        if (headerPageId != null) {
-            BitMapFile bmFile = new BitMapFile(fName, totalNumRecords);
-            if (bmFile.Insert(tid.getPosition())) {
-                return true;
-            } else
-                return false;
-        } else {
-            BitMapFile bmFile = new BitMapFile(fName, totalNumRecords);
-            if (bmFile.Insert(tid.getPosition())) {
-                return true;
-            } else
-                return false;
-        }
+        String fName = columnarHeader.getHdrFile() + ".del";
+        PageId bmPageId = getFileEntry(fName);
+        BitMapFile bmFile = new BitMapFile(fName);
+        //pinPage(bmPageId, bmFile);
 
+        return bmFile.Insert(tid.getPosition());
     }
 
 
-    public void purgeAllDeletedTuples(BitMapFile bitMapFile)
-            throws Exception {
+    public void purgeAllDeletedTuples()
+        throws Exception {
         ArrayList<Integer> posList = new ArrayList<Integer>();
         String fName = this.getColumnarHeader().getHdrFile() + ".del";
+        BitMapFile bitMapFile = new BitMapFile(fName);
         PageId headerPageId = getFileEntry(fName);
 
         if (headerPageId != null) {
-//            BitMapOperations bitMapOperations = new BitMapOperations();
-//            bitMapOperations.init(bitMapFile);
-//            int nextPos = Integer.MIN_VALUE;
-//            while (nextPos != -1) {
-//
-//                nextPos = bitMapOperations.getNextIndexedPosition();
-//                posList.add(nextPos);// .add(nextPos);
-//                // System.out.println(nextPos);
-//                // To Do : Use this position of the BitMap file to delete a record.
-//                // deleteTupleAtPosition is on hold because of delete of HFPage.
-//                // Currently, deleteTupleAtPosition is deleting the record from heap file at a particular position.
-//            }
-//            String fname = this.getColumnarHeader().getHdrFile();
-//            PageId pageId = this.getColumnarHeader().getHeaderPageId();
-//            HFPage hfPage = new HFPage();
-//            pinPage(pageId, hfPage);
-//            for (int i = 0; i < numColumns; i++) {
-//                Heapfile hf = new Heapfile(fname + '.' + i, null);
-//                hf.purgeRecords((Integer[]) posList.toArray());
-//            }
-//            unpinPage(pageId, false);
+            ArrayList<BitMapFile> arrayList = new ArrayList<BitMapFile>();
+            arrayList.add(bitMapFile);
 
+            BitMapUtils bitMapUtils = new BitMapUtils(arrayList);
+
+            Integer position = bitMapUtils.getNextOrPosition();
+
+            while (position != -1) {
+                posList.add(position);
+                position = bitMapUtils.getNextOrPosition();
+            }
+
+            String fname = this.getColumnarHeader().getHdrFile();
+            PageId pageId = this.getColumnarHeader().getHeaderPageId();
+            HFPage hfPage = new HFPage();
+            pinPage(pageId, hfPage);
+            for (int i = 0; i < getColumnarHeader().getColumnCount(); i++) {
+                Heapfile hf = new Heapfile(fname + '.' + i);
+                hf.purgeRecords(posList);
+            }
+
+            unpinPage(pageId, false);
         }
     }
 
@@ -375,7 +367,7 @@ public class ColumnarFile implements GlobalConst {
     }
 
     public AttrType getColumnInfo(int i) throws ColumnarFilePinPageException, InvalidSlotNumberException,
-            HFBufMgrException, heap.InvalidSlotNumberException, IOException, ColumnarFileUnpinPageException {
+        HFBufMgrException, heap.InvalidSlotNumberException, IOException, ColumnarFileUnpinPageException {
         DirectoryHFPage dirpage = new DirectoryHFPage();
         PageId id = columnarHeader.getHeaderPageId();
         pinPage(id, dirpage);
