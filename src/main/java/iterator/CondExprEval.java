@@ -32,8 +32,6 @@ public class CondExprEval {
                 secondOperand[i] = new IntegerValue(condExpr[i].operand2.integer);
             }
         }
-
-
     }
 
     public boolean isValid(ArrayList<byte[]> arrayList) throws IOException {
