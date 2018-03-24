@@ -1,18 +1,14 @@
 package iterator;
 
-import java.io.IOException;
-import java.util.ArrayList;
-
-import bufmgr.PageNotReadException;
 import columnar.ByteToTuple;
 import columnar.ColumnarFile;
-import columnar.TupleScan;
 import global.AttrType;
 import global.RID;
-import heap.InvalidTupleSizeException;
-import heap.InvalidTypeException;
 import heap.Scan;
 import heap.Tuple;
+
+import java.io.IOException;
+import java.util.ArrayList;
 
 public class ColumnScan extends Iterator {
 
@@ -79,11 +75,13 @@ public class ColumnScan extends Iterator {
         ArrayList<byte[]> arrayList = new ArrayList<byte[]>();
         for (int i = 0; i < attrLength; i++) {
             tuples[i] = scan[i].getNext(rid);
+            if (tuples[i] == null)
+                return null;
             arrayList.add(tuples[i].getTupleByteArray());
         }
         Tuple projectTuples[] = new Tuple[projList.length];
         int sizeOfProjectTuple = 0;
-        while (arrayList != null) {
+        while (arrayList.size() != 0) {
             sizeOfProjectTuple = 0;
             if (condExprEval.isValid(arrayList)) {
                 for (int i = 0; i < projList.length; i++) {
@@ -111,7 +109,7 @@ public class ColumnScan extends Iterator {
     @Override
     public void close() throws IOException {
         for (Scan s : scan) {
-		    s.closeScan();
+            s.closeScan();
         }
 
     }

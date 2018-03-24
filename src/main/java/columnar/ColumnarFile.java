@@ -177,7 +177,6 @@ public class ColumnarFile implements GlobalConst {
                     } else {
                         bitMapFile.Delete(position);
                     }
-                    bitMapFile.close();
                     break;
             }
         }

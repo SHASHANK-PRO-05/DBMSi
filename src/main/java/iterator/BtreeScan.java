@@ -99,7 +99,7 @@ public class BtreeScan extends Iterator {
             RID[] rid = new RID[projList.length];
 
             for (int i = 0; i < projList.length; i++) {
-                rid[i] = tid.getRecordIDs()[i];
+                rid[i] = tid.getRecordIDs()[projList[i].offset];
                 HFPage pg = new HFPage();
                 pinPage(rid[i].pageNo, pg);
                 tuples[i] = pg.returnRecord(rid[i]);

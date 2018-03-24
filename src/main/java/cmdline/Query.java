@@ -45,12 +45,10 @@ public class Query {
         value = argv[lengthOfArgv - 3];
         operator = argv[lengthOfArgv - 4];
         conditonalColumn = argv[lengthOfArgv - 5];
-
-
-        for (int i = lengthOfArgv - 7; i >= 3; i--) {
+        for (int i = 3; i <= lengthOfArgv - 7; i++) {
             targetColumnNames.add(argv[i]);
-
         }
+
         setUpFileScan();
     }
 
@@ -59,89 +57,114 @@ public class Query {
      */
     private static void setUpFileScan()
             throws Exception {
-
         AttrType[] in = new AttrType[targetColumnNames.size() + 1];
-        AttrType[] proj = new AttrType[targetColumnNames.size()];
-
-        short[] strSizes = new short[2];
-        int conditonalColumnId = -1;
+        AttrType[] projectionBreak = new AttrType[targetColumnNames.size()];
         FldSpec[] projList = new FldSpec[targetColumnNames.size()];
-        AttrType condAttr = new AttrType();
+
         SystemDefs systemDefs = new SystemDefs(columnDBName, 0, numBuf, "LRU");
+
         ColumnarFile columnarFile = new ColumnarFile(columnarFileName);
         attrTypes = columnarFile.getColumnarHeader().getColumns();
-        int columncount = attrTypes.length;
-        int outColumnsSize = targetColumnNames.size();
-        int counterStr = 0, counterIn = 0, counterFld = 0;
 
-        for (int i = 0; i < columncount; i++) {
-            for (int j = 0; j < outColumnsSize; j++) {
-                if (attrTypes[i].getAttrName().equals(targetColumnNames.get(j))) {
-                    in[counterIn] = attrTypes[i];
-                    proj[counterFld] = attrTypes[i];
-                    projList[counterFld] = new FldSpec(new RelSpec(0), attrTypes[i].getColumnId());
-                    counterIn++;
-                    counterFld++;
-                    if (attrTypes[i].getAttrType() == 0) {
-                        //strSizes[counterStr] = attrTypes[i].getSize();
-                        counterStr++;
+
+        for (int i = 0; i < in.length; i++) {
+            if (i < in.length - 1)
+                for (int j = 0; j < attrTypes.length; j++) {
+                    if (targetColumnNames.get(i).equals(attrTypes[j].getAttrName())) {
+                        in[i] = attrTypes[j];
+                        projectionBreak[i] = attrTypes[j];
+                        projList[i] = new FldSpec(new RelSpec(0)
+                                , attrTypes[j].getColumnId());
+                        break;
                     }
-
-                    break;
-                } else if (i == columncount - 1) {
-                    //throw exception record not found.
+                }
+            else {
+                for (int j = 0; j < attrTypes.length; j++) {
+                    if (conditonalColumn.equals(attrTypes[j].getAttrName())) {
+                        in[i] = attrTypes[j];
+                    }
                 }
             }
-            if (attrTypes[i].getAttrName().equals(conditonalColumn)) {
-                condAttr = attrTypes[i];
-                in[counterIn] = attrTypes[i];
-                counterIn++;
-                conditonalColumnId = attrTypes[i].getColumnId();
-            }
         }
-
 
         CondExpr[] condition = new CondExpr[2];
         condition[1] = null;
         condition[0] = new CondExpr();
         condition[0].next = condition[1];
-        condition[0].operand1.symbol = new FldSpec(new RelSpec(0), conditonalColumnId);
+        condition[0].operand1.symbol = new FldSpec(new RelSpec(0), in[in.length - 1]
+                .getColumnId());
         condition[0].op = parseOperator(operator);
         condition[0].type1 = new AttrType(AttrType.attrSymbol);
-        condition[0].type2 = new AttrType(condAttr.getAttrType());
-        if (condAttr.getAttrType() == 1)
+        condition[0].type2 = new AttrType(in[in.length - 1].getAttrType());
+
+
+        if (in[in.length - 1].getAttrType() == 1)
             condition[0].operand2.integer = Integer.parseInt(value);
-        else if (condAttr.getAttrType() == 0)
+        else if (in[in.length - 1].getAttrType() == 0)
             condition[0].operand2.string = value;
 
-        Iterator iter = getIterator(in, strSizes, counterIn, counterFld, projList, condition);
+        Iterator iterator = getIterator(in, null
+                , in.length, projList.length, projList, condition);
+        double startTime = System.currentTimeMillis();
+        Tuple tuple = iterator.getNext();
+        ByteToTuple byteToTuple = new ByteToTuple(projectionBreak);
+        int position = 0;
 
 
-        //ColumnarFileScan columnarScan = new ColumnarFileScan(columnarFileName, in, strSizes,counterIn, counterFld, projList, condition);
-        Tuple tuple = iter.getNext();
-        ByteToTuple byteToTuple = new ByteToTuple(proj);
-        for (int i = 0; i < proj.length; i++) {
-            System.out.print(proj[i].getAttrName() + "\t");
+        String ans2 = "Count";
+        System.out.print(ans2);
+        int temp2 = 20 - ans2.length();
+        for (int j = 0; j < temp2; j++)
+            System.out.print(" ");
+        for (int i = 0; i < projectionBreak.length; i++) {
+            String ans = projectionBreak[i].getAttrName();
+            System.out.print(ans);
+            int temp = 20 - ans.length();
+            for (int j = 0; j < temp; j++)
+                System.out.print(" ");
+
         }
-        System.out.print("\n");
+        System.out.println();
+        int counter = 1;
         while (tuple != null) {
             ArrayList<byte[]> tuples = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
-            int count = 0;
-            for (AttrType type : proj) {
-                if (type.getAttrType() == 1) {
-                    System.out.print(Convert.getIntValue(0, tuples.get(count)) + "\t	");
-                } else if (type.getAttrType() == 0) {
-                    System.out.print(Convert.getStringValue(0, tuples.get(count), tuples.get(count).length) + "\t");
+            String ans1 = counter + "";
+            System.out.print(ans1);
+            int temp1 = 20 - ans1.length();
+            for (int j = 0; j < temp1; j++)
+                System.out.print(" ");
+
+            counter++;
+            for (int i = 0; i < projectionBreak.length; i++) {
+                if (projectionBreak[i].getAttrType() == AttrType.attrString) {
+                    String ans = Convert.getStringValue(0, tuples.get(i), projectionBreak[i].getSize());
+                    System.out.print(ans);
+                    int temp = 20 - ans.length();
+                    for (int j = 0; j < temp; j++)
+                        System.out.print(" ");
+                } else {
+                    int ans = Convert.getIntValue(0, tuples.get(i));
+                    System.out.print(ans);
+                    int temp = 20 - (ans + "").length();
+                    for (int j = 0; j < temp; j++)
+                        System.out.print(" ");
                 }
-                count++;
             }
-            System.out.println("\n");
-            tuple = iter.getNext();
-
+            System.out.println();
+            tuple = iterator.getNext();
         }
-        iter.close();
-
+        iterator.close();
         SystemDefs.JavabaseBM.flushAllPages();
+
+        System.out.println("--------------------------------------------------");
+        double endTime = System.currentTimeMillis();
+        double duration = (endTime - startTime);
+        System.out.println("Time taken (Seconds)" + duration / 1000);
+        System.out.println("Tuples in the table now:" + columnarFile.getColumnarHeader().getReccnt());
+        System.out.println("Write count: " + SystemDefs.pCounter.getwCounter());
+        System.out.println("Read count: " + SystemDefs.pCounter.getrCounter());
+        SystemDefs.JavabaseBM.flushAllPages();
+        SystemDefs.JavabaseDB.closeDB();
     }
 
     private static Iterator getIterator(AttrType[] in, short[] strSizes, int counterIn, int counterFld, FldSpec[] projList, CondExpr[] condition)

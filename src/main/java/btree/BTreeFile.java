@@ -222,9 +222,7 @@ public class BTreeFile extends IndexFile
         } else {
             throw new IndexException(null, "Btree indexing already done on this column");
         }
-
         dbname = new String(filename);
-
     }
 
     /**
