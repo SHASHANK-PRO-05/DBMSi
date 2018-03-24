@@ -48,6 +48,52 @@ interface Filetype {
 public class Heapfile implements Filetype, GlobalConst {
 
 
+    public void purgeRecords(Integer[] positions) throws Exception {
+
+        /*
+         * Loop through Directory Pages
+         *  -> Loop through data page records
+         *    -> Check positions array and find pages that contain records with those position
+         */
+        HFPage currentDirPage = new HFPage();
+        PageId currentDirPageId = new PageId(_firstDirPageId.pid);
+        RID currentRecord = new RID();
+        int lastPositionPurged = -1;
+        int recordsScanned = 0;
+
+        for (; currentDirPageId != null; currentDirPageId = currentDirPage.getNextPage()) {
+            pinPage(currentDirPageId, currentDirPage, false);
+            for (RID rid = currentDirPage.firstRecord(); rid != null; rid = currentDirPage.nextRecord(currentRecord)) {
+                byte[] data = currentDirPage.getDataAtSlot(rid);
+                DataPageInfo dataPageInfo = new DataPageInfo(data);
+                int currentlyScanningRecords = recordsScanned + dataPageInfo.getRecordCount();
+                HFPage dataPage = new HFPage();
+                boolean dirtyPage = false;
+                int currentPageRecordsDeleted = 0;
+
+                for (int i = lastPositionPurged + 1; i < lastPositionPurged + dataPageInfo.getRecordCount(); i++) {
+                    if (positions[i] >= recordsScanned && positions[i] < currentlyScanningRecords) {
+                        pinPage(dataPageInfo.pageId, dataPage, false);
+                        dataPage.deleteRecord(new RID(dataPageInfo.pageId, (positions[i] - recordsScanned) % dataPageInfo.getRecordCount()));
+                        lastPositionPurged += 1;
+                        dirtyPage = true;
+                        currentPageRecordsDeleted += 1;
+                    }
+                }
+
+                if (dirtyPage) {
+                    dataPageInfo.recct -= currentPageRecordsDeleted;
+                    dataPageInfo.flushToTuple();
+                    currentDirPage.updateDirRecordCount(rid, dataPageInfo);
+                    dataPage.compact_slot_dir();
+                    unpinPage(dataPageInfo.pageId, true);
+                }
+
+                recordsScanned = currentlyScanningRecords;
+            }
+        }
+    }
+
     PageId _firstDirPageId;   // page number of header page
     int _ftype;
     private boolean _file_deleted;

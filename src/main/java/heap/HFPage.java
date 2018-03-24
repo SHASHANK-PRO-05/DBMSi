@@ -2,11 +2,14 @@
 
 package heap;
 
-import java.io.*;
-import java.lang.*;
+import diskmgr.InvalidPageNumberException;
+import diskmgr.Page;
+import global.Convert;
+import global.GlobalConst;
+import global.PageId;
+import global.RID;
 
-import global.*;
-import diskmgr.*;
+import java.io.IOException;
 
 
 /**
@@ -612,6 +615,40 @@ public class HFPage extends Page
         }
         return ans;
     }
+
+    /**
+     * Update DataPageInfo of a particular RID with new DataPageInfo
+     *
+     * @param rid          Record ID of the data page info to be updated
+     * @param dataPageInfo New Data Page Info
+     * @throws Exception General Exception
+     */
+    public void updateDirRecordCount(RID rid, DataPageInfo dataPageInfo) throws Exception {
+        if (rid.pageNo.pid != curPage.pid) {
+            throw new InvalidPageNumberException(null, "HFPage: Error when updating DataPageInfo in directory page");
+        }
+
+        int slotCount = Convert.getIntValue(SLOT_CNT, data);
+        if (rid.slotNo > slotCount) {
+            throw new InvalidSlotNumberException();
+        }
+
+        int recordOffset = getSlotOffset(rid.slotNo);
+        byte[] currentRecordData = getDataAtSlot(rid);
+        DataPageInfo currentPageInfo = new DataPageInfo(currentRecordData);
+        byte[] newRecordData = dataPageInfo.returnByteArray();
+
+        if (currentPageInfo.pageId != dataPageInfo.pageId) {
+            throw new InvalidPageNumberException(null, "HFPage: PageID of the new and current page don't match");
+        }
+
+        if (currentRecordData.length != newRecordData.length) {
+            throw new Exception();
+        }
+
+        System.arraycopy(newRecordData, 0, data, recordOffset, newRecordData.length);
+    }
+
 
     /**
      * returns the amount of available space on the page.
