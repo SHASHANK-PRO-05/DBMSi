@@ -19,7 +19,7 @@ public class ColumnarFile implements GlobalConst {
 
     private Heapfile heapFileNames[];
     private int numColumns;
-    BitMapFile deleteBitmapFile;
+    private BitMapFile deleteBitMapFile;
 
     /*
      * Contructor for initialization
@@ -43,7 +43,7 @@ public class ColumnarFile implements GlobalConst {
                 heapFileNames[i] = new Heapfile(columnsFileName);
             }
 
-            deleteBitmapFile = new BitMapFile(fileName + ".del", false);
+            deleteBitMapFile = new BitMapFile(fileName + ".del", false);
         } catch (Exception e) {
             e.printStackTrace();
             for (int i = 0; i < numColumns; i++) {
@@ -68,7 +68,7 @@ public class ColumnarFile implements GlobalConst {
 
     public ColumnarFile(String fileName)
         throws IOException, DiskMgrException, ColumnarFileDoesExistsException, ColumnarFilePinPageException,
-        HFException, HFBufMgrException, HFDiskMgrException, ColumnarFileUnpinPageException, bitmap.PinPageException, bitmap.AddFileEntryException, bitmap.UnpinPageException, bitmap.ConstructPageException {
+        HFException, HFBufMgrException, HFDiskMgrException, ColumnarFileUnpinPageException, bitmap.PinPageException, bitmap.AddFileEntryException, bitmap.UnpinPageException, bitmap.ConstructPageException, bitmap.GetFileEntryException {
         PageId pageId = getFileEntry(fileName);
         if (pageId != null) {
             columnarHeader = new ColumnarHeader(pageId, fileName);
@@ -82,7 +82,7 @@ public class ColumnarFile implements GlobalConst {
             throw new ColumnarFileDoesExistsException(null, "Columnar File Does not exists");
         }
 
-        deleteBitmapFile = new BitMapFile(fileName + ".del", false);
+        deleteBitMapFile = new BitMapFile(fileName + ".del");
     }
 
     // TODO: change the throwing exceptions
@@ -294,7 +294,7 @@ public class ColumnarFile implements GlobalConst {
 
         if (headerPageId != null) {
             ArrayList<BitMapFile> arrayList = new ArrayList<BitMapFile>();
-            arrayList.add(deleteBitmapFile);
+            arrayList.add(deleteBitMapFile);
 
             BitMapUtils bitMapUtils = new BitMapUtils(arrayList);
 
@@ -400,6 +400,10 @@ public class ColumnarFile implements GlobalConst {
 
     public void setNumColumns(int numColumns) {
         this.numColumns = numColumns;
+    }
+
+    public BitMapFile getDeleteBitMapFile() {
+        return deleteBitMapFile;
     }
 
 

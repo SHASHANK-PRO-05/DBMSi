@@ -89,6 +89,18 @@ public class BitMapUtils implements GlobalConst {
         return -1;
     }
 
+    public ArrayList<Integer> getAllOrPositions() throws UnpinPageException, IOException, PinPageException {
+        ArrayList<Integer> positions = new ArrayList<Integer>();
+        int position = getNextOrPosition();
+
+        while (position != -1) {
+            positions.add(position);
+            position = getNextOrPosition();
+        }
+
+        return positions;
+    }
+
     public void unpinPage(PageId pageId, boolean dirty) throws UnpinPageException {
         try {
             SystemDefs.JavabaseBM.unpinPage(pageId, dirty);
