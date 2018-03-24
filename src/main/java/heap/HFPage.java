@@ -638,7 +638,7 @@ public class HFPage extends Page
         DataPageInfo currentPageInfo = new DataPageInfo(currentRecordData);
         byte[] newRecordData = dataPageInfo.returnByteArray();
 
-        if (currentPageInfo.pageId != dataPageInfo.pageId) {
+        if (currentPageInfo.pageId.pid != dataPageInfo.pageId.pid) {
             throw new InvalidPageNumberException(null, "HFPage: PageID of the new and current page don't match");
         }
 

@@ -7,6 +7,7 @@ import global.RID;
 import global.SystemDefs;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * This heapfile implementation is directory-based. We maintain a
@@ -48,7 +49,7 @@ interface Filetype {
 public class Heapfile implements Filetype, GlobalConst {
 
 
-    public void purgeRecords(Integer[] positions) throws Exception {
+    public void purgeRecords(ArrayList<Integer> positions) throws Exception {
 
         /*
          * Loop through Directory Pages
@@ -60,9 +61,12 @@ public class Heapfile implements Filetype, GlobalConst {
         RID currentRecord = new RID();
         int lastPositionPurged = -1;
         int recordsScanned = 0;
+        int totalRecordsDeleted = 0;
 
-        for (; currentDirPageId != null; currentDirPageId = currentDirPage.getNextPage()) {
+        for (; currentDirPageId.pid != INVALID_PAGE; currentDirPageId = currentDirPage.getNextPage()) {
+            boolean currentDirUpdated = false;
             pinPage(currentDirPageId, currentDirPage, false);
+
             for (RID rid = currentDirPage.firstRecord(); rid != null; rid = currentDirPage.nextRecord(currentRecord)) {
                 byte[] data = currentDirPage.getDataAtSlot(rid);
                 DataPageInfo dataPageInfo = new DataPageInfo(data);
@@ -70,11 +74,16 @@ public class Heapfile implements Filetype, GlobalConst {
                 HFPage dataPage = new HFPage();
                 boolean dirtyPage = false;
                 int currentPageRecordsDeleted = 0;
+                pinPage(dataPageInfo.pageId, dataPage, false);
 
                 for (int i = lastPositionPurged + 1; i < lastPositionPurged + dataPageInfo.getRecordCount(); i++) {
-                    if (positions[i] >= recordsScanned && positions[i] < currentlyScanningRecords) {
-                        pinPage(dataPageInfo.pageId, dataPage, false);
-                        dataPage.deleteRecord(new RID(dataPageInfo.pageId, (positions[i] - recordsScanned) % dataPageInfo.getRecordCount()));
+
+                    if (i >= positions.size()) {
+                        break;
+                    }
+
+                    if (positions.get(i) >= recordsScanned && positions.get(i) < currentlyScanningRecords) {
+                        dataPage.deleteRecord(new RID(dataPageInfo.pageId, (positions.get(i) - recordsScanned) % dataPageInfo.getRecordCount()));
                         lastPositionPurged += 1;
                         dirtyPage = true;
                         currentPageRecordsDeleted += 1;
@@ -85,12 +94,17 @@ public class Heapfile implements Filetype, GlobalConst {
                     dataPageInfo.recct -= currentPageRecordsDeleted;
                     dataPageInfo.flushToTuple();
                     currentDirPage.updateDirRecordCount(rid, dataPageInfo);
+                    currentDirUpdated = true;
                     dataPage.compact_slot_dir();
                     unpinPage(dataPageInfo.pageId, true);
+                } else {
+                    unpinPage(dataPageInfo.pageId, false);
                 }
 
                 recordsScanned = currentlyScanningRecords;
             }
+
+            unpinPage(currentDirPageId, currentDirUpdated);
         }
     }
 

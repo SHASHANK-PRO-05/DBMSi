@@ -8,6 +8,7 @@ import columnar.ColumnarFile;
 import diskmgr.Page;
 import global.*;
 import heap.*;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 
@@ -120,7 +121,10 @@ public class BitMapFile implements GlobalConst {
         bitMapHeaderPage = new BitMapHeaderPage(true);
         pinPage(headerPageId, bitMapHeaderPage);
         unpinPage(headerPageId, false);
-        unpinPage(headerPageId, false);
+    }
+
+    public boolean shrinkBitMapFile(int position){
+        throw new NotImplementedException();
     }
 
     public BitMapFile(String fileName, long totalTuples) throws AddFileEntryException, IOException,
