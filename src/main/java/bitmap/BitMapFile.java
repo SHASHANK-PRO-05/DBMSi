@@ -362,12 +362,60 @@ public class BitMapFile implements GlobalConst {
         return false;
     }
 
+    public BitMapFile(String bitMapFileName, boolean start)
+            throws PinPageException, UnpinPageException, ConstructPageException, IOException, AddFileEntryException {
+        bitMapHeaderPage = new BitMapHeaderPage(false);
+        headerPageId = bitMapHeaderPage.getCurrPage();
+        addFileEntry(bitMapFileName, headerPageId);
+        PageId startingPage = new PageId();
+        BMPage bmPage = new BMPage();
+        allocatePage(startingPage, 1);
+        pinPage(startingPage, bmPage);
+        bmPage.init(startingPage, bmPage);
+        bitMapHeaderPage.setNextPage(startingPage);
+        unpinPage(startingPage, true);
+        unpinPage(headerPageId, true);
+    }
+
+    private boolean getBMPagePosition(long position) throws PinPageException, IOException, UnpinPageException {
+        pinPage(headerPageId, bitMapHeaderPage);
+        PageId pageId = bitMapHeaderPage.getNextPage();
+        BMPage bmPage = new BMPage();
+
+        pinPage(pageId, bmPage);
+
+        long bytes = (position) / 8;
+        long locationUntilLoop = bytes / bmPage.getAvailableMap();
+
+        for (int i = 0; i < locationUntilLoop; i++) {
+            PageId nextPageId = bmPage.getNextPage();
+
+            if (nextPageId.pid != INVALID_PAGE) {
+                unpinPage(pageId);
+                pageId.pid = nextPageId.pid;
+                pinPage(pageId, bmPage);
+            } else {
+                unpinPage(pageId);
+                unpinPage(headerPageId);
+                return false;
+            }
+        }
+        int num = bmPage.getABit(position);
+        unpinPage(pageId);
+        unpinPage(headerPageId);
+        return num == 1;
+    }
+
     public boolean Delete(int position) throws PinPageException, IOException, UnpinPageException {
         return setBMPagePositions(position, 0);
     }
 
     public boolean Insert(int position) throws PinPageException, IOException, UnpinPageException {
         return setBMPagePositions(position, 1);
+    }
+
+    public boolean Get(long position) throws IOException, UnpinPageException, PinPageException {
+        return getBMPagePosition(position);
     }
 
     public PageId getHeaderPageId() {

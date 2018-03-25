@@ -25,6 +25,7 @@ public class ColumnarFileScan extends Iterator {
     private int[] columnNosArray;
     ByteToTuple byteToTuple;
     CondExprEval condExprEval;
+    int counter = -1;
 
     public ColumnarFileScan(String fileName, AttrType[] attrTypes
             , short stringSizes[], int attrLength, int nOutFields
@@ -64,6 +65,32 @@ public class ColumnarFileScan extends Iterator {
     }
 
 
+    public int getNextPosition() throws Exception {
+        Tuple projectedTuple = null;
+        RID rids[] = new RID[attrTypes.length];
+        for (int i = 0; i < attrTypes.length; i++) rids[i] = new RID();
+        TID tid = new TID(attrTypes.length, 0, rids);
+        tuple = tupleScan.getNext(tid);
+        while (tuple != null) {
+            ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
+            Tuple projectTuples[] = new Tuple[projList.length];
+            int sizeOfProjectTuple = 0;
+            if (condExprEval.isValid(arrayList) && !columnarFile.isTupleDeletedAtPosition(counter + 1)) {
+                for (int i = 0; i < projList.length; i++) {
+                    projectTuples[i] = new Tuple(arrayList.get(i), 0, arrayList.get(i).length);
+                    sizeOfProjectTuple += arrayList.get(i).length;
+                }
+                projectedTuple = byteToTuple.mergeTuples(projectTuples, sizeOfProjectTuple);
+                counter++;
+                break;
+            }
+            counter++;
+            tuple = tupleScan.getNext(tid);
+        }
+        if (tuple == null) return -1;
+        return counter;
+    }
+
     public Tuple getNext() throws Exception {
         Tuple projectedTuple = null;
         RID rids[] = new RID[attrTypes.length];
@@ -74,14 +101,16 @@ public class ColumnarFileScan extends Iterator {
             ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
             Tuple projectTuples[] = new Tuple[projList.length];
             int sizeOfProjectTuple = 0;
-            if (condExprEval.isValid(arrayList)) {
+            if (condExprEval.isValid(arrayList) && !columnarFile.isTupleDeletedAtPosition(counter + 1)) {
                 for (int i = 0; i < projList.length; i++) {
                     projectTuples[i] = new Tuple(arrayList.get(i), 0, arrayList.get(i).length);
                     sizeOfProjectTuple += arrayList.get(i).length;
                 }
                 projectedTuple = byteToTuple.mergeTuples(projectTuples, sizeOfProjectTuple);
+                counter++;
                 break;
             }
+            counter++;
             tuple = tupleScan.getNext(tid);
         }
         return projectedTuple;

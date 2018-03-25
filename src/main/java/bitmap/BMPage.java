@@ -1,12 +1,11 @@
 package bitmap;
 
-import java.io.*;
-
-import global.Convert;
-import global.PageId;
-import global.GlobalConst;
-
 import diskmgr.Page;
+import global.Convert;
+import global.GlobalConst;
+import global.PageId;
+
+import java.io.IOException;
 
 
 public class BMPage extends Page implements GlobalConst {
@@ -272,6 +271,18 @@ public class BMPage extends Page implements GlobalConst {
             data[setLocation + DPFIXED] = (byte) (data[setLocation + DPFIXED] & tempAns);
             //System.out.println(data[setLocation + DPFIXED]);
         }
+    }
+
+    /**
+     * @param position
+     * @return
+     * @throws IOException
+     */
+    public int getABit(long position) throws IOException {
+        long recordToUse = (position / 8) % availableMap;
+        long recordPositionToUse = position % 8;
+
+        return (data[(int) (DPFIXED + recordToUse)] >> recordPositionToUse) & 1;
     }
 
 

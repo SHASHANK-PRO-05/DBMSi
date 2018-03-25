@@ -128,15 +128,27 @@ public class BitmapScan extends Iterator {
         bitMapUtils = new BitMapUtils(bitMapFiles);
     }
 
-    public Tuple getNext() throws Exception {
-        int ans = bitMapUtils.getNextOrPosition();
-        if (ans != -1) {
+    public int getNextPosition() throws Exception {
+        int nextPos = bitMapUtils.getNextOrPosition();
+        while (nextPos != -1 && columnarFile.isTupleDeletedAtPosition(nextPos)) {
+            nextPos = bitMapUtils.getNextOrPosition();
+        }
+        return nextPos;
+    }
 
+
+    public Tuple getNext() throws Exception {
+        int nextPos = bitMapUtils.getNextOrPosition();
+        while (nextPos != -1 && columnarFile.isTupleDeletedAtPosition(nextPos)) {
+            nextPos = bitMapUtils.getNextOrPosition();
+        }
+        if (nextPos != -1) {
             Tuple[] tuples = new Tuple[fieldSpecification.length];
             int size = 0;
             for (int i = 0; i < fieldSpecification.length; i++) {
+
                 Heapfile heapfile = columnarFile.getHeapFileNames()[fieldSpecification[i].getColumnId()];
-                tuples[i] = heapfile.getRecordAtPosition(ans);
+                tuples[i] = heapfile.getRecordAtPosition(nextPos);
                 size = size + fieldSpecification[i].getSize();
             }
             return byteToTuple.mergeTuples(tuples, size);

@@ -18,7 +18,7 @@ public class ColumnarFile implements GlobalConst {
 
     private Heapfile heapFileNames[];
     private int numColumns;
-
+    private BitMapFile deleteBitMapFile;
     /*
      * Contructor for initialization
      *
@@ -40,7 +40,7 @@ public class ColumnarFile implements GlobalConst {
                 String columnsFileName = fileName + "." + fileNum;
                 heapFileNames[i] = new Heapfile(columnsFileName);
             }
-
+            deleteBitMapFile = new BitMapFile(fileName + ".del", false);
         } catch (Exception e) {
             e.printStackTrace();
             for (int i = 0; i < numColumns; i++) {
@@ -65,7 +65,7 @@ public class ColumnarFile implements GlobalConst {
 
     public ColumnarFile(String fileName)
             throws IOException, DiskMgrException, ColumnarFileDoesExistsException, ColumnarFilePinPageException,
-            HFException, HFBufMgrException, HFDiskMgrException, ColumnarFileUnpinPageException {
+            HFException, HFBufMgrException, HFDiskMgrException, ColumnarFileUnpinPageException, bitmap.PinPageException, bitmap.AddFileEntryException, bitmap.UnpinPageException, bitmap.ConstructPageException, bitmap.GetFileEntryException {
         PageId pageId = getFileEntry(fileName);
         if (pageId != null) {
             columnarHeader = new ColumnarHeader(pageId, fileName);
@@ -75,6 +75,7 @@ public class ColumnarFile implements GlobalConst {
                 heapFileNames[i] = new Heapfile(fileName + "." + i);
             }
             unpinPage(pageId, false);
+            deleteBitMapFile = new BitMapFile(fileName + ".del");
         } else {
             throw new ColumnarFileDoesExistsException(null, "Columnar File Does not exists");
         }
@@ -176,6 +177,15 @@ public class ColumnarFile implements GlobalConst {
                     break;
             }
         }
+    }
+
+
+    public void markTupleDeleted(int position) throws Exception {
+        deleteBitMapFile.Insert(position);
+    }
+
+    public boolean isTupleDeletedAtPosition(long position) throws bitmap.UnpinPageException, IOException, bitmap.PinPageException {
+        return deleteBitMapFile.Get(position);
     }
 
     /*

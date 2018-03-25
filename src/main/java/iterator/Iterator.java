@@ -42,6 +42,8 @@ public abstract class Iterator implements Flags {
             TupleUtilsException,
             Exception;
 
+    public abstract int getNextPosition() throws Exception;
+
     /**
      * @throws IOException                 I/O errors
      * @throws IndexException              exception from Index class
