@@ -58,7 +58,7 @@ public class BitMapHeaderPage extends Page {
 
     public void setPrevPage(PageId prev) throws IOException {
         Convert.setIntValue(prev.pid, PREV_PAGE, data);
-        this.prevPage = prevPage;
+        this.prevPage = prev;
     }
 
     public PageId getCurrPage() throws IOException {
@@ -68,7 +68,7 @@ public class BitMapHeaderPage extends Page {
 
     public void setCurrPage(PageId curr) throws IOException {
         Convert.setIntValue(curr.pid, CURRENT_PAGE, data);
-        this.currPage = currPage;
+        this.currPage = curr;
     }
 
     public PageId getNextPage() throws IOException {
@@ -78,7 +78,7 @@ public class BitMapHeaderPage extends Page {
 
     public void setNextPage(PageId next) throws IOException {
         Convert.setIntValue(next.pid, NEXT_PAGE, data);
-        this.nextPage = nextPage;
+        this.nextPage = next;
     }
 
     public short getColumnIndex() throws IOException {
@@ -88,7 +88,7 @@ public class BitMapHeaderPage extends Page {
 
     public void setColumnIndex(short index) throws IOException {
         Convert.setShortValue(index, COLUMN_INDEX, data);
-        this.columnIndex = columnIndex;
+        this.columnIndex = index;
     }
 
     public short getValueType() throws IOException {
@@ -98,7 +98,7 @@ public class BitMapHeaderPage extends Page {
 
     public void setValueType(short value) throws IOException {
         Convert.setShortValue(value, VALUE_TYPE, data);
-        this.valueType = valueType;
+        this.valueType = value;
     }
 
     public BitMapHeaderPage(PageId pageId)
