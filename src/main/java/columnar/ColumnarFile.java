@@ -188,6 +188,27 @@ public class ColumnarFile implements GlobalConst {
         return deleteBitMapFile.Get(position);
     }
 
+    public void purgeRecords() throws Exception {
+        AttrType[] attrTypes = this.getColumnarHeader().getColumns();
+        for (int i = 0; i < attrTypes.length; i++) {
+            Scan scan = new Scan(this, (short) i);
+            RID rid = new RID();
+            Heapfile heapfile = new Heapfile(this.columnarHeader.getHdrFile() + ".temp");
+            Tuple tuple = scan.getNext(rid);
+            int position = 0;
+            while (tuple != null) {
+                if (!this.isTupleDeletedAtPosition(position))
+                    heapfile.insertRecord(tuple.getTupleByteArray());
+                position++;
+                tuple = scan.getNext(rid);
+            }
+            scan.closeScan();
+            new Heapfile(this.columnarHeader.getHdrFile() + "." + i).deleteFile();
+            SystemDefs.JavabaseDB.updateFileEntry(this.columnarHeader.getHdrFile() + ".temp"
+                    , this.columnarHeader.getHdrFile() + "." + i, heapfile.get_firstDirPageId());
+        }
+    }
+
     /*
      * gives the count of tuple return: Integer - count of total records
      */

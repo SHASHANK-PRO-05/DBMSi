@@ -269,6 +269,48 @@ public class ColumnDB implements GlobalConst {
         unpinPage(headerPageId, true);
     }
 
+    public void updateFileEntry(String prevName, String newName, PageId pageId)
+            throws DiskMgrException, IOException {
+        Page page = new Page();
+        boolean found = false;
+        int slot = 0;
+        PageId headerPid = new PageId();
+        PageId nextHeaderPageId = new PageId(0);
+        DBHeaderPage dbHeaderPage;
+        do {
+            headerPid.pid = nextHeaderPageId.pid;
+            pinPage(headerPid, page, false);
+            if (headerPid.pid == 0) {
+                dbHeaderPage = new DBFirstPage();
+                dbHeaderPage.openPage(page);
+            } else {
+                dbHeaderPage = new DBDirectoryPage();
+                dbHeaderPage.openPage(page);
+            }
+            nextHeaderPageId = dbHeaderPage.getNextPage();
+            int entry = 0;
+            PageId tempId = new PageId();
+            String tempFileName;
+            int sizeOfEntry = dbHeaderPage.getNumOfEntries();
+            while (entry < sizeOfEntry) {
+                tempFileName = dbHeaderPage.getFileEntry(tempId, entry);
+                if (tempId.pid != INVALID_PAGE && tempFileName.compareTo(prevName) == 0) break;
+                entry++;
+            }
+            if (entry < sizeOfEntry) {
+                slot = entry;
+                found = true;
+            } else {
+                unpinPage(headerPid, false);
+            }
+        } while (nextHeaderPageId.pid != INVALID_PAGE && (!found));
+        if (!found) {
+            throw new DiskMgrException(null, "File Not found exception");
+        }
+        dbHeaderPage.setFileEntry(pageId, newName, slot);
+        unpinPage(headerPid, true);
+    }
+
     public void deleteFileEntry(String fName) throws DiskMgrException
             , IOException, FileEntryNotFoundException {
         Page page = new Page();

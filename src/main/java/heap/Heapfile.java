@@ -54,10 +54,13 @@ public class Heapfile implements Filetype, GlobalConst {
     private String _fileName;
     private static int tempfilecount = 0;
 
+    public PageId get_firstDirPageId() {
+        return _firstDirPageId;
+    }
 
     /* get a new datapage from the buffer manager and initialize dpinfo
-       @param dpinfop the information in the new HFPage
-    */
+           @param dpinfop the information in the new HFPage
+        */
     private HFPage _newDatapage(DataPageInfo dpinfop)
             throws HFException,
             HFBufMgrException,
@@ -1036,5 +1039,4 @@ public class Heapfile implements Filetype, GlobalConst {
         unpinPage(pageId, false);
         return tuple;
     }
-
 }// End of HeapFile
