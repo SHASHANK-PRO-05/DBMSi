@@ -17,13 +17,9 @@ public class TupleScan {
     private ColumnarFile cf;
     private Scan scans[];
     private int columnNos[];
-    private ArrayList<Integer> deletedPositions;
 
     private void init(ColumnarFile cf) throws IOException, UnpinPageException, PinPageException {
         this.cf = cf;
-
-        BitMapUtils bitMapUtils = new BitMapUtils(new ArrayList<BitMapFile>(Collections.singletonList(cf.getDeleteBitMapFile())));
-        deletedPositions = bitMapUtils.getAllOrPositions();
     }
 
     /**
@@ -47,7 +43,7 @@ public class TupleScan {
         scans = new Scan[noOfColumns];
 
         for (int i = 0; i < noOfColumns; i++) {
-            scans[i] = new Scan(this.cf, (short) i, deletedPositions);
+            scans[i] = new Scan(this.cf, (short) i);
         }
     }
 
@@ -77,7 +73,7 @@ public class TupleScan {
         scans = new Scan[noOfColumns];
 
         for (int i = 0; i < noOfColumns; i++) {
-            scans[i] = new Scan(cf, (short) columnNosArray[i], deletedPositions);
+            scans[i] = new Scan(cf, (short) columnNosArray[i]);
         }
     }
 
