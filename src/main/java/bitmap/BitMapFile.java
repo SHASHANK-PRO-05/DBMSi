@@ -337,7 +337,7 @@ public class BitMapFile implements GlobalConst {
         PageId pageId = bitMapHeaderPage.getNextPage();
         BMPage bmPage = new BMPage();
         pinPage(pageId, bmPage);
-        int bytes = (position + 8) / 8;
+        int bytes = (position) / 8;
         int locationUntilLoop = bytes / bmPage.getAvailableMap();
 
         for (int i = 0; i < locationUntilLoop; i++) {
