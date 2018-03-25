@@ -220,6 +220,7 @@ public class BTreeFile extends IndexFile
             headerPage.setType(NodeType.BTHEAD);
 
         } else {
+            System.out.println("Btree indexing already done on this column");
             throw new IndexException(null, "Btree indexing already done on this column");
         }
         dbname = new String(filename);
