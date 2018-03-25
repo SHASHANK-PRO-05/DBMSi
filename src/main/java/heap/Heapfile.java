@@ -59,9 +59,8 @@ public class Heapfile implements Filetype, GlobalConst {
         HFPage currentDirPage = new HFPage();
         PageId currentDirPageId = new PageId(_firstDirPageId.pid);
         RID currentRecord = new RID();
-        int lastPositionPurged = -1;
+        int lastPositionPurgedIndex = -1;
         int recordsScanned = 0;
-        int totalRecordsDeleted = 0;
 
         for (; currentDirPageId.pid != INVALID_PAGE; currentDirPageId = currentDirPage.getNextPage()) {
             boolean currentDirUpdated = false;
@@ -70,27 +69,32 @@ public class Heapfile implements Filetype, GlobalConst {
             for (RID rid = currentDirPage.firstRecord(); rid != null; rid = currentDirPage.nextRecord(currentRecord)) {
                 byte[] data = currentDirPage.getDataAtSlot(rid);
                 DataPageInfo dataPageInfo = new DataPageInfo(data);
-                int currentlyScanningRecords = recordsScanned + dataPageInfo.getRecordCount();
+                int currentScanLB = recordsScanned;
+                int currentScanRB = recordsScanned + dataPageInfo.getRecordCount();
                 HFPage dataPage = new HFPage();
-                boolean dirtyPage = false;
                 int currentPageRecordsDeleted = 0;
                 pinPage(dataPageInfo.pageId, dataPage, false);
 
-                for (int i = lastPositionPurged + 1; i < lastPositionPurged + dataPageInfo.getRecordCount(); i++) {
+                ArrayList<Integer> positionsInCurrentPage = new ArrayList<Integer>();
 
-                    if (i >= positions.size()) {
+                for (int i = lastPositionPurgedIndex + 1; i < positions.size(); i++) {
+                    int lastPositionPurged = positions.get(i);
+
+                    if (lastPositionPurged >= currentScanLB && lastPositionPurged < currentScanRB) {
+                        lastPositionPurgedIndex += 1;
+                        positionsInCurrentPage.add(lastPositionPurged);
+                    } else {
                         break;
-                    }
-
-                    if (positions.get(i) >= recordsScanned && positions.get(i) < currentlyScanningRecords) {
-                        dataPage.deleteRecord(new RID(dataPageInfo.pageId, (positions.get(i) - recordsScanned) % dataPageInfo.getRecordCount()));
-                        lastPositionPurged += 1;
-                        dirtyPage = true;
-                        currentPageRecordsDeleted += 1;
                     }
                 }
 
-                if (dirtyPage) {
+                for (int i = 0; i < positionsInCurrentPage.size(); i++) {
+                    dataPage.deleteRecord(new RID(dataPageInfo.pageId, (positions.get(i) - recordsScanned) % dataPageInfo.getRecordCount()));
+                    lastPositionPurgedIndex += 1;
+                    currentPageRecordsDeleted += 1;
+                }
+
+                if (currentPageRecordsDeleted > 0) {
                     dataPageInfo.recct -= currentPageRecordsDeleted;
                     dataPageInfo.flushToTuple();
                     currentDirPage.updateDirRecordCount(rid, dataPageInfo);
@@ -101,7 +105,7 @@ public class Heapfile implements Filetype, GlobalConst {
                     unpinPage(dataPageInfo.pageId, false);
                 }
 
-                recordsScanned = currentlyScanningRecords;
+                recordsScanned = currentScanLB;
             }
 
             unpinPage(currentDirPageId, currentDirUpdated);
@@ -124,8 +128,7 @@ public class Heapfile implements Filetype, GlobalConst {
             HFDiskMgrException,
             IOException {
         Page apage = new Page();
-        PageId pageId = new PageId();
-        pageId = newPage(apage, 1);
+        PageId pageId = newPage(apage, 1);
 
         if (pageId == null)
             throw new HFException(null, "can't new pae");
@@ -411,13 +414,7 @@ public class Heapfile implements Filetype, GlobalConst {
      * @throws IOException                I/O errors
      */
     public RID insertRecord(byte[] recPtr)
-            throws InvalidSlotNumberException,
-            InvalidTupleSizeException,
-            SpaceNotAvailableException,
-            HFException,
-            HFBufMgrException,
-            HFDiskMgrException,
-            IOException {
+        throws Exception {
         int dpinfoLen = 0;
         int recLen = recPtr.length;
         boolean found;
@@ -428,14 +425,15 @@ public class Heapfile implements Filetype, GlobalConst {
 
         HFPage nextDirPage = new HFPage();
         PageId currentDirPageId = new PageId(_firstDirPageId.pid);
-        PageId nextDirPageId = new PageId();  // OK
+        PageId nextDirPageId = new PageId(-1);  // OK
 
         pinPage(currentDirPageId, currentDirPage, false/*Rdisk*/);
 
         found = false;
         Tuple atuple;
         DataPageInfo dpinfo = new DataPageInfo();
-        while (found == false) { //Start While01
+
+        while (!found) { //Start While01
             // look for suitable dpinfo-struct
             for (currentDataPageRid = currentDirPage.firstRecord();
                  currentDataPageRid != null;
@@ -461,7 +459,7 @@ public class Heapfile implements Filetype, GlobalConst {
             //     there is no datapagerecord on the current directory page
             //     whose corresponding datapage has enough space free
             //     several subcases: see below
-            if (found == false) { //Start IF01
+            if (!found) { //Start IF01
                 // case (2)
 
                 //System.out.println("no datapagerecord on the current directory is OK");
@@ -480,7 +478,7 @@ public class Heapfile implements Filetype, GlobalConst {
                 // - (2.2) (currentDirPage->available_space() <= sizeof(DataPageInfo):
                 //         look at the next directory page, if necessary, create it.
 
-                if (currentDirPage.available_space() >= dpinfo.size) {
+                if (currentDirPage.available_space() >= DataPageInfo.size) {
                     //Start IF02
                     // case (2.1) : add a new data page record into the
                     //              current directory page
@@ -610,22 +608,23 @@ public class Heapfile implements Filetype, GlobalConst {
         RID rid;
         rid = currentDataPage.insertRecord(recPtr);
 
-        dpinfo.recct++;
+        dpinfo.recct += 1;
         dpinfo.availspace = currentDataPage.available_space();
-
+        dpinfo.flushToTuple();
 
         unpinPage(dpinfo.pageId, true /* = DIRTY */);
 
         // DataPage is now released
-        atuple = currentDirPage.returnRecord(currentDataPageRid);
-        DataPageInfo dpinfo_ondirpage = new DataPageInfo(atuple);
+//        atuple = currentDirPage.returnRecord(currentDataPageRid);
+//        DataPageInfo dpinfo_ondirpage = new DataPageInfo(atuple);
+//
+//
+//        dpinfo_ondirpage.availspace = dpinfo.availspace;
+//        dpinfo_ondirpage.recct = dpinfo.recct;
+//        dpinfo_ondirpage.pageId.pid = dpinfo.pageId.pid;
+//        dpinfo_ondirpage.flushToTuple();
 
-
-        dpinfo_ondirpage.availspace = dpinfo.availspace;
-        dpinfo_ondirpage.recct = dpinfo.recct;
-        dpinfo_ondirpage.pageId.pid = dpinfo.pageId.pid;
-        dpinfo_ondirpage.flushToTuple();
-
+        currentDirPage.updateRecord(currentDataPageRid, dpinfo.returnByteArray());
 
         unpinPage(currentDirPageId, true /* = DIRTY */);
 

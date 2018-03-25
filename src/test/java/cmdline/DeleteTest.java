@@ -1,12 +1,10 @@
 package cmdline;
 
+import columnar.ByteToTuple;
 import columnar.TupleScan;
 import diskmgr.DiskMgrException;
 import diskmgr.FileEntryNotFoundException;
-import global.AttrType;
-import global.RID;
-import global.SystemDefs;
-import global.TID;
+import global.*;
 import heap.Tuple;
 import org.junit.After;
 import org.junit.Before;
@@ -15,6 +13,7 @@ import testutils.BaseTest;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class DeleteTest extends BaseTest {
@@ -26,12 +25,13 @@ public class DeleteTest extends BaseTest {
         numType.setAttrType(AttrType.attrInteger);
         initDatabase(5, numType);
         insertDummyData();
+        System.out.println(columnarFile.getTupleCount());
         SystemDefs.JavabaseBM.flushAllPages();
     }
 
     @Test
     public void deleteUsingColumnarScan() throws Exception {
-        String[] argv = {dbName, employeeColumnarFile, "Column2", "<", "50", Integer.toString(bufPoolSize), "COLUMNSCAN", Boolean.toString(false)};
+        String[] argv = {dbName, employeeColumnarFile, "Column2", "<", "50", Integer.toString(bufPoolSize), "COLUMNSCAN", Boolean.toString(true)};
         Delete.main(argv);
 
         AttrType[] attrTypes = columnarFile.getColumnarHeader().getColumns();
@@ -50,9 +50,17 @@ public class DeleteTest extends BaseTest {
         long resultingTupleCount = 0;
 
         while (tuple != null) {
-            System.out.println(Arrays.toString(tuple.getTupleByteArray()));
-            tuple = tupleScan.getNext(tid);
+            ByteToTuple byteToTuple = new ByteToTuple(columnarFile.getColumnarHeader().getColumns());
+            ArrayList<byte[]> arrayList = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
+
+            if (Convert.getIntValue(0, arrayList.get(2)) < 50) {
+                System.out.println(tid.getPosition());
+                System.out.println(Arrays.toString(tuple.getTupleByteArray()));
+            }
+
             resultingTupleCount += 1;
+
+            tuple = tupleScan.getNext(tid);
         }
 
         SystemDefs.JavabaseBM.pinPage(columnarFile.getColumnarHeader().getHeaderPageId(), columnarFile.getColumnarHeader(), false);

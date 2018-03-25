@@ -424,6 +424,10 @@ public class BitMapFile implements GlobalConst {
         return getBMPagePosition(position);
     }
 
+    public void Purge(int position) {
+        throw new NotImplementedException();
+    }
+
     public PageId getHeaderPageId() {
         return headerPageId;
     }

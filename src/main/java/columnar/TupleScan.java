@@ -17,14 +17,6 @@ public class TupleScan {
     private ColumnarFile cf;
     private Scan scans[];
     private int columnNos[];
-    private ArrayList<Integer> deletedPositions;
-
-    private void init(ColumnarFile cf) throws IOException, UnpinPageException, PinPageException {
-        this.cf = cf;
-
-        BitMapUtils bitMapUtils = new BitMapUtils(new ArrayList<BitMapFile>(Collections.singletonList(cf.getDeleteBitMapFile())));
-        deletedPositions = bitMapUtils.getAllOrPositions();
-    }
 
     /**
      * Create a Tuple scan over all the columns in a Columnar file
@@ -34,8 +26,7 @@ public class TupleScan {
      * @throws InvalidTupleSizeException
      */
     public TupleScan(ColumnarFile cf) throws IOException, InvalidTupleSizeException, PinPageException, UnpinPageException {
-        init(cf);
-
+        this.cf = cf;
         int noOfColumns = this.cf.getHeapFileNames().length;
 
         columnNos = new int[noOfColumns];
@@ -47,7 +38,7 @@ public class TupleScan {
         scans = new Scan[noOfColumns];
 
         for (int i = 0; i < noOfColumns; i++) {
-            scans[i] = new Scan(this.cf, (short) i, deletedPositions);
+            scans[i] = new Scan(this.cf, (short) i);
         }
     }
 
@@ -60,7 +51,7 @@ public class TupleScan {
      * @throws InvalidTupleSizeException
      */
     public TupleScan(ColumnarFile cf, int columnNosArray[]) throws IOException, InvalidTupleSizeException, PinPageException, UnpinPageException {
-        init(cf);
+        this.cf = cf;
         int noOfColumns = this.cf.getHeapFileNames().length;
         for (int i = 0; i < columnNosArray.length; i++) {
             if (columnNosArray[i] > noOfColumns) {
@@ -77,7 +68,7 @@ public class TupleScan {
         scans = new Scan[noOfColumns];
 
         for (int i = 0; i < noOfColumns; i++) {
-            scans[i] = new Scan(cf, (short) columnNosArray[i], deletedPositions);
+            scans[i] = new Scan(cf, (short) columnNosArray[i]);
         }
     }
 

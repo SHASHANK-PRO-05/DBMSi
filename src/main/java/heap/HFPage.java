@@ -649,6 +649,27 @@ public class HFPage extends Page
         System.arraycopy(newRecordData, 0, data, recordOffset, newRecordData.length);
     }
 
+    public void updateRecord(RID rid, byte[] newData) throws InvalidTupleSizeException, IOException, InvalidSlotNumberException, InvalidPageNumberException {
+        if (rid.pageNo.pid != curPage.pid) {
+            throw new InvalidPageNumberException(null, "HFPage: Error when updating DataPageInfo in directory page");
+        }
+
+        int slotCount = Convert.getIntValue(SLOT_CNT, data);
+
+        if (rid.slotNo > slotCount) {
+            throw new InvalidSlotNumberException();
+        }
+
+        int recordOffset = getSlotOffset(rid.slotNo);
+        byte[] currentRecordData = getDataAtSlot(rid);
+
+        if (currentRecordData.length != newData.length) {
+            throw new InvalidTupleSizeException();
+        }
+
+        System.arraycopy(newData, 0, data, recordOffset, newData.length);
+    }
+
 
     /**
      * returns the amount of available space on the page.
