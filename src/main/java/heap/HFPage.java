@@ -444,7 +444,7 @@ public class HFPage extends Page
 
             setSlot(slotNo, EMPTY_SLOT, 0);  // mark slot free
         } else {
-            throw new InvalidSlotNumberException(null, "HEAPFILE: INVALID_SLOTNO");
+            throw new InvalidSlotNumberException(null, "HEAPFILE: INVALID_SLOTNO : " + slotNo);
         }
     }
 

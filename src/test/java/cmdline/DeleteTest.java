@@ -25,13 +25,13 @@ public class DeleteTest extends BaseTest {
         numType.setSize((short) 4);
         numType.setAttrType(AttrType.attrInteger);
         initDatabase(5, numType);
-        insertDummyData();
+        insertDummyData(17000);
         SystemDefs.JavabaseBM.flushAllPages();
     }
 
     @Test
     public void deleteUsingColumnarScan() throws Exception {
-        String[] argv = {dbName, employeeColumnarFile, "Column2", "<", "50", Integer.toString(bufPoolSize), "COLUMNSCAN", Boolean.toString(false)};
+        String[] argv = {dbName, employeeColumnarFile, "Column2", "<", "50", Integer.toString(bufPoolSize), "COLUMNSCAN", Boolean.toString(true)};
         Delete.main(argv);
 
         AttrType[] attrTypes = columnarFile.getColumnarHeader().getColumns();
@@ -50,7 +50,6 @@ public class DeleteTest extends BaseTest {
         long resultingTupleCount = 0;
 
         while (tuple != null) {
-            System.out.println(Arrays.toString(tuple.getTupleByteArray()));
             tuple = tupleScan.getNext(tid);
             resultingTupleCount += 1;
         }

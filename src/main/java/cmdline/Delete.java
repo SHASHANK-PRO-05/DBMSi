@@ -127,12 +127,12 @@ public class Delete {
         tupleScan.closeTupleScan();
 
         if (totalRecordsDeleted > 0) {
-            if (purgeDB) columnarFile.purgeAllDeletedTuples();
-
             SystemDefs.JavabaseBM.pinPage(columnarFile.getColumnarHeader().getHeaderPageId(), columnarFile.getColumnarHeader(), false);
             columnarFile.getColumnarHeader().setReccnt(columnarFile.getColumnarHeader().getReccnt() - totalRecordsDeleted);
             SystemDefs.JavabaseBM.unpinPage(columnarFile.getColumnarHeader().getHeaderPageId(), true);
         }
+
+        if (purgeDB) columnarFile.purgeAllDeletedTuples();
 
         SystemDefs.JavabaseBM.flushAllPages();
     }

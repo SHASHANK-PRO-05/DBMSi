@@ -23,22 +23,19 @@ public class Scan implements GlobalConst {
     private PageId dataPageId = new PageId();
     private HFPage dataPage = new HFPage();
     private RID userRID = new RID();
-    private int lastTupleFoundDeleted = -1;
-    private int currentlyScanningRecord = -1;
 
     /**
      * Column Index no in the Columnar File starting from 0
      */
     private short columnNo;
     private boolean nextUserStatus;
-    private ArrayList<Integer> deletedPositions;
 
     public Scan(ColumnarFile cf, short columnNo) throws PinPageException, InvalidTupleSizeException, UnpinPageException, IOException {
-        init(cf, columnNo, null);
+        init(cf, columnNo);
     }
 
     public Scan(ColumnarFile cf, short columnNo, ArrayList<Integer> deletedPositions) throws IOException, InvalidTupleSizeException, PinPageException, UnpinPageException {
-        init(cf, columnNo, deletedPositions);
+        init(cf, columnNo);
     }
 
     public RID getFirstRID() throws IOException {
@@ -48,7 +45,6 @@ public class Scan implements GlobalConst {
 
     public Tuple getNext(RID rid) throws InvalidTupleSizeException, IOException {
         Tuple recptrTuple = null;
-        currentlyScanningRecord += 1;
 
         if (!nextUserStatus) {
             nextDataPage();
@@ -65,11 +61,6 @@ public class Scan implements GlobalConst {
             recptrTuple = dataPage.getRecord(rid);
             userRID = dataPage.nextRecord(rid);
             nextUserStatus = userRID != null;
-
-            while (deletedPositions.size() > (lastTupleFoundDeleted + 1) && deletedPositions.get(lastTupleFoundDeleted + 1) == currentlyScanningRecord) {
-                lastTupleFoundDeleted += 1;
-                recptrTuple = getNext(rid);
-            }
 
         } catch (Exception e) {
             // System.err.println("SCAN: Error in Scan" + e);
@@ -128,18 +119,11 @@ public class Scan implements GlobalConst {
         return bst;
     }
 
-    private void init(ColumnarFile cf, short columnNo, ArrayList<Integer> deletedPositions) throws IOException, InvalidTupleSizeException, PinPageException, UnpinPageException {
+    private void init(ColumnarFile cf, short columnNo) throws IOException, InvalidTupleSizeException, PinPageException, UnpinPageException {
         this.cf = cf;
         this.columnNo = columnNo;
         if (!firstDataPage()) {
             System.err.println("Error in Scan class object's init method.");
-        }
-
-        if (deletedPositions == null) {
-            BitMapUtils bitMapUtils = new BitMapUtils(new ArrayList<BitMapFile>(Collections.singletonList(cf.getDeleteBitMapFile())));
-            this.deletedPositions = bitMapUtils.getAllOrPositions();
-        } else {
-            this.deletedPositions = deletedPositions;
         }
     }
 

@@ -35,18 +35,19 @@ public class BaseTest implements ITestConstants {
     }
 
     protected void insertDummyData() throws Exception {
-        insertDummyData(50);
+        insertDummyData(1000);
     }
 
     protected void insertDummyData(int numOfRows) throws Exception {
         int[] row = new int[attrTypes.length];
         for (int i = 0; i < numOfRows; i++) {
             for (int j = 0; j < attrTypes.length; j++) {
-                row[j] = (int) (Math.random() * 100);
+                row[j] = i % 2 == 0 ? 25 : 75;
             }
 
-            System.out.println("Inserting: " + Arrays.toString(row));
             columnarFile.insertTuple(Convert.intAtobyteA(row));
         }
+
+        System.out.println("Insertion completed");
     }
 }

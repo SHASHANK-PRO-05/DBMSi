@@ -182,6 +182,51 @@ public class ColumnarFile implements GlobalConst {
         }
     }
 
+    private void updateIndexForDelete(TID tid, ArrayList<byte[]> arrayList, int position)
+        throws ColumnarFilePinPageException,
+        ColumnarFileUnpinPageException,
+        IOException
+        , HFBufMgrException, InvalidSlotNumberException
+        , ConstructPageException, GetFileEntryException
+        , btree.PinPageException, Exception {
+        AttrType[] attrTypes = this.getColumnarHeader().getColumns();
+        ArrayList<IndexInfo> indexInfos = this.getColumnarHeader().getAllIndexes();
+        for (int i = 0; i < indexInfos.size(); i++) {
+            int columnNumber = indexInfos.get(i).getColumnNumber();
+            AttrType attrType = attrTypes[columnNumber];
+
+            ValueClass valueClass;
+            KeyClass keyClass;
+            if (attrType.getAttrType() == AttrType.attrString) {
+                String temp = Convert.getStringValue(0
+                    , arrayList.get(columnNumber), attrType.getSize());
+                valueClass = new StringValue(temp);
+                keyClass = new StringKey(temp);
+            } else {
+                int temp = Convert
+                    .getIntValue(0, arrayList.get(columnNumber));
+                valueClass = new IntegerValue(temp);
+                keyClass = new IntegerKey(temp);
+            }
+            //System.out.println(indexInfos.get(i).getIndextype().indexType);
+            switch (indexInfos.get(i).getIndextype().indexType) {
+                case IndexType.B_Index:
+                    BTreeFile bTreeFile = new BTreeFile(indexInfos.get(i).getFileName());
+                    bTreeFile.Delete(keyClass, tid);
+                    bTreeFile.close();
+                    break;
+                case IndexType.BitMapIndex:
+                    BitMapFile bitMapFile = new BitMapFile(indexInfos.get(i).getFileName());
+                    if (indexInfos.get(i).getValue().getValue().toString().equals(valueClass.getValue().toString())) {
+                        bitMapFile.Insert(position - 1);
+                    } else {
+                        bitMapFile.Delete(position - 1);
+                    }
+                    break;
+            }
+        }
+    }
+
 
     /*
      * gives the count of tuple return: Integer - count of total records
@@ -290,6 +335,7 @@ public class ColumnarFile implements GlobalConst {
         ArrayList<Integer> posList = new ArrayList<Integer>();
         String fName = this.getColumnarHeader().getHdrFile();
         PageId headerPageId = getFileEntry(fName);
+        int columnCount = getColumnarHeader().getColumnCount();
 
         if (headerPageId != null) {
             ArrayList<BitMapFile> arrayList = new ArrayList<BitMapFile>();
@@ -307,9 +353,28 @@ public class ColumnarFile implements GlobalConst {
             PageId pageId = this.getColumnarHeader().getHeaderPageId();
             HFPage hfPage = new HFPage();
             pinPage(pageId, hfPage);
-            for (int i = 0; i < getColumnarHeader().getColumnCount(); i++) {
-                Heapfile hf = new Heapfile(fName + '.' + i);
-                hf.purgeRecords(posList);
+            Heapfile[] heapfiles = new Heapfile[columnCount];
+
+            for (int i = 0; i < columnCount; i++) {
+                heapfiles[i] = new Heapfile(fName + '.' + i);
+            }
+
+            for (int i = 0; i < posList.size(); i++) {
+                RID[] rids = new RID[columnCount];
+                ArrayList<byte[]> tuples = new ArrayList<byte[]>();
+
+                for (int j = 0; j < columnCount; j++) {
+                    rids[j] = heapfiles[j].getRIDAtPosition(posList.get(i));
+                    tuples.add(heapfiles[j].getRecordAtPosition(posList.get(i)).getTupleByteArray());
+                }
+
+                TID tid = new TID(columnCount, posList.get(i), rids);
+
+                updateIndexForDelete(tid, tuples, posList.get(i));
+            }
+
+            for (int i = 0; i < columnCount; i++) {
+                heapfiles[i].purgeRecords(posList);
             }
 
             unpinPage(pageId, false);
