@@ -2,13 +2,15 @@
 
 package columnar;
 
-import java.io.*;
-import java.lang.*;
-
-import global.*;
-import diskmgr.*;
+import diskmgr.Page;
+import global.Convert;
+import global.GlobalConst;
+import global.PageId;
+import global.RID;
 import heap.InvalidSlotNumberException;
 import heap.Tuple;
+
+import java.io.IOException;
 
 /**
  * Define constant values for INVALID_SLOT and EMPTY_SLOT
@@ -233,7 +235,6 @@ public class DirectoryHFPage extends Page implements ConstSlot, GlobalConst {
 
     public void setReccnt(long reccnt) throws IOException {
         Convert.setLongValue(reccnt, RECCNT, data);
-
     }
 
     /**

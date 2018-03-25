@@ -328,8 +328,23 @@ public class BitMapFile implements GlobalConst {
         }
     }
 
-    public void destroyBitMapFile() {
+    public void destroyBitMapFile() throws Exception {
 
+
+        bitMapHeaderPage = new BitMapHeaderPage(true);
+        pinPage(headerPageId, bitMapHeaderPage);
+
+        PageId pageId = bitMapHeaderPage.getNextPage();
+        PageId nextPageId = new PageId(-1);
+        BMPage bmPage = new BMPage();
+        while (pageId.pid != INVALID_PAGE) {
+            pinPage(pageId, bmPage);
+            nextPageId = bmPage.getNextPage();
+            unpinPage(pageId, false);
+            pageId.pid = nextPageId.pid;
+        }
+        deleteFileEntry(fileName);
+        unpinPage(headerPageId);
     }
 
     public boolean setBMPagePositions(int position, int bit) throws PinPageException, IOException, UnpinPageException {
@@ -363,14 +378,15 @@ public class BitMapFile implements GlobalConst {
     }
 
     public BitMapFile(String bitMapFileName, boolean start)
-            throws PinPageException, UnpinPageException, ConstructPageException, IOException, AddFileEntryException {
+            throws PinPageException, UnpinPageException, ConstructPageException, IOException, AddFileEntryException, Exception {
         bitMapHeaderPage = new BitMapHeaderPage(false);
         headerPageId = bitMapHeaderPage.getCurrPage();
+        fileName = bitMapFileName;
         addFileEntry(bitMapFileName, headerPageId);
         PageId startingPage = new PageId();
         BMPage bmPage = new BMPage();
         allocatePage(startingPage, 1);
-        pinPage(startingPage, bmPage);
+        SystemDefs.JavabaseBM.pinPage(startingPage, bmPage, true);
         bmPage.init(startingPage, bmPage);
         bitMapHeaderPage.setNextPage(startingPage);
         unpinPage(startingPage, true);
@@ -416,6 +432,10 @@ public class BitMapFile implements GlobalConst {
 
     public boolean Get(long position) throws IOException, UnpinPageException, PinPageException {
         return getBMPagePosition(position);
+    }
+
+    public void deallocatePage(PageId pageId) throws Exception {
+        SystemDefs.JavabaseDB.deallocatePage(pageId, 0);
     }
 
     public PageId getHeaderPageId() {

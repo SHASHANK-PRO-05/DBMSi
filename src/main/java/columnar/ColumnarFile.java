@@ -190,23 +190,104 @@ public class ColumnarFile implements GlobalConst {
 
     public void purgeRecords() throws Exception {
         AttrType[] attrTypes = this.getColumnarHeader().getColumns();
+        Scan[] scans = new Scan[attrTypes.length];
+        RID[] rids = new RID[attrTypes.length];
+        Tuple[] tuples = new Tuple[attrTypes.length];
+        Heapfile[] heapfiles = new Heapfile[attrTypes.length];
+        BitMapFile deleteFileTemp = new BitMapFile(this.columnarHeader.getHdrFile()
+                + ".del.temp", false);
+
+
+        //Initialize Scans on all the heap files
         for (int i = 0; i < attrTypes.length; i++) {
-            Scan scan = new Scan(this, (short) i);
-            RID rid = new RID();
-            Heapfile heapfile = new Heapfile(this.columnarHeader.getHdrFile() + ".temp");
-            Tuple tuple = scan.getNext(rid);
-            int position = 0;
-            while (tuple != null) {
-                if (!this.isTupleDeletedAtPosition(position))
-                    heapfile.insertRecord(tuple.getTupleByteArray());
-                position++;
-                tuple = scan.getNext(rid);
+            scans[i] = new Scan(this, (short) i);
+            rids[i] = new RID();
+            tuples[i] = scans[i].getNext(rids[i]);
+            heapfiles[i] = new Heapfile(this.columnarHeader.getHdrFile() + "." + i + ".temp");
+        }
+
+        ArrayList<IndexInfo> indexInfos = columnarHeader.getAllIndexes();
+        ArrayList<Object> arrayList = new ArrayList<Object>();
+        for (int i = 0; i < indexInfos.size(); i++) {
+            IndexInfo indexInfo = indexInfos.get(i);
+            if (indexInfo.getIndextype().indexType == IndexType.B_Index) {
+                BTreeFile bTreeFile = new BTreeFile(indexInfo.getFileName());
+
+                bTreeFile.destroyFile();
+                bTreeFile.close();
+                bTreeFile = new BTreeFile(indexInfo.getFileName()
+                        , indexInfo.getValue().getValueType(), attrTypes[indexInfo.getColumnNumber()].getSize(), 1);
+                bTreeFile.close();
+            } else {
+                BitMapFile bitMapFile = new BitMapFile(indexInfo.getFileName());
+                bitMapFile.destroyBitMapFile();
+                bitMapFile = new BitMapFile(indexInfo.getFileName(), false);
             }
-            scan.closeScan();
-            new Heapfile(this.columnarHeader.getHdrFile() + "." + i).deleteFile();
-            SystemDefs.JavabaseDB.updateFileEntry(this.columnarHeader.getHdrFile() + ".temp"
+        }
+        int position = 0;
+        int availablePos = 0;
+        while (tuples[0] != null) {
+            if (!isTupleDeletedAtPosition(position)) {
+                for (int i = 0; i < attrTypes.length; i++) {
+                    heapfiles[i].insertRecord(tuples[i].getTupleByteArray());
+                }
+                for (int i = 0; i < indexInfos.size(); i++) {
+                    IndexInfo indexInfo = indexInfos.get(i);
+                    if (indexInfo.getIndextype().indexType == IndexType.B_Index) {
+                        BTreeFile bTreeFile = new BTreeFile(indexInfo.getFileName());
+                        TID tid = new TID(rids.length, availablePos, rids);
+                        Tuple tuple = tuples[indexInfo.getColumnNumber()];
+                        KeyClass keyClass;
+
+                        if (attrTypes[indexInfo.getColumnNumber()].getAttrType() == AttrType.attrInteger) {
+                            keyClass = new IntegerKey(Convert.getIntValue(0, tuple.getTupleByteArray()));
+                        } else {
+                            keyClass = new StringKey(Convert.getStringValue(0, tuple.getTupleByteArray()
+                                    , attrTypes[indexInfo.getColumnNumber()].getSize()));
+                        }
+                        bTreeFile.insert(keyClass, tid);
+                        bTreeFile.close();
+                    } else {
+                        BitMapFile bitMapFile = new BitMapFile(indexInfo.getFileName());
+                        Tuple tuple = tuples[indexInfo.getColumnNumber()];
+                        ValueClass valueClass;
+                        AttrType attrType = attrTypes[indexInfo.getColumnNumber()];
+
+                        if (attrType.getAttrType() == AttrType.attrInteger) {
+                            valueClass = new IntegerValue(Convert.getIntValue(0, tuple.getTupleByteArray()));
+                        } else {
+                            valueClass = new StringValue(Convert.getStringValue(0, tuple.getTupleByteArray()
+                                    , attrType.getSize()));
+                        }
+                        if (valueClass.getValue().toString().equals(indexInfo.getValue().getValue().toString())) {
+                            bitMapFile.Insert(availablePos);
+                        } else {
+                            bitMapFile.Delete(availablePos);
+                        }
+                    }
+                }
+
+                deleteFileTemp.Delete(availablePos);
+                availablePos++;
+            }
+            position++;
+            for (int i = 0; i < attrTypes.length; i++) {
+                tuples[i] = scans[i].getNext(rids[i]);
+            }
+        }
+
+        deleteBitMapFile.destroyBitMapFile();
+        SystemDefs.JavabaseDB.updateFileEntry(this.columnarHeader.getHdrFile() + ".del.temp"
+                , this.columnarHeader.getHdrFile() + ".del", deleteFileTemp.getHeaderPageId());
+        for (int i = 0; i < attrTypes.length; i++) {
+            scans[i].closeScan();
+            Heapfile heapfile = new Heapfile(this.columnarHeader.getHdrFile() + "." + i);
+            heapfile.deleteFile();
+            heapfile = new Heapfile(this.columnarHeader.getHdrFile() + "." + i + ".temp");
+            SystemDefs.JavabaseDB.updateFileEntry(this.columnarHeader.getHdrFile() + "." + i + ".temp"
                     , this.columnarHeader.getHdrFile() + "." + i, heapfile.get_firstDirPageId());
         }
+        columnarHeader.setReccnt(availablePos);
     }
 
     /*
@@ -218,6 +299,13 @@ public class ColumnarFile implements GlobalConst {
         long ans = directoryHFPage.getReccnt();
         unpinPage(this.getColumnarHeader().getHeaderPageId(), false);
         return ans;
+    }
+
+    public void setTupleCount(long ans) throws Exception {
+        DirectoryHFPage directoryHFPage = new DirectoryHFPage();
+        pinPage(this.getColumnarHeader().getHeaderPageId(), directoryHFPage);
+        directoryHFPage.setReccnt(ans);
+        unpinPage(this.getColumnarHeader().getHeaderPageId(), true);
     }
 
     public Tuple getTuple(TID tid) throws InvalidSlotNumberException, InvalidTupleSizeException, Exception {

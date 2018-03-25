@@ -91,10 +91,17 @@ public class Delete {
         Iterator iterator = getIterator(in, null
                 , in.length, projList.length, projList, condition);
         int nextPos = iterator.getNextPosition();
+        int counter = 0;
         while (nextPos != -1) {
             columnarFile.markTupleDeleted(nextPos);
             nextPos = iterator.getNextPosition();
+            counter++;
         }
+        columnarFile.setTupleCount(columnarFile.getTupleCount() - counter);
+
+        if (purgeDB)
+            columnarFile.purgeRecords();
+        System.out.println("Number of tuples deleted: " + counter);
         iterator.close();
         SystemDefs.JavabaseBM.flushAllPages();
     }

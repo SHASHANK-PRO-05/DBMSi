@@ -145,9 +145,10 @@ public class BitmapScan extends Iterator {
         if (nextPos != -1) {
             Tuple[] tuples = new Tuple[fieldSpecification.length];
             int size = 0;
-            for (int i = 0; i < fieldSpecification.length; i++) {
 
+            for (int i = 0; i < fieldSpecification.length; i++) {
                 Heapfile heapfile = columnarFile.getHeapFileNames()[fieldSpecification[i].getColumnId()];
+                //System.out.println(nextPos);
                 tuples[i] = heapfile.getRecordAtPosition(nextPos);
                 size = size + fieldSpecification[i].getSize();
             }
