@@ -125,6 +125,7 @@ public class ColumnScan extends Iterator {
                     sizeOfProjectTuple += arrayList.get(i).length;
                 }
                 projectedTuple = byteToTuple.mergeTuples(projectTuples, sizeOfProjectTuple);
+                counter++;
                 break;
             }
             arrayList.clear();
@@ -135,6 +136,7 @@ public class ColumnScan extends Iterator {
                 else
                     return null;
             }
+            counter++;
 
         }
         return projectedTuple;
