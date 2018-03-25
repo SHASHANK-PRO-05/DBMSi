@@ -314,6 +314,8 @@ public class ColumnarFile implements GlobalConst {
 
             unpinPage(pageId, false);
         }
+
+        System.out.println("Purge Finished");
     }
 
 

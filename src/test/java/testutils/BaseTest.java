@@ -35,7 +35,7 @@ public class BaseTest implements ITestConstants {
     }
 
     protected void insertDummyData() throws Exception {
-        insertDummyData(16000);
+        insertDummyData(1000);
     }
 
     protected void insertDummyData(int numOfRows) throws Exception {
@@ -47,5 +47,7 @@ public class BaseTest implements ITestConstants {
 
             columnarFile.insertTuple(Convert.intAtobyteA(row));
         }
+
+        System.out.println("Insertion Finished");
     }
 }
