@@ -72,7 +72,7 @@ public class Index {
         setupIndex();
     }
 
-    private static void setupIndex() throws Exception {
+    private static void setupIndex() throws GetFileEntryException, java.lang.Exception {
         long count = columnarFile.getTupleCount();
 
         Scan scan = new Scan(columnarFile, (short) columnId);
@@ -103,7 +103,7 @@ public class Index {
     }
 
 
-    private static void setupBTreeIndexes(Scan scan) throws Exception {
+    private static void setupBTreeIndexes(Scan scan) throws java.lang.Exception {
         String fileName = columnarFileName + "." + columnId + ".btree";
         BTreeFile bTreeFile = new BTreeFile(fileName, attrType.getAttrType(), attrType.getSize(), 1);
         int pos = 0;
@@ -184,7 +184,12 @@ public class Index {
             } else {
                 IntegerValue integerValue = (IntegerValue) valueClass;
                 indexFileName = indexFileName + integerValue.getValue();
-                new BitMapFile(indexFileName, columnarFile, columnId, integerValue);
+                try {
+                    new BitMapFile(indexFileName, columnarFile, columnId, integerValue);
+                } catch (Exception e) {
+                    System.out.println("Eiter Index already Exists/ Or Something is wrong");
+                    return;
+                }
                 indexInfo.setValue(integerValue);
                 indexInfo.setFileName(indexFileName);
                 columnarFile.getColumnarHeader().setIndex(indexInfo);

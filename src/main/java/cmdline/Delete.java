@@ -87,7 +87,7 @@ public class Delete {
             condition[0].operand2.integer = Integer.parseInt(value);
         else if (conditionAttr.getAttrType() == 0)
             condition[0].operand2.string = value;
-        SystemDefs.JavabaseBM.flushAllPages();
+        double startTime = System.currentTimeMillis();
         Iterator iterator = getIterator(in, null
                 , in.length, projList.length, projList, condition);
         int nextPos = iterator.getNextPosition();
@@ -104,6 +104,15 @@ public class Delete {
         System.out.println("Number of tuples deleted: " + counter);
         iterator.close();
         SystemDefs.JavabaseBM.flushAllPages();
+        System.out.println("--------------------------------------------------");
+        double endTime = System.currentTimeMillis();
+        double duration = (endTime - startTime);
+        System.out.println("Time taken (Seconds)" + duration / 1000);
+        System.out.println("Tuples in the table now:" + columnarFile.getTupleCount());
+        System.out.println("Write count: " + SystemDefs.pCounter.getwCounter());
+        System.out.println("Read count: " + SystemDefs.pCounter.getrCounter());
+        SystemDefs.JavabaseBM.flushAllPages();
+        SystemDefs.JavabaseDB.closeDB();
     }
 
     private static Iterator getIterator(AttrType[] in, short[] strSizes, int counterIn, int counterFld, FldSpec[] projList, CondExpr[] condition)
