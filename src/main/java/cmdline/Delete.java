@@ -66,6 +66,9 @@ public class Delete {
                 conditionAttr = attrTypes[i];
                 conditionalColumnId = i;
                 break;
+            }else if (i==attrTypes.length-1){
+                System.out.println("No column found with that name");
+                return;
             }
         }
         projList[0] = new FldSpec(new RelSpec(0)
