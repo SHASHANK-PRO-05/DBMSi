@@ -6,3 +6,4 @@ src/Minibase.min
 MinibaseColumned.iml
 ./Minibase.min
 src/.*
+bazel-*
