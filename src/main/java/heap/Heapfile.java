@@ -1030,6 +1030,8 @@ public class Heapfile implements Filetype, GlobalConst {
             unpinPage(currentPageId, false);
             currentPageId.pid = nextDirPageId.pid;
         }
+        if (position >= dataPageInfo.recct)
+            return null;
         PageId pageId = new PageId(dataPageInfo.pageId.pid);
         HFPage hfPage = new HFPage();
         RID rid = new RID(pageId, position);

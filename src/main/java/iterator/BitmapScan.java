@@ -148,10 +148,13 @@ public class BitmapScan extends Iterator {
 
             for (int i = 0; i < fieldSpecification.length; i++) {
                 Heapfile heapfile = columnarFile.getHeapFileNames()[fieldSpecification[i].getColumnId()];
-                //System.out.println(nextPos);
                 tuples[i] = heapfile.getRecordAtPosition(nextPos);
+                if (tuples[i] == null) {
+                    return null;
+                } ;
                 size = size + fieldSpecification[i].getSize();
             }
+
             return byteToTuple.mergeTuples(tuples, size);
         } else {
             return null;
