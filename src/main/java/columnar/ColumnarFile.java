@@ -211,16 +211,16 @@ public class ColumnarFile implements GlobalConst {
         for (int i = 0; i < indexInfos.size(); i++) {
             IndexInfo indexInfo = indexInfos.get(i);
             if (indexInfo.getIndextype().indexType == IndexType.B_Index) {
-                BTreeFile bTreeFile = new BTreeFile(indexInfo.getFileName());
 
+                BTreeFile bTreeFile = new BTreeFile(indexInfo.getFileName());
                 bTreeFile.destroyFile();
-                bTreeFile.close();
                 bTreeFile = new BTreeFile(indexInfo.getFileName()
                         , indexInfo.getValue().getValueType(), attrTypes[indexInfo.getColumnNumber()].getSize(), 1);
                 bTreeFile.close();
             } else {
                 BitMapFile bitMapFile = new BitMapFile(indexInfo.getFileName());
                 bitMapFile.destroyBitMapFile();
+
                 bitMapFile = new BitMapFile(indexInfo.getFileName(), false);
             }
         }

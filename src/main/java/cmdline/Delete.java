@@ -98,11 +98,11 @@ public class Delete {
             counter++;
         }
         columnarFile.setTupleCount(columnarFile.getTupleCount() - counter);
-
+        iterator.close();
         if (purgeDB)
             columnarFile.purgeRecords();
         System.out.println("Number of tuples deleted: " + counter);
-        iterator.close();
+
         SystemDefs.JavabaseBM.flushAllPages();
         System.out.println("--------------------------------------------------");
         double endTime = System.currentTimeMillis();

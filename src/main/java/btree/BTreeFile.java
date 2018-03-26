@@ -68,6 +68,11 @@ public class BTreeFile extends IndexFile
 
 
     private BTreeHeaderPage headerPage;
+
+    public PageId getHeaderPageId() {
+        return headerPageId;
+    }
+
     private PageId headerPageId;
     private String dbname;
 
@@ -243,6 +248,7 @@ public class BTreeFile extends IndexFile
             SystemDefs.JavabaseBM.unpinPage(headerPageId, true);
             headerPage = null;
         }
+
     }
 
     /**
@@ -298,8 +304,8 @@ public class BTreeFile extends IndexFile
                 childId = ((IndexData) (entry.data)).getData();
                 _destroyFile(childId);
             }
+            unpinPage(pageno);
         } else { // BTLeafPage
-
             unpinPage(pageno);
             freePage(pageno);
         }
