@@ -8,7 +8,7 @@ import heap.Tuple;
 
 import java.util.ArrayList;
 
-public class ColumnarScanIndexUtil {
+public class ColumnarScanIndexUtil extends LateMaterializationUtil {
     Scan scan;
     CondExpr condExpr;
     ColumnarFile columnarFile;
@@ -95,7 +95,7 @@ public class ColumnarScanIndexUtil {
     }
 
     public ArrayList<BitMapFile> makeBitMapFiles() throws Exception {
-        String fileName = columnarFile.getColumnarHeader().getHdrFile() + ".c.t" + attrType.getColumnId();
+        String fileName = System.currentTimeMillis() + "";
         BitMapFile bitMapFile = new BitMapFile(fileName, false);
         int count = (int) columnarFile.getTupleCount();
         bitMapFile.Delete(count - 1);
@@ -111,7 +111,9 @@ public class ColumnarScanIndexUtil {
         return bitMapFiles;
     }
 
-    public void destroyBitMapFiles() throws Exception {
+
+    @Override
+    public void destroyEveryThing() throws Exception {
         for (BitMapFile bitMapFile : bitMapFilesToDelete) {
             bitMapFile.destroyBitMapFile();
         }

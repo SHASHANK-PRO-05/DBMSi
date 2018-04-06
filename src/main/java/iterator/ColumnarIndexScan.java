@@ -11,13 +11,14 @@ import heap.Tuple;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class ColumnarIndexScan {
+public class ColumnarIndexScan extends Iterator {
 
     private ArrayList<BitMapFile> bitMapFiles = new ArrayList<BitMapFile>();
     ColumnarFile columnarFile;
     private AttrType[] fieldSpecification;
     private ByteToTuple byteToTuple;
     private BitMapUtils bitMapUtils;
+    private LateMaterializationUtil[] lateMaterializationUtil;
 
     public ColumnarIndexScan(String relName, int[] fldName
             , IndexType[] indexTypes, String[] indexName
@@ -25,7 +26,7 @@ public class ColumnarIndexScan {
             , int noOutFlds, FldSpec[] projList, CondExpr[] selects
             , boolean indexOnly) throws Exception {
         this.columnarFile = new ColumnarFile(relName);
-
+        lateMaterializationUtil = new LateMaterializationUtil[selects.length];
         HashMap<Integer, AttrType> hashMap = new HashMap<Integer, AttrType>();
         for (int i = 0; i < attrTypes.length; i++) {
             hashMap.put(attrTypes[i].getColumnId(), attrTypes[i]);
@@ -36,19 +37,18 @@ public class ColumnarIndexScan {
         }
 
         byteToTuple = new ByteToTuple(fieldSpecification);
-
-
         for (int i = 0; i < selects.length; i++) {
             if (indexTypes[i].indexType == IndexType.ColumnScan) {
                 ColumnarScanIndexUtil columnarScanIndexUtil = new ColumnarScanIndexUtil(selects[i], attrTypes[i], relName);
                 bitMapFiles.addAll(columnarScanIndexUtil.makeBitMapFiles());
+                lateMaterializationUtil[i] = columnarScanIndexUtil;
             } else if (indexTypes[i].indexType == IndexType.BitMapIndex) {
                 ColumnarScanBitMapIndexUtil columnarScanBitMapIndexUtil = new ColumnarScanBitMapIndexUtil(selects[i]
                         , attrTypes[i], relName);
                 bitMapFiles.addAll(columnarScanBitMapIndexUtil.makeBitMapFiles());
+                lateMaterializationUtil[i] = columnarScanBitMapIndexUtil;
             }
         }
-
         bitMapUtils = new BitMapUtils(bitMapFiles);
     }
 
@@ -76,5 +76,18 @@ public class ColumnarIndexScan {
         }
     }
 
+    public int getNextPosition() throws Exception {
+        int nextPos = bitMapUtils.getNextAndPosition();
+        while (nextPos != -1 && columnarFile.isTupleDeletedAtPosition(nextPos)) {
+            nextPos = bitMapUtils.getNextAndPosition();
+        }
+        return nextPos;
+    }
+
+    public void close() throws Exception {
+        for (int i = 0; i < lateMaterializationUtil.length; i++) {
+            lateMaterializationUtil[i].destroyEveryThing();
+        }
+    }
 
 }

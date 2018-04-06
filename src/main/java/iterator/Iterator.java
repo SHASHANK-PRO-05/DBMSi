@@ -53,7 +53,7 @@ public abstract class Iterator implements Flags {
      * @throws PageUnpinnedException
      */
     public abstract void close()
-            throws IOException, IndexException, PageUnpinnedException, InvalidFrameNumberException, HashEntryNotFoundException, ReplacerException;
+            throws IOException, IndexException, PageUnpinnedException, InvalidFrameNumberException, HashEntryNotFoundException, ReplacerException, Exception;
 
 
 }

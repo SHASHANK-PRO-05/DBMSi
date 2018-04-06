@@ -49,8 +49,8 @@ public class Test {
         condExprs[1] = new CondExpr();
         condExprs[1].op = new AttrOperator(AttrOperator.opRANGE);
         condExprs[1].operand2.integerRange = new int[2];
-        condExprs[1].operand2.integerRange[0] = 2;
-        condExprs[1].operand2.integerRange[1] = 3;
+        condExprs[1].operand2.integerRange[0] = 0;
+        condExprs[1].operand2.integerRange[1] = 4;
         condExprs[1].next = null;
         AttrType[] attrTypes1 = new AttrType[3];
         attrTypes1[0] = attrTypes[0];
@@ -107,7 +107,16 @@ public class Test {
             }
             System.out.println();
             tuple = columnarIndexScan.getNext();
+
         }
+
+        columnarIndexScan.close();
+        System.out.println("Tuples in the table now:" + columnarFile.getTupleCount());
+        System.out.println("Write count: " + SystemDefs.pCounter.getwCounter());
+        System.out.println("Read count: " + SystemDefs.pCounter.getrCounter());
+        SystemDefs.JavabaseBM.flushAllPages();
+        SystemDefs.JavabaseDB.closeDB();
+        SystemDefs.JavabaseBM.flushAllPages();
 
     }
 }

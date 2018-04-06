@@ -7,7 +7,7 @@ import global.*;
 
 import java.util.ArrayList;
 
-public class ColumnarScanBitMapIndexUtil {
+public class ColumnarScanBitMapIndexUtil extends LateMaterializationUtil {
     ColumnarFile columnarFile;
     ArrayList<IndexInfo> indexInfos;
     AttrType attrType;
@@ -92,8 +92,7 @@ public class ColumnarScanBitMapIndexUtil {
             }
 
         }
-        BitMapFile bitMapFile = new BitMapFile(relName
-                + "b.t" + attrType.getColumnId(), false);
+        BitMapFile bitMapFile = new BitMapFile(System.currentTimeMillis() + "", false);
         bitMapFile.Delete((int) columnarFile.getTupleCount() - 1);
         bitMapFilesToDelete.add(bitMapFile);
         BitMapUtils bitMapUtils = new BitMapUtils(ored);
@@ -104,6 +103,13 @@ public class ColumnarScanBitMapIndexUtil {
         }
         bitMapFiles.add(bitMapFile);
         return bitMapFiles;
+    }
+
+    @Override
+    public void destroyEveryThing() throws Exception {
+        for (BitMapFile bitMapFile : bitMapFilesToDelete) {
+            bitMapFile.destroyBitMapFile();
+        }
     }
 
 
