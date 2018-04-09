@@ -127,7 +127,6 @@ public class Heapfile implements Filetype, GlobalConst {
                 {
                     return false;
                 }
-
                 DataPageInfo dpinfo = new DataPageInfo(atuple);
                 try {
                     pinPage(dpinfo.pageId, currentDataPage, false/*Rddisk*/);
@@ -773,7 +772,13 @@ public class Heapfile implements Filetype, GlobalConst {
 
         return true;
     }
-
+    public PageId getDataPage(RID rid) {
+    	
+    	
+    	
+    	
+    	return null;
+    }
 
     /**
      * Read record from file, returning pointer and length.
