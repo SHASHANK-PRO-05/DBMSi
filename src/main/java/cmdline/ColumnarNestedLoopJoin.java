@@ -74,21 +74,29 @@ public class ColumnarNestedLoopJoin {
 	if (argv[3].equals("[")) {
 	    i = 4;
 	    while (!argv[i].equals("]")) {
-		outerConst.append(argv[i]);
-		i++;
+		if (argv[i].equals("(") || argv[i].equals(")"))
+		    i++;
+		else {
+		    outerConst.append(argv[i]);
+		    i++;
+		}
 	    }
 	}
 	if (argv[i + 1].equals("[")) {
 	    i = i + 2;
 	    while (!argv[i].equals("]")) {
-		innerConst.append(argv[i]);
-		i++;
+		if (argv[i].equals("(") || argv[i].equals(")"))
+		    i++;
+		else {
+		    innerConst.append(argv[i]);
+		    i++;
+		}
 	    }
 	}
 	if (argv[i + 1].equals("[")) {
 	    i = i + 2;
 	    while (!argv[i].equals("]")) {
-		joinConst.append(argv[i]);
+		    joinConst.append(argv[i]);
 		i++;
 	    }
 	}
@@ -101,14 +109,18 @@ public class ColumnarNestedLoopJoin {
 
 	SystemDefs systemDefs = new SystemDefs(columnDBName, 0, numBuf, "LRU");
 
-	outerCondExpr = parseToCondExpr(outerFile, outerConst);
-	innerCondExpr = parseToCondExpr(innerFile, innerConst);
-		
-
+	 outerCondExpr = parseToCondExpr(outerFile, outerConst);
+	 innerCondExpr = parseToCondExpr(innerFile, innerConst);
+	
     }
 
     private static CondExpr[][] parseToCondExpr(String fileName,
-	    StringBuffer constr) throws HFBufMgrException, InvalidSlotNumberException, IOException, DiskMgrException, ColumnarFileDoesExistsException, ColumnarFilePinPageException, HFException, HFDiskMgrException, ColumnarFileUnpinPageException, bitmap.PinPageException, AddFileEntryException, UnpinPageException, bitmap.ConstructPageException, bitmap.GetFileEntryException {
+	    StringBuffer constr) throws HFBufMgrException,
+	    InvalidSlotNumberException, IOException, DiskMgrException,
+	    ColumnarFileDoesExistsException, ColumnarFilePinPageException,
+	    HFException, HFDiskMgrException, ColumnarFileUnpinPageException,
+	    bitmap.PinPageException, AddFileEntryException, UnpinPageException,
+	    bitmap.ConstructPageException, bitmap.GetFileEntryException {
 	// TODO Auto-generated method stub
 	int k = 0, index = 0;
 	ColumnarFile columnarFile = new ColumnarFile(fileName);
@@ -117,8 +129,8 @@ public class ColumnarNestedLoopJoin {
 	for (int i = 0; i < attrTypes.length; i++) {
 	    columnName.add(attrTypes[i].getAttrName());
 	}
-	in1= new AttrType[attrTypes.length];
-	in2= new AttrType[attrTypes.length];
+	in1 = new AttrType[attrTypes.length];
+	in2 = new AttrType[attrTypes.length];
 	ArrayList<ArrayList<CondExpr>> outerConstParser = new ArrayList<ArrayList<CondExpr>>();
 	String[] temp1 = constr.toString().split("AND");
 	for (int i = 0; i < temp1.length; i++) {
@@ -129,7 +141,7 @@ public class ColumnarNestedLoopJoin {
 
 		condExpr.op = parseOperator(temp2[j]);
 		String op = getOperatorSymbol(condExpr.op);
-		//System.out.println(op);
+		// System.out.println(op);
 		String splitExpr[] = temp2[j].split(op);
 		if (fileName.equals(outerFile)) {
 		    if (columnName.toString().contains(splitExpr[0])) {
@@ -148,7 +160,7 @@ public class ColumnarNestedLoopJoin {
 
 		condExpr.operand1.symbol = new FldSpec(new RelSpec(0),
 			attrTypes[index].getColumnId());
-		//System.out.println(condExpr.operand1.symbol);
+		// System.out.println(condExpr.operand1.symbol);
 		condExpr.type1 = new AttrType(AttrType.attrSymbol);
 		condExpr.type2 = new AttrType(attrTypes[index].getAttrType());
 		condExpr.next = null;
@@ -157,22 +169,20 @@ public class ColumnarNestedLoopJoin {
 		    condExpr.operand2.integer = Integer.parseInt(splitExpr[1]);
 		else if (attrTypes[index].getAttrType() == 0)
 		    condExpr.operand2.string = splitExpr[1];
-		
+
 		condList.add(condExpr);
 	    }
 	    outerConstParser.add(condList);
 
 	}
 	CondExpr c = outerConstParser.get(0).get(0);
-	
+	System.out.println(c.op.attrOperator);
 
 	CondExpr[][] condExpression = outerConstParser.stream()
 		.map(u -> u.toArray(new CondExpr[0]))
 		.toArray(CondExpr[][]::new);
-	
-	
-	return condExpression;
 
+	return condExpression;
 
     }
 
@@ -210,7 +220,7 @@ public class ColumnarNestedLoopJoin {
 	    return new AttrOperator(2);
 	if (expr.contains("!="))
 	    return new AttrOperator(3);
-	
+
 	else
 	    return null;
     }
