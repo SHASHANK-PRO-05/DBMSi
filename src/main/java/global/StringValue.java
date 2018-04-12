@@ -1,10 +1,10 @@
 package global;
 
-public class StringValue extends ValueClass {
+public class StringValue extends ValueClass implements Comparable<StringValue>{
 
     String value;
 
-
+ 
     public StringValue(String val) {
         super(val);
         this.value = val;
@@ -32,4 +32,14 @@ public class StringValue extends ValueClass {
         }
         return false;
     }
+
+
+	public int compareTo(StringValue o) {
+		// TODO Auto-generated method stub
+		return this.value.compareTo(o.value);
+	}
+
+	
+    
+    
 }

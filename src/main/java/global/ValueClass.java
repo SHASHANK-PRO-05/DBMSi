@@ -48,6 +48,8 @@ public abstract class ValueClass {
     }
 
     public abstract boolean isequal(Object obj);
+    
+    
 
 
 }

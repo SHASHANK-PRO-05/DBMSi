@@ -1,6 +1,6 @@
 package global;
 
-public class IntegerValue extends ValueClass {
+public class IntegerValue extends ValueClass implements Comparable<IntegerValue>{
     int value;
 
     public IntegerValue(int val) {
@@ -34,4 +34,13 @@ public class IntegerValue extends ValueClass {
 
         return false;
     }
+    
+
+	public int compareTo(IntegerValue o) {
+		// TODO Auto-generated method stub
+		return this.value-o.value;
+	}
+    
+
+   
 }
