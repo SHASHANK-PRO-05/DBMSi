@@ -2,14 +2,10 @@ package cmdline;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import bitmap.AddFileEntryException;
-import bitmap.BitMapScanException;
 import bitmap.UnpinPageException;
-import btree.ConstructPageException;
-import btree.GetFileEntryException;
-import btree.PinPageException;
-import columnar.ByteToTuple;
 import columnar.ColumnarFile;
 import columnar.ColumnarFileDoesExistsException;
 import columnar.ColumnarFilePinPageException;
@@ -17,24 +13,14 @@ import columnar.ColumnarFileUnpinPageException;
 import diskmgr.DiskMgrException;
 import global.AttrOperator;
 import global.AttrType;
-import global.Convert;
 import global.IndexType;
 import global.SystemDefs;
 import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
 import heap.InvalidSlotNumberException;
-import heap.Tuple;
-import iterator.BitmapScan;
-import iterator.BtreeScan;
-import iterator.ColumnScan;
-import iterator.ColumnarFileScan;
-import iterator.ColumnarFileScanException;
 import iterator.CondExpr;
 import iterator.FldSpec;
-import iterator.IndexException;
-import iterator.Iterator;
-import iterator.NestedLoopJoins;
 import iterator.RelSpec;
 
 public class ColumnarNestedLoopJoin {
@@ -51,8 +37,9 @@ public class ColumnarNestedLoopJoin {
     private static IndexType indexType;
     private static AttrType[] in1;
     private static AttrType[] in2;
-    private static CondExpr[][] outerCondExpr;
-    private static CondExpr[][] innerCondExpr;
+    private static CondExpr[] outerCondExpr;
+    private static CondExpr[] innerCondExpr;
+    private static CondExpr joinCondExpr;
     int c = 0;
 
     public static void main(String argv[]) throws Exception {
@@ -70,14 +57,13 @@ public class ColumnarNestedLoopJoin {
 	outerFile = argv[1];
 	innerFile = argv[2];
 	int i = 0;
-	System.out.println("argv 3" + argv[3]);
 	if (argv[3].equals("[")) {
 	    i = 4;
 	    while (!argv[i].equals("]")) {
 		if (argv[i].equals("(") || argv[i].equals(")"))
 		    i++;
 		else {
-		    outerConst.append(argv[i]);
+		    outerConst.append(argv[i] + " ");
 		    i++;
 		}
 	    }
@@ -88,7 +74,7 @@ public class ColumnarNestedLoopJoin {
 		if (argv[i].equals("(") || argv[i].equals(")"))
 		    i++;
 		else {
-		    innerConst.append(argv[i]);
+		    innerConst.append(argv[i] + " ");
 		    i++;
 		}
 	    }
@@ -96,7 +82,7 @@ public class ColumnarNestedLoopJoin {
 	if (argv[i + 1].equals("[")) {
 	    i = i + 2;
 	    while (!argv[i].equals("]")) {
-		    joinConst.append(argv[i]);
+		joinConst.append(argv[i] + " ");
 		i++;
 	    }
 	}
@@ -109,81 +95,112 @@ public class ColumnarNestedLoopJoin {
 
 	SystemDefs systemDefs = new SystemDefs(columnDBName, 0, numBuf, "LRU");
 
-	 outerCondExpr = parseToCondExpr(outerFile, outerConst);
-	 innerCondExpr = parseToCondExpr(innerFile, innerConst);
-	
+	outerConst.deleteCharAt(outerConst.length() - 1);
+	innerConst.deleteCharAt(innerConst.length() - 1);
+	joinConst.deleteCharAt(joinConst.length() - 1);
+
+	outerCondExpr = parseToCondExpr(outerFile, outerConst);
+	innerCondExpr = parseToCondExpr(innerFile, innerConst);
+	joinCondExpr = parseJoinConstr(outerFile, innerFile, joinConst);
+
     }
 
-    private static CondExpr[][] parseToCondExpr(String fileName,
+    private static CondExpr[] parseToCondExpr(String fileName,
 	    StringBuffer constr) throws HFBufMgrException,
-	    InvalidSlotNumberException, IOException, DiskMgrException,
-	    ColumnarFileDoesExistsException, ColumnarFilePinPageException,
-	    HFException, HFDiskMgrException, ColumnarFileUnpinPageException,
-	    bitmap.PinPageException, AddFileEntryException, UnpinPageException,
-	    bitmap.ConstructPageException, bitmap.GetFileEntryException {
+    InvalidSlotNumberException, IOException, DiskMgrException,
+    ColumnarFileDoesExistsException, ColumnarFilePinPageException,
+    HFException, HFDiskMgrException, ColumnarFileUnpinPageException,
+    bitmap.PinPageException, AddFileEntryException, UnpinPageException,
+    bitmap.ConstructPageException, bitmap.GetFileEntryException {
 	// TODO Auto-generated method stub
-	int k = 0, index = 0;
+	int index = -1;
 	ColumnarFile columnarFile = new ColumnarFile(fileName);
 	AttrType attrTypes[] = columnarFile.getColumnarHeader().getColumns();
-	ArrayList<String> columnName = new ArrayList<String>();
+	List<String> columnName = new ArrayList<String>();
 	for (int i = 0; i < attrTypes.length; i++) {
 	    columnName.add(attrTypes[i].getAttrName());
 	}
-	in1 = new AttrType[attrTypes.length];
-	in2 = new AttrType[attrTypes.length];
-	ArrayList<ArrayList<CondExpr>> outerConstParser = new ArrayList<ArrayList<CondExpr>>();
-	String[] temp1 = constr.toString().split("AND");
+	String[] temp1 = constr.toString().split(" AND ");
+	ArrayList<CondExpr> constParser = new ArrayList<CondExpr>();
 	for (int i = 0; i < temp1.length; i++) {
-	    ArrayList<CondExpr> condList = new ArrayList<CondExpr>();
-	    String[] temp2 = temp1[i].toString().split("OR");
+	    String[] temp2 = temp1[i].toString().split(" OR ");
+	    CondExpr[] cond = new CondExpr[temp2.length];
+	    for (int k = 0; k < temp2.length; k++)
+		cond[k] = new CondExpr();
 	    for (int j = 0; j < temp2.length; j++) {
-		CondExpr condExpr = new CondExpr();
+		cond[j].op = parseOperator(temp2[j]);
+		String op = getOperatorSymbol(cond[j].op);
+		String splitExpr[] = temp2[j].split(" " + op + " ");
+		if (columnName.toString().contains(splitExpr[0])) {
+		    index = columnName.indexOf(splitExpr[0]);
 
-		condExpr.op = parseOperator(temp2[j]);
-		String op = getOperatorSymbol(condExpr.op);
-		// System.out.println(op);
-		String splitExpr[] = temp2[j].split(op);
-		if (fileName.equals(outerFile)) {
-		    if (columnName.toString().contains(splitExpr[0])) {
-			index = columnName.indexOf(splitExpr[0]);
-			in1[k] = attrTypes[index];
-			k++;
-		    }
-
-		} else {
-		    if (columnName.toString().contains(splitExpr[0])) {
-			index = columnName.indexOf(splitExpr[0]);
-			in2[k] = attrTypes[index];
-			k++;
-		    }
 		}
 
-		condExpr.operand1.symbol = new FldSpec(new RelSpec(0),
+		cond[j].operand1.symbol = new FldSpec(new RelSpec(0),
 			attrTypes[index].getColumnId());
-		// System.out.println(condExpr.operand1.symbol);
-		condExpr.type1 = new AttrType(AttrType.attrSymbol);
-		condExpr.type2 = new AttrType(attrTypes[index].getAttrType());
-		condExpr.next = null;
+		cond[j].type1 = new AttrType(AttrType.attrSymbol);
+		cond[j].type2 = new AttrType(attrTypes[index].getAttrType());
 
 		if (attrTypes[index].getAttrType() == 1)
-		    condExpr.operand2.integer = Integer.parseInt(splitExpr[1]);
+		    cond[j].operand2.integer = Integer.parseInt(splitExpr[1]);
 		else if (attrTypes[index].getAttrType() == 0)
-		    condExpr.operand2.string = splitExpr[1];
+		    cond[j].operand2.string = splitExpr[1];
+		if (j + 1 < temp2.length)
+		    cond[j].next = cond[j + 1];
 
-		condList.add(condExpr);
 	    }
-	    outerConstParser.add(condList);
+	    constParser.add(cond[0]);
 
 	}
-	CondExpr c = outerConstParser.get(0).get(0);
-	System.out.println(c.op.attrOperator);
 
-	CondExpr[][] condExpression = outerConstParser.stream()
-		.map(u -> u.toArray(new CondExpr[0]))
-		.toArray(CondExpr[][]::new);
+	return constParser.toArray(new CondExpr[constParser.size()]);
 
-	return condExpression;
+    }
 
+    public static CondExpr parseJoinConstr(String fileName1, String fileName2,
+	    StringBuffer joinConst)
+		    throws DiskMgrException, ColumnarFileDoesExistsException,
+		    ColumnarFilePinPageException, HFException, HFBufMgrException,
+		    HFDiskMgrException, ColumnarFileUnpinPageException,
+		    bitmap.PinPageException, AddFileEntryException, UnpinPageException,
+		    bitmap.ConstructPageException, bitmap.GetFileEntryException,
+		    IOException, InvalidSlotNumberException {
+
+	int index1 = -1, index2 = -1;
+	ColumnarFile columnarFile1 = new ColumnarFile(fileName1);
+	ColumnarFile columnarFile2 = new ColumnarFile(fileName2);
+	String joinConstr = joinConst.toString();
+	AttrType attrTypes1[] = columnarFile1.getColumnarHeader().getColumns();
+	AttrType attrTypes2[] = columnarFile2.getColumnarHeader().getColumns();
+	List<String> columnNames1 = new ArrayList<String>();
+	List<String> columnNames2 = new ArrayList<String>();
+	for (int i = 0; i < attrTypes1.length; i++) {
+	    columnNames1.add(attrTypes1[i].getAttrName());
+	}
+	for (int i = 0; i < attrTypes2.length; i++) {
+	    columnNames2.add(attrTypes2[i].getAttrName());
+	}
+	CondExpr condExpr = new CondExpr();
+	condExpr.next = null;
+	condExpr.op = parseOperator(joinConstr);
+	String op = getOperatorSymbol(condExpr.op);
+	String splitExpr[] = joinConstr.split(" " + op + " ");
+	if (columnNames1.toString().contains(splitExpr[0])) {
+	    index1 = columnNames1.indexOf(splitExpr[0]);
+
+	}
+	if (columnNames2.toString().contains(splitExpr[1])) {
+	    index2 = columnNames2.indexOf(splitExpr[1]);
+
+	}
+	condExpr.operand1.symbol = new FldSpec(new RelSpec(0),
+		attrTypes1[index1].getColumnId());
+	condExpr.operand2.symbol = new FldSpec(new RelSpec(0),
+		attrTypes2[index2].getColumnId());
+	condExpr.type1 = new AttrType(AttrType.attrSymbol);
+	condExpr.type2 = new AttrType(AttrType.attrSymbol);
+
+	return condExpr;
     }
 
     /*
