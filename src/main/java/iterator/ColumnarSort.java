@@ -39,6 +39,8 @@ public class ColumnarSort implements GlobalConst {
 	private Heapfile heapfiles[];
 	private int coloumnNo;
 	private int numOfColumn;
+	private String columnarFileName;
+
 	// Algo
 	// create a new heap file.
 	// loop around the pages of old heap file.
@@ -46,7 +48,7 @@ public class ColumnarSort implements GlobalConst {
 	// write the page into the new heap file.
 	// I will now have the number of heap files.
 	// run a loop dividing by 2
-	// run untill divide by 2 results into 1 file.
+	// run until divide by 2 results into 1 file.
 
 	public ColumnarSort(String columnarFileName, int columnNo) throws DiskMgrException, ColumnarFileDoesExistsException,
 			ColumnarFilePinPageException, HFException, HFBufMgrException, HFDiskMgrException,
@@ -58,15 +60,14 @@ public class ColumnarSort implements GlobalConst {
 		numOfColumn = columnarFile.getNumColumns();
 		sortedHeapFileNames = new Heapfile[numOfColumn];
 		// create the heap files for the sorted records
-		String columnsFileName = "";
-		columnsFileName = columnarFileName + "." + columnNo + ".sort";
+		
+		this.columnarFileName = columnarFileName ;
 		// sortedHeapFileNames = new Heapfile(columnsFileName);
-		for (int i = 0; i < numOfColumn; i++) {
-			String fileNum = Integer.toString(i);
-
-			sortedHeapFileNames[i] = new Heapfile(columnsFileName);
-
-		}
+//		for (int i = 0; i < numOfColumn; i++) {
+//
+//			sortedHeapFileNames[i] = new Heapfile(columnsFileName);
+//
+//		}
 		// now insert the sorted pages in the heap files.
 		// individual pages would be sorted, not the whole file
 		int numDataPages = init(columnarFile);
@@ -77,53 +78,141 @@ public class ColumnarSort implements GlobalConst {
 
 	private void mergesort(int numDataPages) throws HFException, HFBufMgrException, HFDiskMgrException, IOException,
 			InvalidSlotNumberException, InvalidTupleSizeException, Exception {
-		// TODO Auto-generated method stub
-		Heapfile sortHeapFile = sortedHeapFileNames[coloumnNo];
-		PageId currentDirPageId;
-		HFPage currentDirPage;
-		RID currentDataPageRid = new RID();
-		Tuple atuple = new Tuple();
-		HFPage currentDataPage1 = new HFPage();
-		HFPage currentDataPage2 = new HFPage();
-		int mergeloopNum = (int) Math.ceil((Math.log(numDataPages) / Math.log(2)));
+		/*
+		 * Calculate how many runs do we need run a loop on them for every run
+		 * initialize an array of heap file. name them into sort+ number of run+ column
+		 * number the last run will have name as tablename.column.sort every run will
+		 * take input from the previous run according to the run scan that many pages
+		 * delete all the heap file beyond that.
+		 * 
+		 * 
+		 * 
+		 */
+		HFPage dirPage = new HFPage();
+		RID curDataPageRid = new RID();
+		Tuple tuple = new Tuple();
+		DataPageInfo info = new DataPageInfo();
+		HFPage curDataPage = new HFPage();
+		HFPage curDataPage2 = new HFPage();
+		PageId curDataPageId = new PageId();
+		PageId curDataPageId2 = new PageId(); 
+		PageId curDirPageId = new PageId();
+		PageId nextPageId1 = new PageId();
+		PageId nextPageId2 = new PageId();
+		PageId nextdirePageId = new PageId();
+		RID firstDataPageRID = new RID();
 
-		for (int i = 0; i < mergeloopNum; i++) {
-			Heapfile sort1 = new Heapfile("1");
+		// num of runs needed
+		int numruns = ((int) Math.ceil((Math.log(numDataPages) / Math.log(2))));
+		// loop for the runs
+		for (int i = 0; i < numruns; i++) {
+			Heapfile[] heapfile = new Heapfile[numOfColumn];
+	//		if(i != numruns-1)
+			int filenum = i+1;
+				heapfile[coloumnNo] = new Heapfile(columnarFileName + "s" + filenum + "r" + coloumnNo);
+//			else
+//				heapfile[coloumnNo] = new Heapfile(columnarFileName + coloumnNo + ".s");
+			// get the last heapfile
+			Heapfile lastheapfile = new Heapfile(columnarFileName + "s" + (i) + "r" + coloumnNo);
+			// get the first page of the heapfile
+			// first directory page
+			curDirPageId = new PageId(lastheapfile.get_firstDirPageId().pid);
+			pinPage(curDirPageId, dirPage, false);
+			int counter = 0;
 
-			/*
-			 * here is the code to get the first data page
-			 * 
-			 */
-			currentDirPageId = new PageId(sortHeapFile.get_firstDirPageId().pid);
-			currentDirPage = new HFPage();
-			pinPage(currentDirPageId, currentDirPage, false/* read disk */);
-			currentDataPageRid = currentDirPage.firstRecord();
+			firstDataPageRID = dirPage.firstRecord();
 			try {
-				atuple = currentDirPage.getRecord(currentDataPageRid);
+				tuple = dirPage.getRecord(firstDataPageRID);
 			} catch (InvalidSlotNumberException e)// check error! return false(done)
 			{
 				return;
 			}
-			DataPageInfo dpinfo = new DataPageInfo(atuple);
+			
+			info = new DataPageInfo(tuple);
 			try {
-				// pin the datapage
-				pinPage(dpinfo.pageId, currentDataPage1, false/* Rddisk */);
+				curDataPageId = info.pageId;
+				// pin the first datapage
+				//pinPage(curDataPageId,curDataPage,false);
 				// check error;need unpin currentDirPage
 			} catch (Exception e) {
-				unpinPage(currentDirPageId, false/* undirty */);
+				unpinPage(curDirPageId, false/* undirty */);
 				throw e;
 			}
-			/*
-			 * above is the code to get the first data page
-			 * 
-			 */
-			currentDataPage2.setCurPage(currentDataPage1.getCurPage());
-			for (int j = 0; j < Math.pow(2, i); j++) {
-				currentDataPage2.setCurPage(currentDataPage2.getNextPage());
-
+			while (curDirPageId.pid != INVALID_PAGE) {
+				for (curDataPageRid = dirPage.firstRecord(); curDataPageRid != null; curDataPageRid = dirPage
+						.nextRecord(curDataPageRid)) {
+					if (counter != Math.pow(2, i)  ) {
+						counter++;
+						continue;
+					}
+					// first page should be next of second page
+					try {
+						tuple = dirPage.getRecord(curDataPageRid);
+					} catch (InvalidSlotNumberException e)// check error! return false(done)
+					{
+						return;
+					}
+					info = new DataPageInfo(tuple);
+					try {
+						curDataPageId2 = info.pageId;
+						
+					} catch (Exception e) {
+						unpinPage(curDirPageId, false/* undirty */);
+						throw e;
+					}
+					mergeRuns(curDataPageId, curDataPageId2, i);
+					curDataPageId2.pid = INVALID_PAGE;
+					curDataPageId.pid = INVALID_PAGE;
+					counter = 0;
+					
+					
+					firstDataPageRID = dirPage.nextRecord(curDataPageRid);
+					
+						if(firstDataPageRID!=null) {
+							try {
+							tuple = dirPage.getRecord(firstDataPageRID);
+							}catch (InvalidSlotNumberException e)// check error! return false(done)
+							{
+								return;
+							}
+							info = new DataPageInfo(tuple);
+							try {
+								curDataPageId = info.pageId;
+								// pin the datapage
+								if(curDataPageId.pid == INVALID_PAGE) {
+									break;
+									
+								}
+								// check error;need unpin currentDirPage
+							} catch (Exception e) {
+								unpinPage(curDirPageId, false/* undirty */);
+								throw e;
+							}
+						}
+							
+					
+					
+					
+						
+				}
+				
+				nextdirePageId = dirPage.getNextPage();
+				try {
+					unpinPage(dirPage.getCurPage(), false /* undirty */);
+				} catch (Exception e) {
+					throw new HFException(e, "heapfile,_find,unpinpage failed");
+				}
+				
+				curDirPageId.pid = nextdirePageId.pid;
+				if (curDirPageId.pid != INVALID_PAGE) {
+					
+					pinPage(curDirPageId, dirPage, false/* Rdisk */);
+				}
 			}
-
-			mergeRuns(currentDataPage1.getCurPage(), currentDataPage2.getCurPage(), 1);
+			if(curDataPageId2.pid == INVALID_PAGE && curDataPageId.pid != INVALID_PAGE) {
+				mergeRuns(curDataPageId,curDataPageId2,i);
+			}
+			
 
 		}
 
@@ -142,26 +231,29 @@ public class ColumnarSort implements GlobalConst {
 		 * its remaining tuple and vice versa
 		 * 
 		 */
-		Heapfile heapfile = new Heapfile("Sort");
-		int count = 0;
+		int filenum = i+1;
+		Heapfile heapfile = new Heapfile(columnarFileName + "s" + filenum+ "r" + coloumnNo);
+		
 		HFPage list1 = new HFPage();
 		HFPage list2 = new HFPage();
 		PageId nextPage1 = new PageId();
 		PageId nextPage2 = new PageId();
-		RID record1 = new RID();
-		RID record2 = new RID();
+		RID record1 = null;
+		RID record2 = null;
 		// it is for int later will change
 		ValueClass val1;
 		ValueClass val2;
 		int counter1 = 0;
 		int counter2 = 0;
-		pinPage(curPage, list1, false);
-		pinPage(curPage2, list2, false);
+		if(curPage.pid != INVALID_PAGE)
+			pinPage(curPage, list1, false);
+		if(curPage2.pid != INVALID_PAGE)
+			pinPage(curPage2, list2, false);
 		record1 = list1.firstRecord();
 		record2 = list2.firstRecord();
 		while (record1 != null && record2 != null) {
 			val1 = new IntegerValue(Convert.getIntValue(0, list1.getRecord(record1).getTupleByteArray()));
-			val2 = new IntegerValue(Convert.getIntValue(0, list2.getRecord(record1).getTupleByteArray()));
+			val2 = new IntegerValue(Convert.getIntValue(0, list2.getRecord(record2).getTupleByteArray()));
 
 			if ((Integer) val1.getValue() < (Integer) val2.getValue()) {
 				heapfile.insertRecord(list1.getRecord(record1).getTupleByteArray());
@@ -178,17 +270,26 @@ public class ColumnarSort implements GlobalConst {
 					if (curPage.pid != INVALID_PAGE) {
 						counter1++;
 						pinPage(curPage, list1, false/* Rdisk */);
+						record1 = list1.firstRecord();
 					}
-					record1 = list1.firstRecord();
+					
 
+				}
+				else if (record1 == null && counter1 == i) {
+					try {
+						unpinPage(curPage, false /* undirty */);
+					} catch (Exception e) {
+						throw new HFException(e, "heapfile,_find,unpinpage failed");
+					}
+					
 				}
 			}
 
 			else if ((Integer) val1.getValue() > (Integer) val2.getValue()) {
-				heapfile.insertRecord(list1.getRecord(record2).getTupleByteArray());
+				heapfile.insertRecord(list2.getRecord(record2).getTupleByteArray());
 				record2 = list2.nextRecord(record2);
 				if (record2 == null && counter2 < i) {
-					nextPage2 = list1.getNextPage();
+					nextPage2 = list2.getNextPage();
 					try {
 						unpinPage(curPage2, false /* undirty */);
 					} catch (Exception e) {
@@ -196,17 +297,24 @@ public class ColumnarSort implements GlobalConst {
 					}
 
 					curPage2.pid = nextPage2.pid;
-					if (curPage.pid != INVALID_PAGE) {
+					if (curPage2.pid != INVALID_PAGE) {
 						counter2++;
 						pinPage(curPage2, list2, false);
+						record2 = list2.firstRecord();
 					}
-					record2 = list2.firstRecord();
+					
 
+				}else if(record2 == null && counter2 < i ) {
+					try {
+						unpinPage(curPage2, false /* undirty */);
+					} catch (Exception e) {
+						throw new HFException(e, "heapfile,_find unpinpage failed");
+					}
 				}
 
 			} else {
-				heapfile.insertRecord(list1.getRecord(record2).getTupleByteArray());
-				heapfile.insertRecord(list1.getRecord(record2).getTupleByteArray());
+				heapfile.insertRecord(list1.getRecord(record1).getTupleByteArray());
+				heapfile.insertRecord(list2.getRecord(record2).getTupleByteArray());
 				record1 = list1.nextRecord(record1);
 				record2 = list2.nextRecord(record2);
 				if (record1 == null && counter1 < i) {
@@ -221,13 +329,21 @@ public class ColumnarSort implements GlobalConst {
 					if (curPage.pid != INVALID_PAGE) {
 						counter1++;
 						pinPage(curPage, list1, false/* Rdisk */);
-						
-					}
-					record1 = list1.firstRecord();
+						record1 = list1.firstRecord();
 
+					}
+					
+
+				} else if (record1 == null && counter1 == i) {
+					try {
+						unpinPage(curPage, false /* undirty */);
+					} catch (Exception e) {
+						throw new HFException(e, "heapfile,_find,unpinpage failed");
+					}
+					
 				}
 				if (record2 == null && counter2 < i) {
-					nextPage2 = list1.getNextPage();
+					nextPage2 = list2.getNextPage();
 					try {
 						unpinPage(curPage2, false /* undirty */);
 					} catch (Exception e) {
@@ -235,14 +351,20 @@ public class ColumnarSort implements GlobalConst {
 					}
 
 					curPage2.pid = nextPage2.pid;
-					if (curPage.pid != INVALID_PAGE) {
+					if (curPage2.pid != INVALID_PAGE) {
 						counter2++;
 						pinPage(curPage2, list2, false);
+						record2 = list2.firstRecord();
 					}
-					record2 = list2.firstRecord();
+					
 
+				} else if(record2 == null && counter2 < i ) {
+					try {
+						unpinPage(curPage2, false /* undirty */);
+					} catch (Exception e) {
+						throw new HFException(e, "heapfile,_find unpinpage failed");
+					}
 				}
-				
 
 			}
 
@@ -259,16 +381,24 @@ public class ColumnarSort implements GlobalConst {
 				}
 
 				curPage2.pid = nextPage2.pid;
-				if (curPage.pid != INVALID_PAGE) {
+				if (curPage2.pid != INVALID_PAGE) {
 					counter2++;
 					pinPage(curPage2, list2, false);
+					record2 = list2.firstRecord();
 				}
-				record2 = list2.firstRecord();
+				
+			}
+			else if(record2 == null && counter2 < i ) {
+				try {
+					unpinPage(curPage2, false /* undirty */);
+				} catch (Exception e) {
+					throw new HFException(e, "heapfile,_find unpinpage failed");
+				}
 			}
 		}
 		while (record1 != null && record2 == null) {
 			heapfile.insertRecord(list1.getRecord(record1).getTupleByteArray());
-			record1 = list1.nextRecord(record2);
+			record1 = list1.nextRecord(record1);
 			if (record1 == null && counter1 < i) {
 				nextPage1 = list1.getNextPage();
 				try {
@@ -281,13 +411,23 @@ public class ColumnarSort implements GlobalConst {
 				if (curPage.pid != INVALID_PAGE) {
 					counter1++;
 					pinPage(curPage, list1, false/* Rdisk */);
+					record1 = list1.firstRecord();
 				}
-				record1 = list1.firstRecord();
+				
+			}else if (record1 == null && counter1 == i) {
+				try {
+					unpinPage(curPage, false /* undirty */);
+				} catch (Exception e) {
+					throw new HFException(e, "heapfile,_find,unpinpage failed");
+				}
+				
 			}
 			
+
 		}
 
 	}
+
 	/*
 	 * 
 	 * function to get the first list of sorted page
@@ -295,7 +435,7 @@ public class ColumnarSort implements GlobalConst {
 
 	private int init(ColumnarFile columnarFile)
 			throws InvalidTupleSizeException, IOException, HFBufMgrException, Exception {
-
+		Heapfile heapfile_0 = new Heapfile(columnarFileName + "s0r" + coloumnNo);
 		heapfiles = columnarFile.getHeapFileNames();
 		// can throw error if columnNo is greater than the heapfiles size
 		AttrType sortedColumnType = columnarFile.getColumnInfo(coloumnNo);
@@ -309,7 +449,7 @@ public class ColumnarSort implements GlobalConst {
 		RID currentDataPageRid = new RID();
 		RID record = new RID();
 		int count = 0;
-		int dirCount = 0;
+		int dirCount = 1;
 		int datapageCount = 0;
 		int totalPageCount = 0;
 		int size = sortedColumnType.getSize();
@@ -338,6 +478,7 @@ public class ColumnarSort implements GlobalConst {
 					throw e;
 				}
 				count = 0;
+				sortingList.clear();
 				// loop around the records
 				for (record = currentDataPage.firstRecord(); record != null; record = currentDataPage
 						.nextRecord(record)) {
@@ -376,16 +517,13 @@ public class ColumnarSort implements GlobalConst {
 						recPtr = new byte[4];
 						Convert.setIntValue((Integer) val.getVal().getValue(), 0, recPtr);
 					}
-					sortedHeapFileNames[coloumnNo].insertRecord(recPtr);
+					heapfile_0.insertRecord(recPtr);
 
 				}
-				sortOtherHeapFilesInit(dirCount, datapageCount, size, sortingList);
+				//sortOtherHeapFilesInit(dirCount, datapageCount, size, sortingList);
 				datapageCount++;
 			}
-			// tracing
-			for (SortInfo val : sortingList) {
-				System.out.println(val.getVal().getValue());
-			}
+			
 			nextDirPageId = currentDirPage.getNextPage();
 			try {
 				unpinPage(currentDirPageId, false /* undirty */);
@@ -398,11 +536,10 @@ public class ColumnarSort implements GlobalConst {
 				dirCount++;
 				datapageCount = 0;
 				pinPage(currentDirPageId, currentDirPage, false/* Rdisk */);
-				if (currentDirPage == null)
-					throw new HFException(null, "pinPage return null page");
 			}
 
 		}
+		
 		return totalPageCount;
 	}
 
@@ -413,25 +550,22 @@ public class ColumnarSort implements GlobalConst {
 	private void sortOtherHeapFilesInit(int dirCount, int datapageCount, int size, ArrayList<SortInfo> sortingList)
 			throws HFBufMgrException, IOException, InvalidTupleSizeException, HFException, Exception {
 		// loop around heap files
-		Heapfile sortedheapfile;
 		PageId currentDirPageId;
 		HFPage currentDirPage;
 		HFPage currentDataPage;
 		PageId nextDirPageId;
 
-		Tuple atuple;
+		Tuple atuple = new Tuple();
 		RID currentDataPageRid;
 		int matchdirCount;
 		int matchdataCount;
 		for (int i = 0; i < numOfColumn; i++) {
 			if (i == coloumnNo)
 				continue;
-			sortedheapfile = sortedHeapFileNames[i];
+			Heapfile sortHeap = new Heapfile(columnarFileName + "s0r" + i);
 			currentDirPageId = new PageId(heapfiles[i].get_firstDirPageId().pid);
 			currentDirPage = new HFPage();
 			currentDataPage = new HFPage();
-			nextDirPageId = new PageId();
-			atuple = new Tuple();
 			currentDataPageRid = new RID();
 			matchdirCount = 0;
 			matchdataCount = 0;
@@ -449,8 +583,6 @@ public class ColumnarSort implements GlobalConst {
 				if (currentDirPageId.pid != INVALID_PAGE) {
 					matchdirCount++;
 					pinPage(currentDirPageId, currentDirPage, false/* Rdisk */);
-					if (currentDirPage == null)
-						throw new HFException(null, "pinPage return null page");
 				}
 
 			}
@@ -491,7 +623,7 @@ public class ColumnarSort implements GlobalConst {
 				int pos = sortInfo.position;
 				RID rid = new RID(currentDataPage.getCurPage(), pos);
 				dataByte = currentDataPage.getDataAtSlot(rid);
-				sortedheapfile.insertRecord(dataByte);
+				sortHeap.insertRecord(dataByte);
 
 			}
 			// unpin the datapage

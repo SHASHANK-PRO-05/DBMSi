@@ -48,7 +48,7 @@ interface Filetype {
 public class Heapfile implements Filetype, GlobalConst {
 
 
-    PageId _firstDirPageId;   // page number of header page
+    public PageId _firstDirPageId;   // page number of header page
     int _ftype;
     private boolean _file_deleted;
     private String _fileName;
@@ -61,7 +61,7 @@ public class Heapfile implements Filetype, GlobalConst {
     /* get a new datapage from the buffer manager and initialize dpinfo
            @param dpinfop the information in the new HFPage
         */
-    private HFPage _newDatapage(DataPageInfo dpinfop)
+    private HFPage _newDatapage(DataPageInfo dpinfop, DataPageInfo prevDataPageInfo)
             throws HFException,
             HFBufMgrException,
             HFDiskMgrException,
@@ -77,6 +77,14 @@ public class Heapfile implements Filetype, GlobalConst {
 
         HFPage hfpage = new HFPage();
         hfpage.init(pageId, apage);
+        HFPage prevPage = new HFPage();
+        if(prevDataPageInfo !=null) {
+        	pinPage(prevDataPageInfo.pageId, prevPage, false);
+            prevPage.setNextPage(pageId);
+            unpinPage(prevDataPageInfo.pageId, true);
+            
+        }
+        
 
         dpinfop.pageId.pid = pageId.pid;
         dpinfop.recct = 0;
@@ -163,6 +171,7 @@ public class Heapfile implements Filetype, GlobalConst {
                     // user record not found on this datapage; unpin it
                     // and try the next one
                     unpinPage(dpinfo.pageId, false /*undirty*/);
+
 
                 }
 
@@ -371,6 +380,7 @@ public class Heapfile implements Filetype, GlobalConst {
         HFPage nextDirPage = new HFPage();
         PageId currentDirPageId = new PageId(_firstDirPageId.pid);
         PageId nextDirPageId = new PageId();  // OK
+        DataPageInfo tempDataPageInfo=null;
 
         pinPage(currentDirPageId, currentDirPage, false/*Rdisk*/);
 
@@ -394,7 +404,8 @@ public class Heapfile implements Filetype, GlobalConst {
                     break;
                 }
             }
-
+            if(dpinfo.pageId.pid !=INVALID_PAGE)
+            	tempDataPageInfo = dpinfo;
             // two cases:
             // (1) found == true:
             //     currentDirPage has a datapagerecord which can accomodate
@@ -426,7 +437,8 @@ public class Heapfile implements Filetype, GlobalConst {
                     //Start IF02
                     // case (2.1) : add a new data page record into the
                     //              current directory page
-                    currentDataPage = _newDatapage(dpinfo);
+                	
+                    currentDataPage = _newDatapage(dpinfo,tempDataPageInfo);
                     // currentDataPage is pinned! and dpinfo->pageId is also locked
                     // in the exclusive mode
 
