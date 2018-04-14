@@ -10,70 +10,70 @@ import heap.Tuple;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.UUID;
+
 
 public class ColumnarIndexScan extends Iterator {
-
-    private ArrayList<BitMapFile> bitMapFiles = new ArrayList<BitMapFile>();
+    String relName;
     ColumnarFile columnarFile;
-    private AttrType[] fieldSpecification;
-    private ByteToTuple byteToTuple;
-    private BitMapUtils bitMapUtils;
-    private LateMaterializationUtil[] lateMaterializationUtil;
+    private LateMaterializationUtil[] lateMaterializationUtils;
+    private AttrType[] fieldSpecfication;
+    private AttrType[] attrTypes;
+    ArrayList<BitMapFile> bitMapFiles[];
+    ArrayList<BitMapFile> filesToDelete = new ArrayList<>();
+    BitMapUtils bitMapUtils;
+    ByteToTuple byteToTuple;
 
     public ColumnarIndexScan(String relName, int[] fldName
-            , IndexType[] indexTypes, String[] indexName
+            , IndexType[] indexTypes, String[] indexNames
             , AttrType[] attrTypes, short[] strSizes, int noInFlds
-            , int noOutFlds, FldSpec[] projList, CondExpr[] selects
-            , boolean indexOnly) throws Exception {
+            , int noOutFlds, FldSpec[] projectionList, CondExpr[] selects)
+            throws Exception {
+        this.relName = relName;
+        this.attrTypes = attrTypes;
         this.columnarFile = new ColumnarFile(relName);
-        lateMaterializationUtil = new LateMaterializationUtil[selects.length];
-        HashMap<Integer, AttrType> hashMap = new HashMap<Integer, AttrType>();
+        this.lateMaterializationUtils = new LateMaterializationUtil[attrTypes.length];
+        HashMap<Integer, AttrType> attrTypeHashMap = new HashMap<>();
         for (int i = 0; i < attrTypes.length; i++) {
-            hashMap.put(attrTypes[i].getColumnId(), attrTypes[i]);
+            attrTypeHashMap.put(attrTypes[i].getColumnId(), attrTypes[i]);
         }
-        fieldSpecification = new AttrType[projList.length];
-        for (int i = 0; i < projList.length; i++) {
-            fieldSpecification[i] = hashMap.get(projList[i].offset);
+        this.fieldSpecfication = new AttrType[projectionList.length];
+        for (int i = 0; i < projectionList.length; i++) {
+            fieldSpecfication[i] = attrTypeHashMap.get(projectionList[i].offset);
         }
-
-        byteToTuple = new ByteToTuple(fieldSpecification);
-        for (int i = 0; i < selects.length; i++) {
+        byteToTuple = new ByteToTuple(fieldSpecfication);
+        bitMapFiles = new ArrayList[selects.length];
+        for (int i = 0; i < bitMapFiles.length; i++)
+            bitMapFiles[i] = new ArrayList<>();
+        for (int i = 0; i < attrTypes.length; i++) {
             if (indexTypes[i].indexType == IndexType.ColumnScan) {
-                ColumnarScanIndexUtil columnarScanIndexUtil = new ColumnarScanIndexUtil(selects[i], attrTypes[i], relName);
-                bitMapFiles.addAll(columnarScanIndexUtil.makeBitMapFiles());
-                lateMaterializationUtil[i] = columnarScanIndexUtil;
-            } else if (indexTypes[i].indexType == IndexType.BitMapIndex) {
-                ColumnarScanBitMapIndexUtil columnarScanBitMapIndexUtil = new ColumnarScanBitMapIndexUtil(selects[i]
-                        , attrTypes[i], relName);
-                bitMapFiles.addAll(columnarScanBitMapIndexUtil.makeBitMapFiles());
-                lateMaterializationUtil[i] = columnarScanBitMapIndexUtil;
-            }
-        }
-        bitMapUtils = new BitMapUtils(bitMapFiles);
-    }
-
-    public Tuple getNext() throws Exception {
-        int nextPos = bitMapUtils.getNextAndPosition();
-        while (nextPos != -1 && columnarFile.isTupleDeletedAtPosition(nextPos)) {
-            nextPos = bitMapUtils.getNextAndPosition();
-        }
-        if (nextPos != -1) {
-            Tuple[] tuples = new Tuple[fieldSpecification.length];
-            int size = 0;
-
-            for (int i = 0; i < fieldSpecification.length; i++) {
-                Heapfile heapfile = columnarFile.getHeapFileNames()[fieldSpecification[i].getColumnId()];
-                tuples[i] = heapfile.getRecordAtPosition(nextPos);
-                if (tuples[i] == null) {
-                    return null;
+                lateMaterializationUtils[i] = new ColumnarScanUtil(relName, attrTypes[i], selects);
+                ArrayList<BitMapFile> tempBitMaps[] = lateMaterializationUtils[i].makeBitMapFile();
+                for (int j = 0; j < bitMapFiles.length; j++) {
+                    bitMapFiles[j].addAll(tempBitMaps[j]);
                 }
-
-                size = size + fieldSpecification[i].getSize();
+            } else if (indexTypes[i].indexType == IndexType.BitMapIndex) {
+                lateMaterializationUtils[i] = new BitMapScanUtil(relName, attrTypes[i], selects);
+                ArrayList<BitMapFile> tempBitMaps[] = lateMaterializationUtils[i].makeBitMapFile();
+                for (int j = 0; j < bitMapFiles.length; j++) {
+                    bitMapFiles[j].addAll(tempBitMaps[j]);
+                }
             }
-            return byteToTuple.mergeTuples(tuples, size);
-        } else {
-            return null;
         }
+        for (int i = 0; i < bitMapFiles.length; i++) {
+            BitMapUtils bitMapUtils = new BitMapUtils(bitMapFiles[i]);
+            int counter = bitMapUtils.getNextOrPosition();
+            BitMapFile bitMapFile = new BitMapFile(UUID.randomUUID().toString(), false);
+            while (counter != -1) {
+                bitMapFile.Insert(counter);
+                counter = bitMapUtils.getNextOrPosition();
+            }
+            bitMapUtils.closeUtils();
+            bitMapFiles[i].clear();
+            bitMapFiles[i].add(bitMapFile);
+            filesToDelete.add(bitMapFile);
+        }
+        bitMapUtils = new BitMapUtils(filesToDelete);
     }
 
     public int getNextPosition() throws Exception {
@@ -84,10 +84,37 @@ public class ColumnarIndexScan extends Iterator {
         return nextPos;
     }
 
-    public void close() throws Exception {
-        for (int i = 0; i < lateMaterializationUtil.length; i++) {
-            lateMaterializationUtil[i].destroyEveryThing();
+
+    public Tuple getNext() throws Exception {
+        int nextPos = bitMapUtils.getNextAndPosition();
+        while (nextPos != -1 && columnarFile.isTupleDeletedAtPosition(nextPos)) {
+            nextPos = bitMapUtils.getNextAndPosition();
+        }
+        if (nextPos != -1) {
+            Tuple[] tuples = new Tuple[fieldSpecfication.length];
+            int size = 0;
+            for (int i = 0; i < fieldSpecfication.length; i++) {
+                Heapfile heapfile = columnarFile.getHeapFileNames()[fieldSpecfication[i].getColumnId()];
+                tuples[i] = heapfile.getRecordAtPosition(nextPos);
+                if (tuples[i] == null) {
+                    return null;
+                }
+                size = size + fieldSpecfication[i].getSize();
+            }
+            return byteToTuple.mergeTuples(tuples, size);
+        } else {
+            return null;
         }
     }
 
+
+    public void close() throws Exception {
+        for (int i = 0; i < lateMaterializationUtils.length; i++) {
+            lateMaterializationUtils[i].destroyEveryThing();
+        }
+        for (BitMapFile bitMapFile : filesToDelete) {
+            bitMapFile.destroyBitMapFile();
+        }
+        bitMapUtils.closeUtils();
+    }
 }

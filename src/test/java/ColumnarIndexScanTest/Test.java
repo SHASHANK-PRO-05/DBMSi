@@ -11,57 +11,64 @@ import iterator.RelSpec;
 import org.junit.Before;
 
 import java.util.ArrayList;
+import java.util.PriorityQueue;
 
 public class Test {
     SystemDefs systemDefs;
+    ColumnarFile columnarFile;
+    String relName = "Employee1";
+    AttrType[] attrTypes;
+    FldSpec[] fldSpecs;
+    CondExpr[] condExprs;
+    IndexType[] indexTypes;
 
     @Before
-    public void start() {
+    public void start() throws Exception {
         systemDefs = new SystemDefs("Minibase.min", 0, 400, "LRU");
+        columnarFile = new ColumnarFile(relName);
+        attrTypes = columnarFile.getColumnarHeader().getColumns();
+        fldSpecs = new FldSpec[attrTypes.length];
+        for (int i = 0; i < fldSpecs.length; i++) {
+            fldSpecs[i] = new FldSpec(new RelSpec(0), i);
+        }
     }
 
     @org.junit.Test
     public void Test() throws Exception {
-        String relName = "Employee1";
-        IndexType[] indexTypes = new IndexType[2];
-        indexTypes[0] = new IndexType(IndexType.ColumnScan);
-        indexTypes[1] = new IndexType(IndexType.ColumnScan);
-        ColumnarFile columnarFile = new ColumnarFile(relName);
-        FldSpec[] fldSpecs = new FldSpec[3];
-        fldSpecs[0] = new FldSpec(new RelSpec(0), 0);
-        fldSpecs[1] = new FldSpec(new RelSpec(0), 2);
-        fldSpecs[2] = new FldSpec(new RelSpec(0), 1);
-        CondExpr[] condExprs = new CondExpr[2];
+        condExprs = new CondExpr[3];
+        // Condition 0: ( A >=  OR B ==  )
+        /*
+         Column 0 is A
+         Column 1 is B in Attrtypes
+         */
         condExprs[0] = new CondExpr();
-        condExprs[0].op = new AttrOperator(AttrOperator.opRANGE);
-
-        AttrType[] attrTypes = columnarFile.getColumnarHeader().getColumns();
-        condExprs[0].operand2.stringRange = new String[2];
-        condExprs[0].operand2.stringRange[0] = "A";
-        condExprs[0].operand2.stringRange[1] = "Z";
-
+        condExprs[0].operand1.symbol = fldSpecs[0];
+        condExprs[0].op = new AttrOperator(AttrOperator.aopEQ);
+        condExprs[0].operand2.string = "Montana";
         condExprs[0].next = new CondExpr();
-        condExprs[0].next.op = new AttrOperator(AttrOperator.opRANGE);
-        condExprs[0].next.operand2.stringRange = new String[2];
-        condExprs[0].next.operand2.stringRange[0] = "Idaho";
-        condExprs[0].next.operand2.stringRange[1] = "Singapore";
+        condExprs[0].next.operand1.symbol = fldSpecs[1];
+        condExprs[0].next.op = new AttrOperator(AttrOperator.aopEQ);
+        condExprs[0].next.operand2.string = "Montana";
 
+
+        // condition 1: C >=
         condExprs[1] = new CondExpr();
-        condExprs[1].op = new AttrOperator(AttrOperator.opRANGE);
-        condExprs[1].operand2.integerRange = new int[2];
-        condExprs[1].operand2.integerRange[0] = 0;
-        condExprs[1].operand2.integerRange[1] = 4;
         condExprs[1].next = null;
-        AttrType[] attrTypes1 = new AttrType[3];
-        attrTypes1[0] = attrTypes[0];
-        attrTypes1[1] = attrTypes[2];
-        attrTypes1[2] = attrTypes[1];
-        ColumnarIndexScan columnarIndexScan = new ColumnarIndexScan(relName, null, indexTypes, null
-                , attrTypes1, null, -1, -1, fldSpecs, condExprs, false);
-        AttrType[] projectionBreak = new AttrType[3];
-        projectionBreak[0] = attrTypes[0];
-        projectionBreak[1] = attrTypes[2];
-        projectionBreak[2] = attrTypes[1];
+        condExprs[1].operand1.symbol = fldSpecs[2];
+        condExprs[1].op = new AttrOperator(AttrOperator.aopGE);
+        condExprs[1].operand2.integer = 6;
+
+
+        // Condition 2: D == 7
+        condExprs[2] = new CondExpr();
+        condExprs[2].next = null;
+        condExprs[2].operand1.symbol = fldSpecs[3];
+        condExprs[2].op = new AttrOperator(AttrOperator.aopLE);
+        condExprs[2].operand2.integer = 3;
+        parseIterators();
+        ColumnarIndexScan columnarIndexScan = new ColumnarIndexScan(relName,
+                null, indexTypes, null, attrTypes, null, -1, -1, fldSpecs, condExprs);
+        AttrType[] projectionBreak = attrTypes;
         ByteToTuple byteToTuple = new ByteToTuple(projectionBreak);
 
         String ans2 = "Count";
@@ -119,4 +126,47 @@ public class Test {
         SystemDefs.JavabaseBM.flushAllPages();
 
     }
+
+    /**
+     * This can be made generic
+     */
+    public void parseIterators() throws Exception {
+        PriorityQueue<Integer>[] priorityQueues = new PriorityQueue[attrTypes.length];
+        indexTypes = new IndexType[attrTypes.length];
+
+        for (int i = 0; i < condExprs.length; i++) {
+            CondExpr condExpr = condExprs[i];
+            while (condExpr != null) {
+                int offset = condExpr.operand1.symbol.offset;
+                if (priorityQueues[offset] == null) {
+                    priorityQueues[offset] = new PriorityQueue<>();
+                }
+                if (condExpr.op.attrOperator == AttrOperator.aopEQ) {
+                    //In equality Bitmap will get the priority
+                    if (columnarFile.getColumnarHeader().getParticularTypeIndex(offset, new IndexType(IndexType.BitMapIndex)).size() != 0) {
+                        priorityQueues[offset].add(IndexType.BitMapIndex);
+                    } else {
+                        priorityQueues[offset].add(IndexType.ColumnScan);
+                    }
+                } else {
+                    // Possible range queries should have B+ tree as priority
+                    if (columnarFile.getColumnarHeader().getParticularTypeIndex(offset, new IndexType(IndexType.B_Index)).size() != 0) {
+                        priorityQueues[offset].add(IndexType.B_Index);
+                    } else if (columnarFile.getColumnarHeader().getParticularTypeIndex(offset, new IndexType(IndexType.BitMapIndex)).size() != 0) {
+                        priorityQueues[offset].add(IndexType.BitMapIndex);
+                    } else {
+                        priorityQueues[offset].add(IndexType.ColumnScan);
+                    }
+                }
+                condExpr = condExpr.next;
+            }
+        }
+        for (int i = 0; i < indexTypes.length; i++) {
+            if (priorityQueues[i] != null) {
+                indexTypes[i] = new IndexType(priorityQueues[i].poll());
+            }
+        }
+    }
+
+
 }
