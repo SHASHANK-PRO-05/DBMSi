@@ -160,6 +160,7 @@ public class ColumnSortScan implements GlobalConst {
         Tuple recTuple = null;
         Boolean bst;
          heapFile = new Heapfile(heapfilename + ".s"+ columnNo);
+        //heapFile = new Heapfile(heapfilename+"s0r1");
         dirPageId.pid = 
         		heapFile._firstDirPageId.pid;
         nextUserStatus = true;

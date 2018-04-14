@@ -21,7 +21,14 @@ public class StringValue extends ValueClass implements Comparable<StringValue>{
     @Override
     public int compare(ValueClass valueClass) {
         StringValue temp = (StringValue) valueClass;
-        return this.getValue().compareTo(temp.getValue());
+        int res = this.getValue().compareTo(temp.getValue());
+        if(res<0) {
+        	return -1;
+        }else if (res>0) {
+        	return 1;
+        }
+        else 
+        	return 0;
     }
 
     public boolean isequal(Object obj) {

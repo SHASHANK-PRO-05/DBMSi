@@ -49,6 +49,18 @@ public abstract class ValueClass {
 
     public abstract boolean isequal(Object obj);
     
+    public int  cmp(ValueClass val) {
+    	int result = 0;
+    	if(this.getValueType() == val.getValueType() && this.getValueType() == 1) {
+    		return this.compare((IntegerValue)val);
+    	}else if(this.getValueType() == val.getValueType() && this.getValueType() ==0) {
+    		return this.compare((StringValue)val);
+    	}
+    	
+		return 0;
+    	
+    }
+    
     
 
 

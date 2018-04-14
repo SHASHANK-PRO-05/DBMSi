@@ -41,6 +41,7 @@ public class ColumnarSort implements GlobalConst {
 	private int numOfColumn;
 	private String columnarFileName;
 	private int numruns;
+	AttrType sortedColumnType;
 
 	// Algo
 	// create a new heap file.
@@ -110,7 +111,7 @@ public class ColumnarSort implements GlobalConst {
 			Heapfile[] heapfile = new Heapfile[numOfColumn];
 			// if(i != numruns-1)
 			int filenum = i + 1;
-			if(i!=numruns-1)
+			if (i != numruns - 1)
 				heapfile[coloumnNo] = new Heapfile(columnarFileName + "s" + filenum + "r" + coloumnNo);
 			else
 				heapfile[coloumnNo] = new Heapfile(columnarFileName + ".s" + coloumnNo);
@@ -123,7 +124,6 @@ public class ColumnarSort implements GlobalConst {
 			curDirPageId = new PageId(lastheapfile.get_firstDirPageId().pid);
 			pinPage(curDirPageId, dirPage, false);
 			int counter = 0;
-			
 
 			firstDataPageRID = dirPage.firstRecord();
 			try {
@@ -202,7 +202,7 @@ public class ColumnarSort implements GlobalConst {
 							throw e;
 						}
 					} else {
-						break;
+						//scan next directory remaining pages
 					}
 				}
 
@@ -240,23 +240,23 @@ public class ColumnarSort implements GlobalConst {
 		 * its remaining tuple and vice versa
 		 * 
 		 */
-		Heapfile heapfile[]= new Heapfile[numOfColumn];
+		Heapfile heapfile[] = new Heapfile[numOfColumn];
 		int filenum = i + 1;
-		if(i!=numruns-1)
-			 heapfile[coloumnNo] = new Heapfile(columnarFileName + "s" + filenum + "r" + coloumnNo);
+		if (i != numruns - 1)
+			heapfile[coloumnNo] = new Heapfile(columnarFileName + "s" + filenum + "r" + coloumnNo);
 		else
-			 heapfile[coloumnNo] = new Heapfile(columnarFileName + ".s" + coloumnNo);
-		
-		int nextPageLimit = (int)Math.pow(2, i)-1;
+			heapfile[coloumnNo] = new Heapfile(columnarFileName + ".s" + coloumnNo);
+
+		int nextPageLimit = (int) Math.pow(2, i) - 1;
 		HFPage list1 = new HFPage();
 		HFPage list2 = new HFPage();
 		PageId nextPage1 = new PageId();
 		PageId nextPage2 = new PageId();
 		RID record1 = null;
 		RID record2 = null;
-		// it is for int later will change
-		ValueClass val1;
-		ValueClass val2;
+		// it is for int latr will change
+		ValueClass val1 = null;
+		ValueClass val2 = null;
 		int counter1 = 0;
 		int counter2 = 0;
 		if (curPage.pid != INVALID_PAGE)
@@ -267,10 +267,17 @@ public class ColumnarSort implements GlobalConst {
 		record2 = list2.firstRecord();
 
 		while (record1 != null && record2 != null) {
-			val1 = new IntegerValue(Convert.getIntValue(0, list1.getRecord(record1).getTupleByteArray()));
-			val2 = new IntegerValue(Convert.getIntValue(0, list2.getRecord(record2).getTupleByteArray()));
+			if (sortedColumnType.getAttrType() == 1) {
+				val1 = new IntegerValue(Convert.getIntValue(0, list1.getRecord(record1).getTupleByteArray()));
+				val2 = new IntegerValue(Convert.getIntValue(0, list2.getRecord(record2).getTupleByteArray()));
+			} else if (sortedColumnType.getAttrType() == 0) {
+				val1 = new StringValue(Convert.getStringValue(0, list1.getRecord(record1).getTupleByteArray(),
+						sortedColumnType.getSize()));
+				val2 = new StringValue(Convert.getStringValue(0, list2.getRecord(record2).getTupleByteArray(),
+						sortedColumnType.getSize()));
+			}
 
-			if ((Integer) val1.getValue() < (Integer) val2.getValue()) {
+			if (val1.cmp(val2) == -1) {
 				heapfile[coloumnNo].insertRecord(list1.getRecord(record1).getTupleByteArray());
 				record1 = list1.nextRecord(record1);
 				if (record1 == null && counter1 < nextPageLimit) {
@@ -298,7 +305,7 @@ public class ColumnarSort implements GlobalConst {
 				}
 			}
 
-			else if ((Integer) val1.getValue() > (Integer) val2.getValue()) {
+			else if (val1.cmp(val2) == 1) {
 				heapfile[coloumnNo].insertRecord(list2.getRecord(record2).getTupleByteArray());
 				record2 = list2.nextRecord(record2);
 				if (record2 == null && counter2 < nextPageLimit) {
@@ -446,7 +453,7 @@ public class ColumnarSort implements GlobalConst {
 		Heapfile heapfile_0 = new Heapfile(columnarFileName + "s0r" + coloumnNo);
 		heapfiles = columnarFile.getHeapFileNames();
 		// can throw error if columnNo is greater than the heapfiles size
-		AttrType sortedColumnType = columnarFile.getColumnInfo(coloumnNo);
+		sortedColumnType = columnarFile.getColumnInfo(coloumnNo);
 		PageId currentDirPageId = new PageId(heapfiles[coloumnNo].get_firstDirPageId().pid);
 		HFPage currentDirPage = new HFPage();
 		HFPage currentDataPage = new HFPage();
