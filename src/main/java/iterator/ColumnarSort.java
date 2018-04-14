@@ -40,6 +40,7 @@ public class ColumnarSort implements GlobalConst {
 	private int coloumnNo;
 	private int numOfColumn;
 	private String columnarFileName;
+	private int numruns;
 
 	// Algo
 	// create a new heap file.
@@ -103,13 +104,16 @@ public class ColumnarSort implements GlobalConst {
 		RID firstDataPageRID = new RID();
 
 		// num of runs needed
-		int numruns = ((int) Math.ceil((Math.log(numDataPages) / Math.log(2))));
+		numruns = ((int) Math.ceil((Math.log(numDataPages) / Math.log(2))));
 		// loop for the runs
 		for (int i = 0; i < numruns; i++) {
 			Heapfile[] heapfile = new Heapfile[numOfColumn];
 			// if(i != numruns-1)
 			int filenum = i + 1;
-			heapfile[coloumnNo] = new Heapfile(columnarFileName + "s" + filenum + "r" + coloumnNo);
+			if(i!=numruns-1)
+				heapfile[coloumnNo] = new Heapfile(columnarFileName + "s" + filenum + "r" + coloumnNo);
+			else
+				heapfile[coloumnNo] = new Heapfile(columnarFileName + ".s" + coloumnNo);
 			// else
 			// heapfile[coloumnNo] = new Heapfile(columnarFileName + coloumnNo + ".s");
 			// get the last heapfile
@@ -119,6 +123,7 @@ public class ColumnarSort implements GlobalConst {
 			curDirPageId = new PageId(lastheapfile.get_firstDirPageId().pid);
 			pinPage(curDirPageId, dirPage, false);
 			int counter = 0;
+			
 
 			firstDataPageRID = dirPage.firstRecord();
 			try {
@@ -235,8 +240,13 @@ public class ColumnarSort implements GlobalConst {
 		 * its remaining tuple and vice versa
 		 * 
 		 */
+		Heapfile heapfile[]= new Heapfile[numOfColumn];
 		int filenum = i + 1;
-		Heapfile heapfile = new Heapfile(columnarFileName + "s" + filenum + "r" + coloumnNo);
+		if(i!=numruns-1)
+			 heapfile[coloumnNo] = new Heapfile(columnarFileName + "s" + filenum + "r" + coloumnNo);
+		else
+			 heapfile[coloumnNo] = new Heapfile(columnarFileName + ".s" + coloumnNo);
+		
 		int nextPageLimit = (int)Math.pow(2, i)-1;
 		HFPage list1 = new HFPage();
 		HFPage list2 = new HFPage();
@@ -261,7 +271,7 @@ public class ColumnarSort implements GlobalConst {
 			val2 = new IntegerValue(Convert.getIntValue(0, list2.getRecord(record2).getTupleByteArray()));
 
 			if ((Integer) val1.getValue() < (Integer) val2.getValue()) {
-				heapfile.insertRecord(list1.getRecord(record1).getTupleByteArray());
+				heapfile[coloumnNo].insertRecord(list1.getRecord(record1).getTupleByteArray());
 				record1 = list1.nextRecord(record1);
 				if (record1 == null && counter1 < nextPageLimit) {
 					nextPage1 = list1.getNextPage();
@@ -289,7 +299,7 @@ public class ColumnarSort implements GlobalConst {
 			}
 
 			else if ((Integer) val1.getValue() > (Integer) val2.getValue()) {
-				heapfile.insertRecord(list2.getRecord(record2).getTupleByteArray());
+				heapfile[coloumnNo].insertRecord(list2.getRecord(record2).getTupleByteArray());
 				record2 = list2.nextRecord(record2);
 				if (record2 == null && counter2 < nextPageLimit) {
 					nextPage2 = list2.getNextPage();
@@ -315,8 +325,8 @@ public class ColumnarSort implements GlobalConst {
 				}
 
 			} else {
-				heapfile.insertRecord(list1.getRecord(record1).getTupleByteArray());
-				heapfile.insertRecord(list2.getRecord(record2).getTupleByteArray());
+				heapfile[coloumnNo].insertRecord(list1.getRecord(record1).getTupleByteArray());
+				heapfile[coloumnNo].insertRecord(list2.getRecord(record2).getTupleByteArray());
 				record1 = list1.nextRecord(record1);
 				record2 = list2.nextRecord(record2);
 				if (record1 == null && counter1 < nextPageLimit) {
@@ -370,7 +380,7 @@ public class ColumnarSort implements GlobalConst {
 
 		}
 		while (record1 == null && record2 != null) {
-			heapfile.insertRecord(list2.getRecord(record2).getTupleByteArray());
+			heapfile[coloumnNo].insertRecord(list2.getRecord(record2).getTupleByteArray());
 			record2 = list2.nextRecord(record2);
 			if (record2 == null && counter2 < i) {
 				nextPage2 = list1.getNextPage();
@@ -396,7 +406,7 @@ public class ColumnarSort implements GlobalConst {
 			}
 		}
 		while (record1 != null && record2 == null) {
-			heapfile.insertRecord(list1.getRecord(record1).getTupleByteArray());
+			heapfile[coloumnNo].insertRecord(list1.getRecord(record1).getTupleByteArray());
 			record1 = list1.nextRecord(record1);
 			if (record1 == null && counter1 < nextPageLimit) {
 				nextPage1 = list1.getNextPage();
