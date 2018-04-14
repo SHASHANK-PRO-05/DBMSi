@@ -58,6 +58,14 @@ public class ColumnarIndexScan extends Iterator {
                 for (int j = 0; j < bitMapFiles.length; j++) {
                     bitMapFiles[j].addAll(tempBitMaps[j]);
                 }
+            } else if (indexTypes[i].indexType == IndexType.B_Index) {
+                lateMaterializationUtils[i] = new BtreeScanUtil(relName, attrTypes[i], selects);
+                ArrayList<BitMapFile> tempBitMaps[] = lateMaterializationUtils[i].makeBitMapFile();
+                for (int j = 0; j < bitMapFiles.length; j++) {
+                    bitMapFiles[j].addAll(tempBitMaps[j]);
+                }
+            } else {
+                throw new Exception("Index is unknown");
             }
         }
         for (int i = 0; i < bitMapFiles.length; i++) {

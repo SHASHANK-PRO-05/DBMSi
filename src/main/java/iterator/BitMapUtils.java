@@ -73,6 +73,7 @@ public class BitMapUtils implements GlobalConst {
             if (bytePostion == BMPage.availableMap) {
                 for (int i = 0; i < bmPage.length; i++) {
                     PageId tempPageId = bmPage[i].getNextPage();
+
                     unpinPage(pageIds[i], false);
                     pageIds[i].pid = tempPageId.pid;
                     if (pageIds[i].pid != INVALID_PAGE)
