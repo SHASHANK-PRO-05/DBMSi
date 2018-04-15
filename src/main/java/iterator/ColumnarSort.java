@@ -75,7 +75,7 @@ public class ColumnarSort implements GlobalConst {
 		// now insert the sorted pages in the heap files.
 		// individual pages would be sorted, not the whole file
 		int numDataPages = init(columnarFile);
-		if(numDataPages == 1) {
+		if (numDataPages == 1) {
 			copySortedFile();
 			return;
 		}
@@ -84,14 +84,11 @@ public class ColumnarSort implements GlobalConst {
 
 	}
 
-	private void copySortedFile() 
-			throws HFException, 
-			HFBufMgrException, 
-			HFDiskMgrException, 
-			IOException, 
-			DiskMgrException {
-		Heapfile firstLevel = new Heapfile(columnarFileName + "s0r"+coloumnNo+order );
-		SystemDefs.JavabaseDB.updateFileEntry(columnarFileName + ".s"+coloumnNo+order,columnarFileName + "s0r"+coloumnNo+order,firstLevel._firstDirPageId );
+	private void copySortedFile()
+			throws HFException, HFBufMgrException, HFDiskMgrException, IOException, DiskMgrException {
+		Heapfile firstLevel = new Heapfile(columnarFileName + "s0r" + coloumnNo + order);
+		SystemDefs.JavabaseDB.updateFileEntry(columnarFileName + ".s" + coloumnNo + order,
+				columnarFileName + "s0r" + coloumnNo + order, firstLevel._firstDirPageId);
 	}
 
 	private void mergesort(int numDataPages) throws HFException, HFBufMgrException, HFDiskMgrException, IOException,
@@ -128,16 +125,16 @@ public class ColumnarSort implements GlobalConst {
 			// if(i != numruns-1)
 			int filenum = i + 1;
 			if (i != numruns - 1)
-				heapfile[coloumnNo] = new Heapfile(columnarFileName + "s" + filenum + "r" + coloumnNo+order);
+				heapfile[coloumnNo] = new Heapfile(columnarFileName + "s" + filenum + "r" + coloumnNo + order);
 			else {
-				heapfile[coloumnNo] = new Heapfile(columnarFileName + ".s" + coloumnNo+order);
-				System.out.println("here1");
+				heapfile[coloumnNo] = new Heapfile(columnarFileName + ".s" + coloumnNo + order);
+				
 			}
 
 			// else
 			// heapfile[coloumnNo] = new Heapfile(columnarFileName + coloumnNo + ".s");
 			// get the last heapfile
-			Heapfile lastheapfile = new Heapfile(columnarFileName + "s" + (i) + "r" + coloumnNo+order);
+			Heapfile lastheapfile = new Heapfile(columnarFileName + "s" + (i) + "r" + coloumnNo + order);
 			// get the first page of the heapfile
 			// first directory page
 			curDirPageId = new PageId(lastheapfile.get_firstDirPageId().pid);
@@ -238,7 +235,7 @@ public class ColumnarSort implements GlobalConst {
 
 				}
 				nextdirePageId = dirPage.getNextPage();
-				System.out.println(nextdirePageId);
+				
 				try {
 					unpinPage(dirPage.getCurPage(), false /* undirty */);
 				} catch (Exception e) {
@@ -258,7 +255,14 @@ public class ColumnarSort implements GlobalConst {
 
 				mergeRuns(curDataPageId, curDataPageId2, i);
 			}
-			System.out.println("Round complete" + i);
+			
+			if (i >= 0) {
+				Heapfile[] heapTodistroy = new Heapfile[2];
+				heapTodistroy[0] = new Heapfile(columnarFileName + "s" + (i) + "r" + order + coloumnNo);
+				heapTodistroy[0].deleteFile();
+				// to-so also delete position file
+
+			}
 		}
 
 	}
@@ -291,9 +295,9 @@ public class ColumnarSort implements GlobalConst {
 		Heapfile heapfile[] = new Heapfile[numOfColumn];
 		int filenum = i + 1;
 		if (i != numruns - 1)
-			heapfile[coloumnNo] = new Heapfile(columnarFileName + "s" + filenum + "r" + coloumnNo+order);
+			heapfile[coloumnNo] = new Heapfile(columnarFileName + "s" + filenum + "r" + coloumnNo + order);
 		else
-			heapfile[coloumnNo] = new Heapfile(columnarFileName + ".s" + coloumnNo+order);
+			heapfile[coloumnNo] = new Heapfile(columnarFileName + ".s" + coloumnNo + order);
 
 		int nextPageLimit = (int) Math.pow(2, i) - 1;
 		HFPage list1 = new HFPage();
@@ -496,7 +500,7 @@ public class ColumnarSort implements GlobalConst {
 
 	private int init(ColumnarFile columnarFile)
 			throws InvalidTupleSizeException, IOException, HFBufMgrException, Exception {
-		Heapfile heapfile_0 = new Heapfile(columnarFileName + "s0r" + coloumnNo+order);
+		Heapfile heapfile_0 = new Heapfile(columnarFileName + "s0r" + coloumnNo + order);
 		Heapfile temp = new Heapfile("temp.sort");
 		heapfiles = columnarFile.getHeapFileNames();
 		// can throw error if columnNo is greater than the heapfiles size
@@ -519,7 +523,6 @@ public class ColumnarSort implements GlobalConst {
 			for (currentDataPageRid = currentDirPage
 					.firstRecord(); currentDataPageRid != null; currentDataPageRid = currentDirPage
 							.nextRecord(currentDataPageRid)) {
-				
 
 				try {
 					atuple = currentDirPage.getRecord(currentDataPageRid);
@@ -628,7 +631,7 @@ public class ColumnarSort implements GlobalConst {
 						recPtr = new byte[4];
 						Convert.setIntValue((Integer) val.getVal().getValue(), 0, recPtr);
 					}
-					heapfile_0.insertRecord(getBytefromSortInfo(recPtr,val.position));
+					heapfile_0.insertRecord(getBytefromSortInfo(recPtr, val.position));
 
 				}
 				// sortOtherHeapFilesInit(dirCount, datapageCount, size, sortingList);
