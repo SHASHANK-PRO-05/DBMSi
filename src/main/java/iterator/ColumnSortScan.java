@@ -25,14 +25,15 @@ public class ColumnSortScan implements GlobalConst {
     private RID userRID = new RID();
     private String heapfilename;
     Heapfile heapFile;
+    private String order;
     /**
      * Column Index no in the Columnar File starting from 0
      */
     private short columnNo;
     private boolean nextUserStatus;
 
-    public ColumnSortScan(String heapfilename, short columnNo) throws IOException, InvalidTupleSizeException, heap.InvalidTupleSizeException, HFException, HFBufMgrException, HFDiskMgrException {
-        init(heapfilename, columnNo);
+    public ColumnSortScan(String heapfilename, short columnNo, String order) throws IOException, InvalidTupleSizeException, heap.InvalidTupleSizeException, HFException, HFBufMgrException, HFDiskMgrException {
+        init(heapfilename, columnNo,order);
     }
 
     public RID getFirstRID() throws IOException {
@@ -114,8 +115,8 @@ public class ColumnSortScan implements GlobalConst {
         return bst;
     }
 
-    private void init(String heapfilename, short columnNo) throws IOException, InvalidTupleSizeException, heap.InvalidTupleSizeException, HFException, HFBufMgrException, HFDiskMgrException {
-        
+    private void init(String heapfilename, short columnNo, String order) throws IOException, InvalidTupleSizeException, heap.InvalidTupleSizeException, HFException, HFBufMgrException, HFDiskMgrException {
+        this.order = order;
         this.heapfilename = heapfilename;
         this.columnNo = columnNo;
         if (!firstDataPage()) {
@@ -159,7 +160,7 @@ public class ColumnSortScan implements GlobalConst {
         DataPageInfo dpInfo;
         Tuple recTuple = null;
         Boolean bst;
-         heapFile = new Heapfile(heapfilename + ".s"+ columnNo);
+         heapFile = new Heapfile(heapfilename + ".s"+columnNo+order);
         //heapFile = new Heapfile(heapfilename+"s0r1");
         dirPageId.pid = 
         		heapFile._firstDirPageId.pid;
