@@ -42,6 +42,7 @@ public class ColumnarSort implements GlobalConst {
 	private String columnarFileName;
 	private int numruns;
 	AttrType sortedColumnType;
+	String order;
 
 	// Algo
 	// create a new heap file.
@@ -52,13 +53,14 @@ public class ColumnarSort implements GlobalConst {
 	// run a loop dividing by 2
 	// run until divide by 2 results into 1 file.
 
-	public ColumnarSort(String columnarFileName, int columnNo) throws DiskMgrException, ColumnarFileDoesExistsException,
-			ColumnarFilePinPageException, HFException, HFBufMgrException, HFDiskMgrException,
-			ColumnarFileUnpinPageException, PinPageException, AddFileEntryException, UnpinPageException,
-			ConstructPageException, GetFileEntryException, IOException, InvalidTupleSizeException, Exception {
+	public ColumnarSort(String columnarFileName, int columnNo, String order)
+			throws DiskMgrException, ColumnarFileDoesExistsException, ColumnarFilePinPageException, HFException,
+			HFBufMgrException, HFDiskMgrException, ColumnarFileUnpinPageException, PinPageException,
+			AddFileEntryException, UnpinPageException, ConstructPageException, GetFileEntryException, IOException,
+			InvalidTupleSizeException, Exception {
 		ColumnarFile columnarFile = new ColumnarFile(columnarFileName);
 		this.coloumnNo = columnNo;
-
+		this.order = order;
 		numOfColumn = columnarFile.getNumColumns();
 		sortedHeapFileNames = new Heapfile[numOfColumn];
 		// create the heap files for the sorted records
@@ -113,8 +115,11 @@ public class ColumnarSort implements GlobalConst {
 			int filenum = i + 1;
 			if (i != numruns - 1)
 				heapfile[coloumnNo] = new Heapfile(columnarFileName + "s" + filenum + "r" + coloumnNo);
-			else
+			else {
 				heapfile[coloumnNo] = new Heapfile(columnarFileName + ".s" + coloumnNo);
+				System.out.println("here1");
+			}
+				
 			// else
 			// heapfile[coloumnNo] = new Heapfile(columnarFileName + coloumnNo + ".s");
 			// get the last heapfile
@@ -123,65 +128,15 @@ public class ColumnarSort implements GlobalConst {
 			// first directory page
 			curDirPageId = new PageId(lastheapfile.get_firstDirPageId().pid);
 			pinPage(curDirPageId, dirPage, false);
-			int counter = 0;
-
-			firstDataPageRID = dirPage.firstRecord();
-			try {
-				tuple = dirPage.getRecord(firstDataPageRID);
-			} catch (InvalidSlotNumberException e)// check error! return false(done)
-			{
-				return;
-			}
-
-			info = new DataPageInfo(tuple);
-			try {
-				curDataPageId = info.pageId;
-				// pin the first datapage
-				// pinPage(curDataPageId,curDataPage,false);
-				// check error;need unpin currentDirPage
-			} catch (Exception e) {
-				unpinPage(curDirPageId, false/* undirty */);
-				throw e;
-			}
 
 			int nextsecondposition = (int) Math.pow(2, i) - 1;
+			boolean found1 = true;
+			boolean start = true;
+			int k = 0;
 			while (curDirPageId.pid != INVALID_PAGE) {
-				for (curDataPageRid = dirPage
-						.nextRecord(firstDataPageRID); curDataPageRid != null; curDataPageRid = dirPage
-								.nextRecord(curDataPageRid)) {
-
-					if (counter != nextsecondposition) {
-						counter++;
-						continue;
-					}
-					// first page should be next of second page
-					try {
-						tuple = dirPage.getRecord(curDataPageRid);
-					} catch (InvalidSlotNumberException e)// check error! return false(done)
-					{
-						return;
-					}
-					info = new DataPageInfo(tuple);
-					try {
-						curDataPageId2 = info.pageId;
-
-					} catch (Exception e) {
-						unpinPage(curDirPageId, false/* undirty */);
-						throw e;
-					}
-					mergeRuns(curDataPageId, curDataPageId2, i);
-					curDataPageId2.pid = INVALID_PAGE;
-					curDataPageId.pid = INVALID_PAGE;
-					counter = 0;
-					int nextFirstPagePosition = 0;
-
-					for (curDataPageRid = dirPage.nextRecord(
-							curDataPageRid); nextFirstPagePosition < nextsecondposition; nextFirstPagePosition++) {
-						if (curDataPageRid != null)
-							curDataPageRid = dirPage.nextRecord(curDataPageRid);
-					}
-
-					if (curDataPageRid != null) {
+				curDataPageRid = dirPage.firstRecord();
+				while (curDataPageRid != null) {
+					if ((curDataPageId2.pid == INVALID_PAGE||curDataPageId2.pid == 0) && found1 && start ) {
 						try {
 							tuple = dirPage.getRecord(curDataPageRid);
 						} catch (InvalidSlotNumberException e)// check error! return false(done)
@@ -191,22 +146,86 @@ public class ColumnarSort implements GlobalConst {
 						info = new DataPageInfo(tuple);
 						try {
 							curDataPageId = info.pageId;
-							// pin the datapage
-							if (curDataPageId.pid == INVALID_PAGE) {
-								break;
+							start = false;
+							curDataPageId2.pid=INVALID_PAGE;
 
-							}
-							// check error;need unpin currentDirPage
 						} catch (Exception e) {
 							unpinPage(curDirPageId, false/* undirty */);
 							throw e;
 						}
-					} else {
-						//scan next directory remaining pages
-					}
-				}
 
+					} else if((curDataPageId2.pid != INVALID_PAGE||curDataPageId2.pid != 0)&&found1){
+						while (k <= nextsecondposition) {
+							curDataPageRid = dirPage.nextRecord(curDataPageRid);
+							k++;
+							if(curDataPageRid ==null) {
+								break;
+							}
+
+						}
+						if (curDataPageRid != null) {
+							k = 0;
+							try {
+								tuple = dirPage.getRecord(curDataPageRid);
+							} catch (InvalidSlotNumberException e)// check error! return false(done)
+							{
+								return;
+							}
+							info = new DataPageInfo(tuple);
+							try {
+								curDataPageId = info.pageId;
+								curDataPageId2.pid=INVALID_PAGE;
+
+							} catch (Exception e) {
+								unpinPage(curDirPageId, false/* undirty */);
+								throw e;
+							}
+						}else {
+							break;
+						}
+
+					}
+
+					if (curDataPageId.pid != INVALID_PAGE && curDataPageRid!=null ) {
+						while (k <= nextsecondposition) {
+							curDataPageRid = dirPage.nextRecord(curDataPageRid);
+							k++;
+							
+							if(curDataPageRid ==null) {
+								found1 = false;
+								break;
+							}
+
+						}
+						if (curDataPageRid != null) {
+							found1 = true;
+							k = 0;
+							try {
+								tuple = dirPage.getRecord(curDataPageRid);
+							} catch (InvalidSlotNumberException e)// check error! return false(done)
+							{
+								return;
+							}
+							info = new DataPageInfo(tuple);
+							try {
+								curDataPageId2 = info.pageId;
+
+							} catch (Exception e) {
+								unpinPage(curDirPageId, false/* undirty */);
+								throw e;
+							}
+						} 
+
+					}
+					if(curDataPageId.pid !=INVALID_PAGE && curDataPageId2.pid!=INVALID_PAGE) {
+ 						mergeRuns(curDataPageId, curDataPageId2, i);
+						curDataPageId.pid = INVALID_PAGE;
+					}
+					
+
+				}
 				nextdirePageId = dirPage.getNextPage();
+				System.out.println(nextdirePageId);
 				try {
 					unpinPage(dirPage.getCurPage(), false /* undirty */);
 				} catch (Exception e) {
@@ -217,12 +236,28 @@ public class ColumnarSort implements GlobalConst {
 				if (curDirPageId.pid != INVALID_PAGE) {
 
 					pinPage(curDirPageId, dirPage, false/* Rdisk */);
+				}else {
+					curDataPageId2.pid = INVALID_PAGE;
 				}
+
 			}
 			if (curDataPageId2.pid == INVALID_PAGE && curDataPageId.pid != INVALID_PAGE) {
+				
 				mergeRuns(curDataPageId, curDataPageId2, i);
 			}
+			System.out.println("Round complete" +i);
+		}
 
+	}
+
+	private int order() {
+		if (order.equalsIgnoreCase("DSC")) {
+			return -1;
+
+		} else if (order.equalsIgnoreCase("ASC")) {
+			return 1;
+		} else {
+			return 0;
 		}
 
 	}
@@ -277,7 +312,7 @@ public class ColumnarSort implements GlobalConst {
 						sortedColumnType.getSize()));
 			}
 
-			if (val1.cmp(val2) == -1) {
+			if (val1.cmp(val2) == (-1* order())) {
 				heapfile[coloumnNo].insertRecord(list1.getRecord(record1).getTupleByteArray());
 				record1 = list1.nextRecord(record1);
 				if (record1 == null && counter1 < nextPageLimit) {
@@ -305,7 +340,7 @@ public class ColumnarSort implements GlobalConst {
 				}
 			}
 
-			else if (val1.cmp(val2) == 1) {
+			else if (val1.cmp(val2) == (1*order())) {
 				heapfile[coloumnNo].insertRecord(list2.getRecord(record2).getTupleByteArray());
 				record2 = list2.nextRecord(record2);
 				if (record2 == null && counter2 < nextPageLimit) {
@@ -513,14 +548,24 @@ public class ColumnarSort implements GlobalConst {
 
 				// unpin page immediately
 				unpinPage(dpinfo.pageId, false);
-
-				// sort a page using comparator
-				sortingList.sort(new Comparator<SortInfo>() {
-					public int compare(SortInfo o1, SortInfo o2) {
-						// TODO Auto-generated method stub
-						return o1.compareTo(o2);
-					}
-				});
+				if(order.equalsIgnoreCase("ASC")) {
+					// sort a page using comparator
+					sortingList.sort(new Comparator<SortInfo>() {
+						public int compare(SortInfo o1, SortInfo o2) {
+							// TODO Auto-generated method stub
+							return o1.compareTo(o2);
+						}
+					});
+				}else if(order.equalsIgnoreCase("DSC")) {
+					sortingList.sort(new Comparator<SortInfo>() {
+						public int compare(SortInfo o1, SortInfo o2) {
+							// TODO Auto-generated method stub
+							return o2.compareTo(o1);
+						}
+					});
+					
+				}
+				
 
 				// Inserting to new heap file
 				for (SortInfo val : sortingList) {

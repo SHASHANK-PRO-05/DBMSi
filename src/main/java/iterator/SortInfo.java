@@ -37,8 +37,5 @@ public class SortInfo implements Comparable<SortInfo>{
 		}
 		return -1;
 	}
-	
-	
-	
 
 }
