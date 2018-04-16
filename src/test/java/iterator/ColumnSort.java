@@ -27,7 +27,7 @@ public class ColumnSort {
 
 		BatchInsert.main(new String[] { "sampledata.txt", "Minibase.min", tablename, "4" });
 		new ColumnarSort("Employee", columnNo, "ASC");
-
+		 
 		ColumnarSortTupleScan scan = new ColumnarSortTupleScan(tablename, (short) columnNo, "ASC");
 
 		ColumnarFile columnfile = new ColumnarFile("Employee");
@@ -64,7 +64,7 @@ public class ColumnSort {
 		}
 		
 		scan.closeScan();
-		// SystemDefs.JavabaseBM.flushAllPages();
+		 SystemDefs.JavabaseBM.flushAllPages();
 	}
 
 	ValueClass getValuefromSortByte(byte[] record) throws IOException {

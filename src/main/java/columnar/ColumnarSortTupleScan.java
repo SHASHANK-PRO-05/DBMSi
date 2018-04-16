@@ -2,25 +2,16 @@ package columnar;
 
 import java.io.IOException;
 
-import bitmap.AddFileEntryException;
-import bitmap.ConstructPageException;
-import bitmap.GetFileEntryException;
-import bitmap.PinPageException;
-import bitmap.UnpinPageException;
-import diskmgr.DiskMgrException;
 import global.AttrType;
 import global.Convert;
 import global.RID;
 import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
-import heap.HFException;
 import heap.Heapfile;
 import heap.InvalidSlotNumberException;
 import heap.InvalidTupleSizeException;
 import heap.Tuple;
-import iterator.ColumnSort;
 import iterator.ColumnSortScan;
-import iterator.ColumnarSort;
 
 public class ColumnarSortTupleScan {
 

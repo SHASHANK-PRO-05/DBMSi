@@ -650,7 +650,7 @@ public class ColumnarSort implements GlobalConst {
 				pinPage(currentDirPageId, currentDirPage, false/* Rdisk */);
 			}
 		}
-
+		temp.deleteFile();
 		return totalPageCount;
 	}
 
