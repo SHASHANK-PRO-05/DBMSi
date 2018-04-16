@@ -56,11 +56,13 @@ public class ColumnarSortTupleScan {
 			ColumnarFilePinPageException, InvalidSlotNumberException, HFBufMgrException, ColumnarFileUnpinPageException,
 			HFDiskMgrException {
 		RID rid = new RID();
+		Tuple res = null;
 		Tuple tuple = new Tuple();
 		tuple = scan.getNext(rid);
+
+		if(tuple != null) {
 		int position = getPositionfromSortByte(tuple.getTupleByteArray());
 		Tuple[] sortedtuples = new Tuple[noOfColumns];
-
 		byte[] val = new byte[attrtypes[columnNo].getSize()];
 		System.arraycopy(tuple.getTupleByteArray(), 0, val, 0, attrtypes[columnNo].getSize());
 		tuple = new Tuple(val, 0, attrtypes[columnNo].getSize());
@@ -73,8 +75,9 @@ public class ColumnarSortTupleScan {
 				continue;
 			sortedtuples[i] = heapfiles[i].getRecordAtPosition(position);
 		}
-		Tuple res = byteToTuple.mergeTuples(sortedtuples, size);
-
+		res = byteToTuple.mergeTuples(sortedtuples, size);
+		}
+		
 		return res;
 
 	}
@@ -86,6 +89,10 @@ public class ColumnarSortTupleScan {
 		pos = Convert.getIntValue(size, record);
 
 		return pos;
+	}
+	
+	public void closeScan() {
+		scan.closeScan();
 	}
 
 }

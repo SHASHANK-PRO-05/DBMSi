@@ -66,7 +66,55 @@ public class ColumnSortScan implements GlobalConst {
         return recptrTuple;
     }
 
-    
+    public boolean position(RID rid) throws InvalidTupleSizeException, IOException, heap.InvalidTupleSizeException, HFException, HFBufMgrException, HFDiskMgrException {
+        RID nextRID = new RID();
+        boolean bst;
+
+        if (nextRID.equals(rid)) {
+            return true;
+        }
+
+        // This is kind lame, but otherwise it will take all day.
+        PageId pgId = new PageId();
+        pgId.pid = rid.pageNo.pid;
+
+        if (!dataPageId.equals(pgId)) {
+            reset();
+
+            bst = firstDataPage();
+
+            if (!bst) {
+                return false;
+            }
+
+            while (!dataPageId.equals(pgId)) {
+                bst = nextDataPage();
+                if (!bst)
+                    return bst;
+            }
+        }
+
+        // Now we are on the correct page.
+
+        try {
+            userRID = dataPage.firstRecord();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        if (userRID == null) {
+            return false;
+        }
+
+        bst = peekNext(nextRID);
+
+        while ((bst) && (nextRID != rid)) {
+            bst = mvNext(nextRID);
+        }
+
+        return bst;
+    }
+
     private void init(String heapfilename, short columnNo, String order) throws IOException, InvalidTupleSizeException, heap.InvalidTupleSizeException, HFException, HFBufMgrException, HFDiskMgrException {
         this.order = order;
         this.heapfilename = heapfilename;

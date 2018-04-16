@@ -333,7 +333,7 @@ public class ColumnarSort implements GlobalConst {
 				if (record1 == null && counter1 < nextPageLimit) {
 					nextPage1 = list1.getNextPage();
 					try {
-						unpinPage(curPage, true /* undirty */);
+						unpinPage(curPage, false /* undirty */);
 					} catch (Exception e) {
 						throw new HFException(e, "heapfile,_find,unpinpage failed");
 					}
@@ -347,7 +347,7 @@ public class ColumnarSort implements GlobalConst {
 
 				} else if (record1 == null && counter1 == nextPageLimit) {
 					try {
-						unpinPage(curPage, true /* undirty */);
+						unpinPage(curPage, false /* undirty */);
 					} catch (Exception e) {
 						throw new HFException(e, "heapfile,_find,unpinpage failed");
 					}
@@ -361,7 +361,7 @@ public class ColumnarSort implements GlobalConst {
 				if (record2 == null && counter2 < nextPageLimit) {
 					nextPage2 = list2.getNextPage();
 					try {
-						unpinPage(curPage2, true /* undirty */);
+						unpinPage(curPage2, false /* undirty */);
 					} catch (Exception e) {
 						throw new HFException(e, "heapfile,_find unpinpage failed");
 					}
@@ -389,7 +389,7 @@ public class ColumnarSort implements GlobalConst {
 				if (record1 == null && counter1 < nextPageLimit) {
 					nextPage1 = list1.getNextPage();
 					try {
-						unpinPage(curPage, true /* undirty */);
+						unpinPage(curPage, false /* undirty */);
 					} catch (Exception e) {
 						throw new HFException(e, "heapfile,_find,unpinpage failed");
 					}
@@ -404,7 +404,7 @@ public class ColumnarSort implements GlobalConst {
 
 				} else if (record1 == null && counter1 == nextPageLimit) {
 					try {
-						unpinPage(curPage, true /* undirty */);
+						unpinPage(curPage, false /* undirty */);
 					} catch (Exception e) {
 						throw new HFException(e, "heapfile,_find,unpinpage failed");
 					}
@@ -413,7 +413,7 @@ public class ColumnarSort implements GlobalConst {
 				if (record2 == null && counter2 < nextPageLimit) {
 					nextPage2 = list2.getNextPage();
 					try {
-						unpinPage(curPage2, true /* undirty */);
+						unpinPage(curPage2, false /* undirty */);
 					} catch (Exception e) {
 						throw new HFException(e, "heapfile,_find unpinpage failed");
 					}
@@ -427,7 +427,7 @@ public class ColumnarSort implements GlobalConst {
 
 				} else if (record2 == null && counter2 == nextPageLimit) {
 					try {
-						unpinPage(curPage2, true /* undirty */);
+						unpinPage(curPage2, false /* undirty */);
 					} catch (Exception e) {
 						throw new HFException(e, "heapfile,_find unpinpage failed");
 					}
@@ -442,7 +442,7 @@ public class ColumnarSort implements GlobalConst {
 			if (record2 == null && counter2 < i) {
 				nextPage2 = list1.getNextPage();
 				try {
-					unpinPage(curPage2, true /* undirty */);
+					unpinPage(curPage2, false /* undirty */);
 				} catch (Exception e) {
 					throw new HFException(e, "heapfile,_find unpinpage failed");
 				}
@@ -456,7 +456,7 @@ public class ColumnarSort implements GlobalConst {
 
 			} else if (record2 == null && counter2 == nextPageLimit) {
 				try {
-					unpinPage(curPage2, true /* undirty */);
+					unpinPage(curPage2, false /* undirty */);
 				} catch (Exception e) {
 					throw new HFException(e, "heapfile,_find unpinpage failed");
 				}
@@ -468,7 +468,7 @@ public class ColumnarSort implements GlobalConst {
 			if (record1 == null && counter1 < nextPageLimit) {
 				nextPage1 = list1.getNextPage();
 				try {
-					unpinPage(curPage, true /* undirty */);
+					unpinPage(curPage, false /* undirty */);
 				} catch (Exception e) {
 					throw new HFException(e, "heapfile,_find,unpinpage failed");
 				}
@@ -482,7 +482,7 @@ public class ColumnarSort implements GlobalConst {
 
 			} else if (record1 == null && counter1 == nextPageLimit) {
 				try {
-					unpinPage(curPage, true /* undirty */);
+					unpinPage(curPage, false /* undirty */);
 				} catch (Exception e) {
 					throw new HFException(e, "heapfile,_find,unpinpage failed");
 				}
