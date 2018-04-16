@@ -73,6 +73,52 @@ public class BitMapUtils implements GlobalConst {
             if (bytePostion == BMPage.availableMap) {
                 for (int i = 0; i < bmPage.length; i++) {
                     PageId tempPageId = bmPage[i].getNextPage();
+
+                    unpinPage(pageIds[i], false);
+                    pageIds[i].pid = tempPageId.pid;
+                    if (pageIds[i].pid != INVALID_PAGE)
+                        pinPage(pageIds[i], bmPage[i]);
+                }
+                numBMPages++;
+                bytePostion = 0;
+                bytePointer = 0;
+            }
+            if (ansToSend != -1)
+                return ansToSend;
+
+        }
+        return -1;
+    }
+
+    public int getNextAndPosition() throws Exception {
+        if (bmPage.length == 0) return -1;
+        while (pageIds[0].pid != INVALID_PAGE) {
+            int ansToSend = -1;
+            while (bytePostion < BMPage.availableMap) {
+
+                boolean found = true;
+                for (int i = 0; i < bmPage.length; i++) {
+                    //System.out.println(bmPage[i].getPage()[BMPage.DPFIXED + bytePostion]);
+
+                    int valToTraverse = ((bmPage[i].getPage()[BMPage.DPFIXED + bytePostion] + 256) % 256) >> bytePointer;
+                    if ((valToTraverse & 1) == 0) found = false;
+                }
+                if (found) {
+                    ansToSend = 8 * bytePostion + bytePointer + (numBMPages * (BMPage.availableMap * 8));
+                }
+                bytePointer++;
+                if (bytePointer == 8) {
+                    bytePointer = 0;
+                    bytePostion++;
+                }
+                if (ansToSend != -1) {
+                    break;
+                }
+            }
+
+            if (bytePostion == BMPage.availableMap) {
+                for (int i = 0; i < bmPage.length; i++) {
+                    PageId tempPageId = bmPage[i].getNextPage();
                     unpinPage(pageIds[i], false);
                     pageIds[i].pid = tempPageId.pid;
                     if (pageIds[i].pid != INVALID_PAGE)

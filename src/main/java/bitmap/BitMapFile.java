@@ -362,7 +362,11 @@ public class BitMapFile implements GlobalConst {
                 allocatePage(nextPageId, 1);
                 bmPage.setNextPage(nextPageId);
                 BMPage tempPage = new BMPage();
-                pinPage(nextPageId, tempPage);
+                try {
+                    SystemDefs.JavabaseBM.pinPage(nextPageId, tempPage, true);
+                } catch (Exception e) {
+                    throw new PinPageException(null, "Not able to pin the page");
+                }
                 tempPage.setNextPage(new PageId(-1));
                 unpinPage(nextPageId, true);
             }
