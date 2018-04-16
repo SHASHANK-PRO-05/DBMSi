@@ -25,7 +25,7 @@ public class ColumnSort {
 		String tablename = "Employee";
 		int columnNo = 1;
 
-		BatchInsert.main(new String[] { "sampledata.txt", "Minibase.min", tablename, "4" });
+		BatchInsert.main(new String[] { "smal.txt", "Minibase.min", tablename, "4" });
 		new ColumnarSort("Employee", columnNo, "ASC");
 		 
 		ColumnarSortTupleScan scan = new ColumnarSortTupleScan(tablename, (short) columnNo, "ASC");
