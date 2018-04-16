@@ -14,7 +14,13 @@ import java.util.UUID;
 
 
 public class ColumnarIndexScan extends Iterator {
+    /**
+     * Columnar file name
+     */
     String relName;
+    /**
+     * Columnar file instance
+     */
     ColumnarFile columnarFile;
     private LateMaterializationUtil[] lateMaterializationUtils;
     private AttrType[] fieldSpecfication;
