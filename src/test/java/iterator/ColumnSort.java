@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.junit.Test;
 
 import cmdline.BatchInsert;
+import columnar.ColumnarSortTupleScan;
 import global.Convert;
 import global.IntegerValue;
 import global.RID;
@@ -20,37 +21,28 @@ public class ColumnSort {
 		String tablename = "Employee";
 		int columnNo = 1;
 
-BatchInsert.main(new String[] {"sampledata.txt", "Minibase.min", tablename, "4"} );
-		new ColumnarSort("Employee", columnNo,"ASC");
-		//String FileName = tablename + "." + columnNo + ".sort";
-		ColumnSortScan scan  = new ColumnSortScan(tablename,(short)columnNo,"ASC");
+		BatchInsert.main(new String[] { "sampledata.txt", "Minibase.min", tablename, "4" });
+		new ColumnarSort("Employee", columnNo, "ASC");
 		
-		RID rid = new RID();
-		Tuple tuple = new Tuple();
-		tuple = scan.getNext(rid);
-		while(rid != null) {
-			if(tuple!=null) {
-				
-				System.out.print(getValuefromSortByte(tuple.getTupleByteArray()).getValue()+"\t");
-				System.out.print(Convert.getIntValue(4, tuple.getTupleByteArray()));
-				System.out.println();
-				tuple = scan.getNext(rid);
-			}
-			
+		ColumnarSortTupleScan scan = new ColumnarSortTupleScan(tablename, (short) columnNo, "ASC");
+
+		Tuple tuple = scan.getNext();
+		while (tuple != null) {
+			tuple = scan.getNext();
 		}
+
 		SystemDefs.JavabaseBM.flushAllPages();
 	}
 
-
-ValueClass getValuefromSortByte(byte[] record) throws IOException {
-//	int size = sortedColumnType.getSize();
-	ValueClass val = null;
-//	if (sortedColumnType.getAttrType() == 1) {
+	ValueClass getValuefromSortByte(byte[] record) throws IOException {
+		// int size = sortedColumnType.getSize();
+		ValueClass val = null;
+		// if (sortedColumnType.getAttrType() == 1) {
 		val = new IntegerValue(Convert.getIntValue(0, record));
-//	} else if (sortedColumnType.getAttrType() == 0) {
-//		val = new StringValue(Convert.getStringValue(0, record, size));
+		// } else if (sortedColumnType.getAttrType() == 0) {
+		// val = new StringValue(Convert.getStringValue(0, record, size));
 
-//}
-	return val;
-}
+		// }
+		return val;
+	}
 }
