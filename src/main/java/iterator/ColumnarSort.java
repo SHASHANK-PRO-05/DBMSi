@@ -374,7 +374,7 @@ public class ColumnarSort implements GlobalConst {
 						record2 = list2.firstRecord();
 					}
 
-				} else if (record2 == null && counter2 < nextPageLimit) {
+				} else if (record2 == null && counter2 == nextPageLimit) {
 					try {
 						unpinPage(curPage2, true /* undirty */);
 					} catch (Exception e) {
