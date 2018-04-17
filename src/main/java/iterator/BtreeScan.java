@@ -153,7 +153,7 @@ public class BtreeScan extends Iterator {
                 HFPage pg = new HFPage();
                 pinPage(rid[i].pageNo, pg);
                 tuples[i] = pg.returnRecord(rid[i]);
-                unpinPage(rid[i].pageNo, true);
+                unpinPage(rid[i].pageNo, false);
                 size = size + attrTypes[i].getSize();
 
             }

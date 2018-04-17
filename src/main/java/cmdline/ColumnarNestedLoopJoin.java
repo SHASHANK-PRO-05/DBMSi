@@ -1,9 +1,5 @@
 package cmdline;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import bitmap.AddFileEntryException;
 import bitmap.BitMapScanException;
 import bitmap.ConstructPageException;
@@ -34,6 +30,11 @@ import iterator.IndexException;
 import iterator.Iterator;
 import iterator.RelSpec;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+
 public class ColumnarNestedLoopJoin {
 
     private static String columnDBName;
@@ -50,11 +51,10 @@ public class ColumnarNestedLoopJoin {
     private static CondExpr[] outerCondExpr;
     private static CondExpr[] innerCondExpr;
     private static CondExpr joinCondExpr;
-
-    // int c = 0;
-
+//    private static CondExpr[] joinCondExpr;
+  
     public static void main(String argv[]) throws Exception {
-	initFromArgs(argv);
+        initFromArgs(argv);
     }
 
     /*
@@ -146,8 +146,46 @@ public class ColumnarNestedLoopJoin {
 		    proj2.add(fldSpec);
 		}
 	    }
-
 	}
+/*	    
+        joinCondExpr = new CondExpr[1];
+        joinCondExpr[0] = joinExpr;
+
+        ColumnarFile outerColumnarFile = new ColumnarFile(outerFile);
+        in1 = outerColumnarFile.getColumnarHeader().getColumns();
+
+        FldSpec[] outerFldSpecs = new FldSpec[in1.length];
+
+        for (int j = 0; j < in1.length; j++) {
+            outerFldSpecs[i] = new FldSpec(new RelSpec(RelSpec.outer), i + 1);
+        }
+
+        FldSpec[] projectionFldSpecs = new FldSpec[targetColumnNames.size()];
+
+        ColumnarFile innerColumnarFile = new ColumnarFile(innerFile);
+        in2 = innerColumnarFile.getColumnarHeader().getColumns();
+
+        IndexType[] indexTypes = new IndexType[2];
+        indexTypes[0] = new IndexType(IndexType.ColumnScan);
+        indexTypes[1] = new IndexType(IndexType.B_Index);
+
+        ColumnarIndexScan outerScan = new ColumnarIndexScan(outerFile, null, indexTypes, null, in1,
+            null, in1.length, in1.length, outerFldSpecs, outerCondExpr);
+
+        NestedLoopJoins nestedLoopJoins = new NestedLoopJoins(in1, null, in2, null, 10,
+            outerScan, innerFile, joinCondExpr, innerCondExpr, outerFldSpecs, outerFldSpecs.length, indexTypes);
+
+        Tuple tuple = nestedLoopJoins.getNext();
+
+        while (tuple != null) {
+            System.out.println(tuple);
+
+            tuple = nestedLoopJoins.getNext();
+        }
+
+        System.out.println("Iteration Complete");*/
+    
+
 	FldSpec projList1[] = proj1.toArray(new FldSpec[proj1.size()]);
 	FldSpec projList2[] = proj1.toArray(new FldSpec[proj1.size()]);
 	Iterator am1 = getIterator(outerFile, in1, null, in1.length,
@@ -208,16 +246,16 @@ public class ColumnarNestedLoopJoin {
      * Function to parse the Index type
      */
     private static IndexType getIndexType(String indexName) {
-	if (indexName.equals("FILESCAN"))
-	    return new IndexType(0);
-	if (indexName.equals("COLUMNSCAN"))
-	    return new IndexType(4);
-	if (indexName.equals("BTREE"))
-	    return new IndexType(1);
-	if (indexName.equals("BITMAP"))
-	    return new IndexType(3);
-	else
-	    return null;
+        if (indexName.equals("FILESCAN"))
+            return new IndexType(0);
+        if (indexName.equals("COLUMNSCAN"))
+            return new IndexType(4);
+        if (indexName.equals("BTREE"))
+            return new IndexType(1);
+        if (indexName.equals("BITMAP"))
+            return new IndexType(3);
+        else
+            return null;
     }
 
     private static Iterator getIterator(String columnarFileName, AttrType[] in,
@@ -248,6 +286,7 @@ public class ColumnarNestedLoopJoin {
 		    counterFld, projList, condition);
 	}
 	return iter;
-    }
 
+
+    }
 }

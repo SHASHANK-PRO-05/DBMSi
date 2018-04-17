@@ -1,16 +1,24 @@
 package columnar;
 
+import bufmgr.*;
+import global.RID;
 import global.TID;
 import heap.InvalidTupleSizeException;
+import heap.InvalidTypeException;
 import heap.Scan;
 import heap.Tuple;
+import iterator.IndexException;
+import iterator.Iterator;
+import iterator.TupleUtilsException;
 
 import java.io.IOException;
 
-public class TupleScan {
+public class TupleScan extends Iterator {
     private ColumnarFile cf;
     private Scan scans[];
     private int columnNos[];
+
+    private TID tid;
 
     /**
      * Create a Tuple scan over all the columns in a Columnar file
@@ -35,6 +43,14 @@ public class TupleScan {
         for (int i = 0; i < noOfColumns; i++) {
             scans[i] = new Scan(this.cf, (short) i);
         }
+
+        RID[] rids = new RID[noOfColumns];
+
+        for (int i = 0; i < noOfColumns; i++) {
+            rids[i] = new RID();
+        }
+
+        tid = new TID(noOfColumns, 0, rids);
     }
 
     /**
@@ -125,4 +141,18 @@ public class TupleScan {
         return result;
     }
 
+    @Override
+    public Tuple getNext() throws IOException, InvalidTupleSizeException, InvalidTypeException, PageNotReadException, TupleUtilsException, Exception {
+        return getNext(tid);
+    }
+
+    @Override
+    public int getNextPosition() throws Exception {
+        return 0;
+    }
+
+    @Override
+    public void close() throws IOException, IndexException, PageUnpinnedException, InvalidFrameNumberException, HashEntryNotFoundException, ReplacerException, Exception {
+        closeTupleScan();
+    }
 }

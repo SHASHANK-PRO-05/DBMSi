@@ -228,14 +228,15 @@ public class ColumnarFile implements GlobalConst {
         int availablePos = 0;
         while (tuples[0] != null) {
             if (!isTupleDeletedAtPosition(position)) {
+                RID[] newRids = new RID[attrTypes.length];
                 for (int i = 0; i < attrTypes.length; i++) {
-                    heapfiles[i].insertRecord(tuples[i].getTupleByteArray());
+                    newRids[i] = heapfiles[i].insertRecord(tuples[i].getTupleByteArray());
                 }
                 for (int i = 0; i < indexInfos.size(); i++) {
                     IndexInfo indexInfo = indexInfos.get(i);
                     if (indexInfo.getIndextype().indexType == IndexType.B_Index) {
                         BTreeFile bTreeFile = new BTreeFile(indexInfo.getFileName());
-                        TID tid = new TID(rids.length, availablePos, rids);
+                        TID tid = new TID(rids.length, availablePos, newRids);
                         Tuple tuple = tuples[indexInfo.getColumnNumber()];
                         KeyClass keyClass;
 

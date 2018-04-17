@@ -2,76 +2,90 @@ package iterator;
 
 import columnar.ColumnarFile;
 import columnar.TupleScan;
+import global.AttrOperator;
 import global.AttrType;
-import global.RID;
-import global.TID;
+import global.IndexType;
 import heap.Tuple;
 
 public class NestedLoopJoins extends Iterator {
 
-    private AttrType[] in1, in2;
+    private AttrType[] outerAttributes, innerAttributes;
     private short[] tuple1StringSizes, tuple2StringSizes;
     private int amountOfMemory;
     private Iterator outerIterator;
+    private String columnarFileName;
     private ColumnarFile columnarFile;
-    private CondExpr[] outFiler, rightFilter;
+    private CondExpr[] joinFilter, innerFilter;
     private FldSpec[] projectionList;
     private int nOutFields;
+    private IndexType[] indexTypes;
+    private FldSpec[] innerProjectionList;
 
     private Tuple innerTuple, outerTuple, joinedTuple;
     private boolean done, getFromOuter;
-    private TupleScan innerTupleScan;
+    private Iterator innerScan;
 
     /**
-     * @param in1
+     * @param outerAttributes
      * @param tuple1StringSizes
-     * @param in2
+     * @param innerAttributes
      * @param tuple2StringSizes
      * @param amountOfMemory
      * @param outerIterator
-     * @param columnarFileName
-     * @param outFilter
-     * @param rightFilter
+     * @param innerColumnarFileName
+     * @param joinFilter
+     * @param innerFilter
      * @param projectionList
      * @param nOutFields
      * @throws NestedLoopException
      */
     public NestedLoopJoins(
-        AttrType[] in1,
+        AttrType[] outerAttributes,
         short[] tuple1StringSizes,
-        AttrType[] in2,
+        AttrType[] innerAttributes,
         short[] tuple2StringSizes,
         int amountOfMemory,
         Iterator outerIterator,
-        String columnarFileName,
-        CondExpr[] outFilter,
-        CondExpr[] rightFilter,
+        String innerColumnarFileName,
+        CondExpr[] joinFilter,
+        CondExpr[] innerFilter,
         FldSpec[] projectionList,
-        int nOutFields
-    ) throws NestedLoopException {
+        int nOutFields,
+        IndexType[] indexTypes
+    ) throws Exception {
 
-        this.in1 = new AttrType[in1.length];
-        System.arraycopy(in1, 0, this.in1, 0, in1.length);
-        this.in2 = new AttrType[in2.length];
-        System.arraycopy(in2, 0, this.in2, 0, in2.length);
+        this.outerAttributes = new AttrType[outerAttributes.length];
+        System.arraycopy(outerAttributes, 0, this.outerAttributes, 0, outerAttributes.length);
+        this.innerAttributes = new AttrType[innerAttributes.length];
+        System.arraycopy(innerAttributes, 0, this.innerAttributes, 0, innerAttributes.length);
 
         this.tuple1StringSizes = tuple1StringSizes;
         this.tuple2StringSizes = tuple2StringSizes;
         this.amountOfMemory = amountOfMemory;
         this.outerIterator = outerIterator;
+        this.indexTypes = indexTypes;
+        this.columnarFileName = innerColumnarFileName;
 
         try {
-            this.columnarFile = new ColumnarFile(columnarFileName);
+            this.columnarFile = new ColumnarFile(innerColumnarFileName);
         } catch (Exception e) {
-            throw new NestedLoopException("Cannot open columnar file " + columnarFileName);
+            throw new NestedLoopException("Cannot open columnar file " + innerColumnarFileName);
+        }
+
+        AttrType[] innerAttrTypes = this.columnarFile.getColumnarHeader().getColumns();
+
+        innerProjectionList = new FldSpec[innerAttrTypes.length];
+
+        for (int i = 0; i < innerAttrTypes.length; i++) {
+            innerProjectionList[i] = new FldSpec(new RelSpec(RelSpec.innerRel), i + 1);
         }
 
         this.innerTuple = new Tuple();
         this.outerTuple = new Tuple();
         this.joinedTuple = new Tuple();
 
-        this.outFiler = outFilter;
-        this.rightFilter = rightFilter;
+        this.joinFilter = joinFilter;
+        this.innerFilter = innerFilter;
         this.projectionList = projectionList;
         this.nOutFields = nOutFields;
     }
@@ -86,47 +100,61 @@ public class NestedLoopJoins extends Iterator {
             if (getFromOuter) {
                 getFromOuter = false;
 
-                if (innerTupleScan != null) {
-                    innerTupleScan.closeTupleScan();
-                    innerTupleScan = null;
+                if (innerScan != null) {
+                    innerScan.close();
+                    innerScan = null;
                 }
 
-                innerTupleScan = new TupleScan(this.columnarFile);
-
                 outerTuple = outerIterator.getNext();
+
+                CondExpr[] innerJoinFilter = new CondExpr[1];
+                innerJoinFilter[0] = new CondExpr();
+                innerJoinFilter[0].op = new AttrOperator(AttrOperator.aopEQ);
+                innerJoinFilter[0].operand1 = joinFilter[0].operand2;
+
+                int outerJoinColumnID = joinFilter[0].operand1.symbol.offset;
+                AttrType outerJoinColumnType = outerAttributes[outerJoinColumnID - 1];
+
+                if (outerJoinColumnType.getAttrType() == AttrType.attrString) {
+                    innerJoinFilter[0].operand2.string = outerTuple.getStrFld(outerJoinColumnID);
+                } else if (outerJoinColumnType.getAttrType() == AttrType.attrInteger) {
+                    innerJoinFilter[0].operand2.integer = outerTuple.getIntFld(outerJoinColumnID);
+                }
+
+                if (indexTypes == null || indexTypes.length == 0) {
+                    innerScan = new TupleScan(columnarFile);
+                    CondExpr[] newInnerFilter = new CondExpr[innerFilter.length + 1];
+
+                    System.arraycopy(innerFilter, 0, newInnerFilter, 0, innerFilter.length);
+                    newInnerFilter[innerFilter.length] = innerJoinFilter[0];
+
+                    innerFilter = newInnerFilter;
+
+                } else {
+                    innerScan = new ColumnarIndexScan(columnarFileName, null, indexTypes,
+                        null, innerAttributes, null, innerAttributes.length, innerAttributes.length,
+                        innerProjectionList, innerJoinFilter);
+                }
 
                 if (outerTuple == null) {
                     done = true;
 
-                    if (innerTupleScan != null) {
-                        innerTupleScan.closeTupleScan();
-                        innerTupleScan = null;
+                    if (innerScan != null) {
+                        innerScan.close();
+                        innerScan = null;
                     }
 
                     return null;
                 }
             }
 
-            int numOfRIDs = columnarFile.getColumnarHeader().getColumnCount();
-            RID[] rids = new RID[numOfRIDs];
-
-            for (int i = 0; i < numOfRIDs; i++) {
-                rids[i] = new RID();
-            }
-
-            TID tid = new TID(numOfRIDs, 0, rids);
-
-            innerTuple = innerTupleScan.getNext(tid);
+            innerTuple = innerScan.getNext();
 
             while (innerTuple != null) {
-                innerTuple.setHdr((short) numOfRIDs, in2, tuple2StringSizes);
+                if (ConditionalExpr.evaluate(innerTuple, innerAttributes, innerFilter)) {
+                    Projection.Join(outerTuple, outerAttributes, innerTuple, innerAttributes, joinedTuple, projectionList, nOutFields);
 
-                if (PredEval.Eval(rightFilter, innerTuple, null, in2, null)) {
-                    if (PredEval.Eval(outFiler, outerTuple, innerTuple, in1, in2)) {
-                        Projection.Join(outerTuple, in1, innerTuple, in2, joinedTuple, projectionList, nOutFields);
-
-                        return joinedTuple;
-                    }
+                    return joinedTuple;
                 }
             }
 
