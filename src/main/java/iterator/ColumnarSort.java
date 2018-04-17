@@ -264,6 +264,7 @@ public class ColumnarSort implements GlobalConst {
 
 			}
 		}
+		
 
 	}
 
@@ -439,7 +440,7 @@ public class ColumnarSort implements GlobalConst {
 		while (record1 == null && record2 != null) {
 			heapfile[coloumnNo].insertRecord(list2.getRecord(record2).getTupleByteArray());
 			record2 = list2.nextRecord(record2);
-			if (record2 == null && counter2 < i) {
+			if (record2 == null && counter2 < nextPageLimit) {
 				nextPage2 = list1.getNextPage();
 				try {
 					unpinPage(curPage2, false /* undirty */);
@@ -490,7 +491,7 @@ public class ColumnarSort implements GlobalConst {
 			}
 
 		}
-
+		
 	}
 
 	/*
@@ -547,6 +548,7 @@ public class ColumnarSort implements GlobalConst {
 							getBytefromSortInfo(currentDataPage.getRecord(record).getTupleByteArray(), count));
 					count++;
 				}
+				unpinPage(dpinfo.pageId, false /* undirty */);
 			}
 			nextDirPageId = currentDirPage.getNextPage();
 			try {
@@ -651,6 +653,7 @@ public class ColumnarSort implements GlobalConst {
 			}
 		}
 		temp.deleteFile();
+		
 		return totalPageCount;
 	}
 
