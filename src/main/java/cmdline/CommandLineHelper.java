@@ -74,6 +74,53 @@ public class CommandLineHelper {
 	return constParser.toArray(new CondExpr[constParser.size()]);
 
     }
+    
+    public static CondExpr parseJoinConstr(String fileName1, String fileName2,
+	    StringBuffer joinConst)
+	    throws DiskMgrException, ColumnarFileDoesExistsException,
+	    ColumnarFilePinPageException, HFException, HFBufMgrException,
+	    HFDiskMgrException, ColumnarFileUnpinPageException,
+	    bitmap.PinPageException, AddFileEntryException, UnpinPageException,
+	    bitmap.ConstructPageException, bitmap.GetFileEntryException,
+	    IOException, InvalidSlotNumberException {
+
+	int index1 = -1, index2 = -1;
+	ColumnarFile columnarFile1 = new ColumnarFile(fileName1);
+	ColumnarFile columnarFile2 = new ColumnarFile(fileName2);
+	String joinConstr = joinConst.toString();
+	AttrType attrTypes1[] = columnarFile1.getColumnarHeader().getColumns();
+	AttrType attrTypes2[] = columnarFile2.getColumnarHeader().getColumns();
+	List<String> columnNames1 = new ArrayList<String>();
+	List<String> columnNames2 = new ArrayList<String>();
+	for (int i = 0; i < attrTypes1.length; i++) {
+	    columnNames1.add(attrTypes1[i].getAttrName());
+	}
+	for (int i = 0; i < attrTypes2.length; i++) {
+	    columnNames2.add(attrTypes2[i].getAttrName());
+	}
+	CondExpr condExpr = new CondExpr();
+	condExpr.next = null;
+	condExpr.op = CommandLineHelper.parseOperator(joinConstr);
+	String op = CommandLineHelper.getOperatorSymbol(condExpr.op);
+	String splitExpr[] = joinConstr.split(" " + op + " ");
+	if (columnNames1.toString().contains(splitExpr[0])) {
+	    index1 = columnNames1.indexOf(splitExpr[0]);
+
+	}
+	if (columnNames2.toString().contains(splitExpr[1])) {
+	    index2 = columnNames2.indexOf(splitExpr[1]);
+
+	}
+	condExpr.operand1.symbol = new FldSpec(new RelSpec(0),
+		attrTypes1[index1].getColumnId());
+	condExpr.operand2.symbol = new FldSpec(new RelSpec(0),
+		attrTypes2[index2].getColumnId());
+	condExpr.type1 = new AttrType(AttrType.attrSymbol);
+	condExpr.type2 = new AttrType(AttrType.attrSymbol);
+
+	return condExpr;
+    }
+
 
     public static AttrOperator parseOperator(String expr) {
 
