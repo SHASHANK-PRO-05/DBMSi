@@ -101,7 +101,7 @@ public class ColumnarNestedLoopJoin {
 		i++;
 	    }
 	}
-	indexType = getIndexType(argv[i + 1]);
+	indexType = CommandLineHelper.getIndexType(argv[i + 1]);
 	i = i + 1;
 	for (i = i + 2; i <= lengthOfArgv - 3; i++) {
 	    targetColumnNames.add(argv[i]);
@@ -198,22 +198,7 @@ public class ColumnarNestedLoopJoin {
 	
     }
 
-   
-    /*
-     * Function to parse the Index type
-     */
-    private static IndexType getIndexType(String indexName) {
-        if (indexName.equals("FILESCAN"))
-            return new IndexType(0);
-        if (indexName.equals("COLUMNSCAN"))
-            return new IndexType(4);
-        if (indexName.equals("BTREE"))
-            return new IndexType(1);
-        if (indexName.equals("BITMAP"))
-            return new IndexType(3);
-        else
-            return null;
-    }
+      
 
   
 }

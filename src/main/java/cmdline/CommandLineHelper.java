@@ -13,6 +13,7 @@ import columnar.ColumnarFileUnpinPageException;
 import diskmgr.DiskMgrException;
 import global.AttrOperator;
 import global.AttrType;
+import global.IndexType;
 import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
@@ -158,5 +159,18 @@ public class CommandLineHelper {
    	else
    	    return null;
        }
+       
+       public static IndexType getIndexType(String indexName) {
+	        if (indexName.equals("FILESCAN"))
+	            return new IndexType(0);
+	        if (indexName.equals("COLUMNSCAN"))
+	            return new IndexType(4);
+	        if (indexName.equals("BTREE"))
+	            return new IndexType(1);
+	        if (indexName.equals("BITMAP"))
+	            return new IndexType(3);
+	        else
+	            return null;
+	    }
 
 }
