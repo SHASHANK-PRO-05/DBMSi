@@ -66,11 +66,12 @@ public class ColumnarNestedLoopJoin {
      */
     private static void initFromArgs(String argv[]) throws Exception {
 	int lengthOfArgv = argv.length;
-	SystemDefs systemDefs = new SystemDefs(columnDBName, 0, numBuf, "LRU");
+	
 	targetColumnNames = new ArrayList<String>();
 	columnDBName = argv[0];
 	outerFile = argv[1];
 	innerFile = argv[2];
+	
 	int i = 0;
 	if (argv[3].equals("[")) {
 	    i = 4;
@@ -106,10 +107,12 @@ public class ColumnarNestedLoopJoin {
 	for (i = i + 2; i <= lengthOfArgv - 3; i++) {
 	    targetColumnNames.add(argv[i]);
 	}
+	
 	outerConst.deleteCharAt(outerConst.length() - 1);
 	innerConst.deleteCharAt(innerConst.length() - 1);
 	joinConst.deleteCharAt(joinConst.length() - 1);
 	numBuf = Integer.parseInt(argv[lengthOfArgv - 1]);
+	SystemDefs systemDefs = new SystemDefs(columnDBName, 0, numBuf, "LRU");
 	setUpJoin();
     }
 
