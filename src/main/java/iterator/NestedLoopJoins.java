@@ -15,14 +15,14 @@ public class NestedLoopJoins extends Iterator {
     private Iterator outerIterator;
     private String columnarFileName;
     private ColumnarFile columnarFile;
-    private CondExpr[] joinFilter, innerFilter;
+    private CondExpr[] joinFilter, innerFilter, outerFilter;
     private FldSpec[] projectionList;
     private int nOutFields;
     private IndexType[] indexTypes;
     private FldSpec[] innerProjectionList;
 
     private Tuple innerTuple, outerTuple, joinedTuple;
-    private boolean done, getFromOuter;
+    private boolean done, getFromOuter = true;
     private Iterator innerScan;
 
     /**
@@ -49,6 +49,7 @@ public class NestedLoopJoins extends Iterator {
         String innerColumnarFileName,
         CondExpr[] joinFilter,
         CondExpr[] innerFilter,
+        CondExpr[] outerFilter,
         FldSpec[] projectionList,
         int nOutFields,
         IndexType[] indexTypes
@@ -86,6 +87,7 @@ public class NestedLoopJoins extends Iterator {
 
         this.joinFilter = joinFilter;
         this.innerFilter = innerFilter;
+        this.outerFilter = outerFilter;
         this.projectionList = projectionList;
         this.nOutFields = nOutFields;
     }
@@ -107,6 +109,38 @@ public class NestedLoopJoins extends Iterator {
 
                 outerTuple = outerIterator.getNext();
 
+                if (outerTuple == null) {
+                    done = true;
+
+                    if (innerScan != null) {
+                        innerScan.close();
+                        innerScan = null;
+                    }
+
+                    return null;
+                }
+
+                outerTuple.setHdr((short) outerAttributes.length, outerAttributes, new short[]{12});
+
+                while (outerTuple != null && !ConditionalExpr.evaluate(outerTuple, outerAttributes, outerFilter)) {
+                    outerTuple = outerIterator.getNext();
+
+                    if (outerTuple != null) {
+                        outerTuple.setHdr((short) outerAttributes.length, outerAttributes, new short[]{12});
+                    }
+                }
+
+                if (outerTuple == null) {
+                    done = true;
+
+                    if (innerScan != null) {
+                        innerScan.close();
+                        innerScan = null;
+                    }
+
+                    return null;
+                }
+
                 CondExpr[] innerJoinFilter = new CondExpr[1];
                 innerJoinFilter[0] = new CondExpr();
                 innerJoinFilter[0].op = new AttrOperator(AttrOperator.aopEQ);
@@ -121,7 +155,7 @@ public class NestedLoopJoins extends Iterator {
                     innerJoinFilter[0].operand2.integer = outerTuple.getIntFld(outerJoinColumnID);
                 }
 
-                if (indexTypes == null || indexTypes.length == 0) {
+                if (indexTypes == null || indexTypes.length == 0 || indexTypes[0].indexType == IndexType.None || indexTypes[0].indexType == IndexType.ColumnScan) {
                     innerScan = new TupleScan(columnarFile);
                     CondExpr[] newInnerFilter = new CondExpr[innerFilter.length + 1];
 
@@ -130,27 +164,19 @@ public class NestedLoopJoins extends Iterator {
 
                     innerFilter = newInnerFilter;
 
+                    innerScan = new TupleScan(columnarFile);
+
                 } else {
                     innerScan = new ColumnarIndexScan(columnarFileName, null, indexTypes,
                         null, innerAttributes, null, innerAttributes.length, innerAttributes.length,
                         innerProjectionList, innerJoinFilter);
-                }
-
-                if (outerTuple == null) {
-                    done = true;
-
-                    if (innerScan != null) {
-                        innerScan.close();
-                        innerScan = null;
-                    }
-
-                    return null;
                 }
             }
 
             innerTuple = innerScan.getNext();
 
             while (innerTuple != null) {
+                innerTuple.setHdr((short) innerAttributes.length, innerAttributes, new short[]{12});
                 if (ConditionalExpr.evaluate(innerTuple, innerAttributes, innerFilter)) {
                     Projection.Join(outerTuple, outerAttributes, innerTuple, innerAttributes, joinedTuple, projectionList, nOutFields);
 

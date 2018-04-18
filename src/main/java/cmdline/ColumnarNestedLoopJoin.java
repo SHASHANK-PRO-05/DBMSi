@@ -110,12 +110,11 @@ public class ColumnarNestedLoopJoin {
         innerConst.deleteCharAt(innerConst.length() - 1);
         joinConst.deleteCharAt(joinConst.length() - 1);
         numBuf = Integer.parseInt(argv[lengthOfArgv - 1]);
-        SystemDefs systemDefs = new SystemDefs(columnDBName, 0, numBuf, "LRU");
+//        SystemDefs systemDefs = new SystemDefs(columnDBName, 1000, numBuf, "LRU");
         setUpJoin();
     }
 
-    private static void setUpJoin() throws ColumnarFileScanException,
-        BitMapScanException, IndexException, Exception {
+    private static void setUpJoin() throws Exception {
         ColumnarFile columnarFile = new ColumnarFile(outerFile);
 
         ArrayList<FldSpec> proj1 = new ArrayList<FldSpec>();
@@ -137,17 +136,18 @@ public class ColumnarNestedLoopJoin {
                 if (targetColumnNames.get(i).equals(in1[j].getAttrName())) {
 
                     FldSpec fldSpec = new FldSpec(new RelSpec(RelSpec.outer),
-                        in1[j].getColumnId());
+                        in1[j].getColumnId() + 1);
                     proj1.add(fldSpec);
                 }
             }
         }
+
         for (int i = 0; i < targetColumnNames.size(); i++) {
-            for (int j = 0; j < in1.length; j++) {
+            for (int j = 0; j < in2.length; j++) {
                 if (targetColumnNames.get(i).equals(in2[j].getAttrName())) {
 
                     FldSpec fldSpec = new FldSpec(new RelSpec(RelSpec.innerRel),
-                        in1[j].getColumnId());
+                        in1[j].getColumnId() + 1);
                     proj2.add(fldSpec);
                 }
             }
@@ -176,7 +176,7 @@ public class ColumnarNestedLoopJoin {
 
         Iterator outerScan;
 
-        if (indexType.indexType == IndexType.None || indexType.indexType == IndexType.ColumnScan) {
+        if (indexType.indexType == IndexType.None) {
             outerScan = new TupleScan(outerColumnarFile);
         } else {
             outerScan = new ColumnarIndexScan(outerFile, null, indexTypes, null, in1,
@@ -184,20 +184,16 @@ public class ColumnarNestedLoopJoin {
         }
 
         NestedLoopJoins nestedLoopJoins = new NestedLoopJoins(in1, null, in2, null, numBuf,
-            outerScan, innerFile, joinCondExpr, innerCondExpr, projectionList.toArray(new FldSpec[0]), projectionList.size(), indexTypes);
+            outerScan, innerFile, joinCondExpr, innerCondExpr, outerCondExpr, projectionList.toArray(new FldSpec[0]), projectionList.size(), indexTypes);
 
         Tuple tuple = nestedLoopJoins.getNext();
 
         while (tuple != null) {
-            System.out.println(tuple);
-
+            System.out.println(tuple.getIntFld(1));
+            System.out.println(tuple.getStrFld(2));
             tuple = nestedLoopJoins.getNext();
         }
 
         System.out.println("Iteration Complete");
-
-
     }
-
-
 }

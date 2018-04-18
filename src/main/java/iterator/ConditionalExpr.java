@@ -1,13 +1,15 @@
 package iterator;
 
-import columnar.ByteToTuple;
-import global.*;
+import global.AttrOperator;
+import global.AttrType;
+import global.IntegerValue;
+import global.StringValue;
+import heap.FieldNumberOutOfBoundException;
 import heap.InvalidTupleSizeException;
 import heap.InvalidTypeException;
 import heap.Tuple;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 /**
  * ConditionalExpr Evaluator.
@@ -22,13 +24,13 @@ public class ConditionalExpr {
      * @return whether the tuple passes all the conditional expressions or not
      */
     static boolean evaluate(Tuple tuple, AttrType[] colAttributes, CondExpr[] condExprs)
-        throws IOException, InvalidTupleSizeException, InvalidTypeException, InvalidRelation {
+        throws IOException, InvalidTupleSizeException, InvalidTypeException, InvalidRelation, FieldNumberOutOfBoundException {
 
-        ByteToTuple byteToTuple = new ByteToTuple(colAttributes);
-        ArrayList<byte[]> tupleData = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
+//        ByteToTuple byteToTuple = new ByteToTuple(colAttributes);
+//        ArrayList<byte[]> tupleData = byteToTuple.setTupleBytes(tuple.getTupleByteArray());
 
         for (CondExpr condExpr : condExprs) {
-            boolean disjunctionResult = evaluateDisjunctions(tupleData, colAttributes, condExpr);
+            boolean disjunctionResult = evaluateDisjunctions(tuple, colAttributes, condExpr);
 
             if (!disjunctionResult) {
                 return false;
@@ -39,17 +41,13 @@ public class ConditionalExpr {
     }
 
     /**
-     * @param tupleData     Tuple converted to an arrayList of byte[] based on columns
+     * @param tuple         Tuple converted to an arrayList of byte[] based on columns
      * @param colAttributes columns in a tuple
      * @param condExprs     array of conditional expressions
      * @return whether the tuples passes all the disjunctive conditional expressions or not
      */
-    private static boolean evaluateDisjunctions(ArrayList<byte[]> tupleData, AttrType[] colAttributes, CondExpr condExprs)
-        throws InvalidTupleSizeException, IOException, InvalidTypeException, InvalidRelation {
-
-        if (tupleData.size() != colAttributes.length) {
-            throw new InvalidTupleSizeException();
-        }
+    private static boolean evaluateDisjunctions(Tuple tuple, AttrType[] colAttributes, CondExpr condExprs)
+        throws InvalidTupleSizeException, IOException, InvalidTypeException, InvalidRelation, FieldNumberOutOfBoundException {
 
         CondExpr currentCondExpr = condExprs;
 
@@ -60,50 +58,49 @@ public class ConditionalExpr {
                 throw new InvalidRelation("Invalid column no when evaluating disjunction");
             }
 
-            AttrType columnAttrType = colAttributes[columnNo];
+            AttrType columnAttrType = colAttributes[columnNo - 1];
 
             int comparisonResult = 0;
-            byte[] colData = null;
 
             switch (columnAttrType.getAttrType()) {
                 case AttrType.attrString:
 
-                    colData = tupleData.get(columnNo);
+                    String stringData = tuple.getStrFld(columnNo);
 
-                    StringValue colStringValue = new StringValue(
-                        Convert.getStringValue(0, colData, columnAttrType.getSize())
-                    );
+                    StringValue colStringValue = new StringValue(stringData);
 
                     comparisonResult = colStringValue.compare(new StringValue(currentCondExpr.operand2.string));
                     break;
 
                 case AttrType.attrInteger:
 
-                    colData = tupleData.get(columnNo);
+                    int intData = tuple.getIntFld(columnNo);
 
-                    IntegerValue colIntValue = new IntegerValue(Convert.getIntValue(0, colData));
+                    IntegerValue colIntValue = new IntegerValue(intData);
 
                     comparisonResult = colIntValue.compare(new IntegerValue(currentCondExpr.operand2.integer));
                     break;
             }
 
-            if (colData == null) {
-                throw new InvalidTypeException();
-            }
-
             switch (currentCondExpr.op.attrOperator) {
                 case AttrOperator.aopEQ:
                     if (comparisonResult == 0) return true;
+                    break;
                 case AttrOperator.aopNE:
                     if (comparisonResult != 0) return true;
+                    break;
                 case AttrOperator.aopGE:
                     if (comparisonResult >= 0) return true;
+                    break;
                 case AttrOperator.aopGT:
                     if (comparisonResult > 0) return true;
+                    break;
                 case AttrOperator.aopLE:
                     if (comparisonResult <= 0) return true;
+                    break;
                 case AttrOperator.aopLT:
                     if (comparisonResult < 0) return true;
+                    break;
             }
 
 

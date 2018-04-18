@@ -56,7 +56,7 @@ public class CommandLineHelper {
 		}
 
 		cond[j].operand1.symbol = new FldSpec(new RelSpec(0),
-			attrTypes[index].getColumnId());
+			attrTypes[index].getColumnId() + 1);
 		cond[j].type1 = new AttrType(AttrType.attrSymbol);
 		cond[j].type2 = new AttrType(attrTypes[index].getAttrType());
 
@@ -112,10 +112,10 @@ public class CommandLineHelper {
 	    index2 = columnNames2.indexOf(splitExpr[1]);
 
 	}
-	condExpr.operand1.symbol = new FldSpec(new RelSpec(0),
-		attrTypes1[index1].getColumnId());
-	condExpr.operand2.symbol = new FldSpec(new RelSpec(0),
-		attrTypes2[index2].getColumnId());
+	condExpr.operand1.symbol = new FldSpec(new RelSpec(RelSpec.outer),
+		attrTypes1[index1].getColumnId() + 1);
+	condExpr.operand2.symbol = new FldSpec(new RelSpec(RelSpec.innerRel),
+		attrTypes2[index2].getColumnId() + 1);
 	condExpr.type1 = new AttrType(AttrType.attrSymbol);
 	condExpr.type2 = new AttrType(AttrType.attrSymbol);
 
@@ -162,15 +162,15 @@ public class CommandLineHelper {
        
        public static IndexType getIndexType(String indexName) {
 	        if (indexName.equals("FILESCAN"))
-	            return new IndexType(0);
+	            return new IndexType(IndexType.None);
 	        if (indexName.equals("COLUMNSCAN"))
-	            return new IndexType(4);
+	            return new IndexType(IndexType.ColumnScan);
 	        if (indexName.equals("BTREE"))
-	            return new IndexType(1);
+	            return new IndexType(IndexType.B_Index);
 	        if (indexName.equals("BITMAP"))
-	            return new IndexType(3);
+	            return new IndexType(IndexType.BitMapIndex);
 	        else
-	            return null;
+	            return new IndexType(IndexType.None);
 	    }
 
 }

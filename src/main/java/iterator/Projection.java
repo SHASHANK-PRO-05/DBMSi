@@ -33,10 +33,21 @@ public class Projection {
                           Tuple Jtuple, FldSpec perm_mat[],
                           int nOutFlds
   )
-      throws UnknowAttrType,
-      FieldNumberOutOfBoundException,
-      IOException {
+      throws Exception {
 
+    AttrType[] joinedAttributes = new AttrType[perm_mat.length];
+
+    for (int i = 0; i < perm_mat.length; i++) {
+      FldSpec out = perm_mat[i];
+
+      if (out.relation.key == RelSpec.outer) {
+        joinedAttributes[i] = type1[out.offset - 1];
+      } else {
+        joinedAttributes[i] = type2[out.offset - 1];
+      }
+    }
+
+    Jtuple.setHdr((short) perm_mat.length, joinedAttributes, new short[] {12});
 
     for (int i = 0; i < nOutFlds; i++) {
       switch (perm_mat[i].relation.key) {

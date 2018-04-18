@@ -109,7 +109,7 @@ public class TupleScan extends Iterator {
      * @throws InvalidTupleSizeException
      * @throws IOException
      */
-    public Tuple getNext(TID tid) throws InvalidTupleSizeException, IOException {
+    public Tuple getNext(TID tid) throws Exception {
         int noOfColumns = getNoOfColumns();
         ByteToTuple byteToTuple = new ByteToTuple();
         Tuple nextTuples[] = new Tuple[noOfColumns];
@@ -120,6 +120,8 @@ public class TupleScan extends Iterator {
             size += nextTuples[i].getLength();
         }
 
+        Tuple tuple = byteToTuple.mergeTuples(nextTuples, size);
+        tuple.setHdr((short) noOfColumns, cf.getColumnarHeader().getColumns(), new short[]{12});
         return byteToTuple.mergeTuples(nextTuples, size);
     }
 
