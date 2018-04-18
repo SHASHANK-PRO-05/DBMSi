@@ -45,7 +45,7 @@ public class ColumnarIndexScan extends Iterator {
         }
         this.fieldSpecfication = new AttrType[projectionList.length];
         for (int i = 0; i < projectionList.length; i++) {
-            fieldSpecfication[i] = attrTypeHashMap.get(projectionList[i].offset);
+            fieldSpecfication[i] = attrTypeHashMap.get(projectionList[i].offset - 1);
         }
         byteToTuple = new ByteToTuple(fieldSpecfication);
         bitMapFiles = new ArrayList[selects.length];
@@ -74,6 +74,7 @@ public class ColumnarIndexScan extends Iterator {
                 throw new Exception("Index is unknown");
             }
         }
+
         for (int i = 0; i < bitMapFiles.length; i++) {
             BitMapUtils bitMapUtils = new BitMapUtils(bitMapFiles[i]);
             int counter = bitMapUtils.getNextOrPosition();
