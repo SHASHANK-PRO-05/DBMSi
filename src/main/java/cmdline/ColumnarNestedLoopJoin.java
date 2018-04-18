@@ -19,15 +19,18 @@ import heap.HFBufMgrException;
 import heap.HFDiskMgrException;
 import heap.HFException;
 import heap.InvalidSlotNumberException;
+import heap.Tuple;
 import iterator.BitmapScan;
 import iterator.BtreeScan;
 import iterator.ColumnScan;
 import iterator.ColumnarFileScan;
 import iterator.ColumnarFileScanException;
+import iterator.ColumnarIndexScan;
 import iterator.CondExpr;
 import iterator.FldSpec;
 import iterator.IndexException;
 import iterator.Iterator;
+import iterator.NestedLoopJoins;
 import iterator.RelSpec;
 
 import java.io.IOException;
@@ -50,7 +53,8 @@ public class ColumnarNestedLoopJoin {
     private static AttrType[] in2;
     private static CondExpr[] outerCondExpr;
     private static CondExpr[] innerCondExpr;
-    private static CondExpr joinCondExpr;
+    private static CondExpr []joinCondExpr;
+    private static CondExpr joinExpr;
 //    private static CondExpr[] joinCondExpr;
   
     public static void main(String argv[]) throws Exception {
@@ -125,13 +129,13 @@ public class ColumnarNestedLoopJoin {
 		outerConst);
 	innerCondExpr = CommandLineHelper.parseToCondExpr(innerFile,
 		innerConst);
-	joinCondExpr = parseJoinConstr(outerFile, innerFile, joinConst);
+	joinExpr = parseJoinConstr(outerFile, innerFile, joinConst);
 
 	for (int i = 0; i < targetColumnNames.size(); i++) {
 	    for (int j = 0; j < in1.length; j++) {
 		if (targetColumnNames.get(i).equals(in1[j].getAttrName())) {
 
-		    FldSpec fldSpec = new FldSpec(new RelSpec(0),
+		    FldSpec fldSpec = new FldSpec(new RelSpec(RelSpec.outer),
 			    in1[j].getColumnId());
 		    proj1.add(fldSpec);
 		}
@@ -141,13 +145,13 @@ public class ColumnarNestedLoopJoin {
 	    for (int j = 0; j < in1.length; j++) {
 		if (targetColumnNames.get(i).equals(in2[j].getAttrName())) {
 
-		    FldSpec fldSpec = new FldSpec(new RelSpec(0),
+		    FldSpec fldSpec = new FldSpec(new RelSpec(RelSpec.innerRel),
 			    in1[j].getColumnId());
 		    proj2.add(fldSpec);
 		}
 	    }
 	}
-/*	    
+	    
         joinCondExpr = new CondExpr[1];
         joinCondExpr[0] = joinExpr;
 
@@ -157,10 +161,10 @@ public class ColumnarNestedLoopJoin {
         FldSpec[] outerFldSpecs = new FldSpec[in1.length];
 
         for (int j = 0; j < in1.length; j++) {
-            outerFldSpecs[i] = new FldSpec(new RelSpec(RelSpec.outer), i + 1);
+            outerFldSpecs[j] = new FldSpec(new RelSpec(RelSpec.outer), j + 1);
         }
 
-        FldSpec[] projectionFldSpecs = new FldSpec[targetColumnNames.size()];
+      
 
         ColumnarFile innerColumnarFile = new ColumnarFile(innerFile);
         in2 = innerColumnarFile.getColumnarHeader().getColumns();
@@ -183,17 +187,13 @@ public class ColumnarNestedLoopJoin {
             tuple = nestedLoopJoins.getNext();
         }
 
-        System.out.println("Iteration Complete");*/
+        System.out.println("Iteration Complete");
     
 
 	FldSpec projList1[] = proj1.toArray(new FldSpec[proj1.size()]);
 	FldSpec projList2[] = proj1.toArray(new FldSpec[proj1.size()]);
-	Iterator am1 = getIterator(outerFile, in1, null, in1.length,
-		projList1.length, projList1, outerCondExpr);
-	// Call to NLJ
-	// new NestedLoopJoins(in1, in1.length, null, in2, in2.length, null,
-	// numBuf, am1, innerFile, outerCondExpr, innerCondExpr, projList1,
-	// projList2, projList1.length+ projList2.length);
+	
+	
     }
 
     public static CondExpr parseJoinConstr(String fileName1, String fileName2,
@@ -258,35 +258,5 @@ public class ColumnarNestedLoopJoin {
             return null;
     }
 
-    private static Iterator getIterator(String columnarFileName, AttrType[] in,
-	    short[] strSizes, int counterIn, int counterFld, FldSpec[] projList,
-	    CondExpr[] condition) throws ColumnarFileScanException,
-	    HFBufMgrException, InvalidSlotNumberException,
-	    GetFileEntryException, PinPageException, ConstructPageException,
-	    IOException, IndexException, BitMapScanException, Exception {
-	Iterator iter = null;
-	if (indexType.indexType == IndexType.None) {
-	    iter = new ColumnarFileScan(columnarFileName, in, strSizes,
-		    counterIn, counterFld, projList, condition);
-	}
-	if (indexType.indexType == IndexType.ColumnScan) {
-	    iter = new ColumnScan(columnarFileName, in, strSizes, counterIn,
-		    counterFld, projList, condition);
-	}
-	if (indexType.indexType == IndexType.B_Index) {
-	    boolean indexOnly = false;
-	    if (counterIn == 2
-		    && in[0].getAttrName().equals(in[1].getAttrName()))
-		indexOnly = true;
-	    iter = new BtreeScan(columnarFileName, in, strSizes, counterIn,
-		    counterFld, projList, condition, indexOnly);
-	}
-	if (indexType.indexType == IndexType.BitMapIndex) {
-	    iter = new BitmapScan(columnarFileName, in, strSizes, counterIn,
-		    counterFld, projList, condition);
-	}
-	return iter;
-
-
-    }
+  
 }
