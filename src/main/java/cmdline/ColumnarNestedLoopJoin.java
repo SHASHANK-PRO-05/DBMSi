@@ -173,10 +173,13 @@ public class ColumnarNestedLoopJoin {
         indexTypes[0] = new IndexType(IndexType.ColumnScan);
         indexTypes[1] = new IndexType(IndexType.B_Index);
 
+        FldSpec projList1[] = proj1.toArray(new FldSpec[proj1.size()]);
+	FldSpec projList2[] = proj1.toArray(new FldSpec[proj1.size()]);
+	
         ColumnarIndexScan outerScan = new ColumnarIndexScan(outerFile, null, indexTypes, null, in1,
             null, in1.length, in1.length, outerFldSpecs, outerCondExpr);
 
-        NestedLoopJoins nestedLoopJoins = new NestedLoopJoins(in1, null, in2, null, 10,
+        NestedLoopJoins nestedLoopJoins = new NestedLoopJoins(in1, null, in2, null, numBuf,
             outerScan, innerFile, joinCondExpr, innerCondExpr, outerFldSpecs, outerFldSpecs.length, indexTypes);
 
         Tuple tuple = nestedLoopJoins.getNext();
@@ -190,8 +193,7 @@ public class ColumnarNestedLoopJoin {
         System.out.println("Iteration Complete");
     
 
-	FldSpec projList1[] = proj1.toArray(new FldSpec[proj1.size()]);
-	FldSpec projList2[] = proj1.toArray(new FldSpec[proj1.size()]);
+	
 	
 	
     }
