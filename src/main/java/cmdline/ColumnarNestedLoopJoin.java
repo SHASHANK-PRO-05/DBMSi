@@ -168,8 +168,11 @@ public class ColumnarNestedLoopJoin {
         ColumnarFile innerColumnarFile = new ColumnarFile(innerFile);
         in2 = innerColumnarFile.getColumnarHeader().getColumns();
 
-        IndexType[] indexTypes = new IndexType[1];
-        indexTypes[0] = indexType;
+        IndexType[] indexTypes = new IndexType[in1.length];
+        for(int i=0;i<in1.length;i++) {
+            indexTypes[i] = indexType;    
+        }
+        
 
         ArrayList<FldSpec> projectionList = new ArrayList<>(proj1);
         projectionList.addAll(proj2);
@@ -189,6 +192,7 @@ public class ColumnarNestedLoopJoin {
         Tuple tuple = nestedLoopJoins.getNext();
 
         while (tuple != null) {
+            System.out.println("here");
             System.out.println(tuple.getIntFld(1));
             System.out.println(tuple.getStrFld(2));
             tuple = nestedLoopJoins.getNext();

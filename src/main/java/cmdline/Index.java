@@ -99,9 +99,8 @@ public class Index {
         System.out.println("Write count: " + SystemDefs.pCounter.getwCounter());
         System.out.println("Read count: " + SystemDefs.pCounter.getrCounter());
         SystemDefs.JavabaseBM.flushAllPages();
-        SystemDefs.JavabaseDB.closeDB();
+       // SystemDefs.JavabaseDB.closeDB();
     }
-
 
     private static void setupBTreeIndexes(Scan scan) throws java.lang.Exception {
         String fileName = columnarFileName + "." + columnId + ".btree";
