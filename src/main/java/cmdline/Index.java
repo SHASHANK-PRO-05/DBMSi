@@ -18,33 +18,34 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Index {
-    private static String columnDBName;
-    private static String columnarFileName;
-    private static int columnId;
-    private static String indexMethod;
-    private static String columnName;
-    private static ColumnarFile columnarFile;
-    private static AttrType[] attrTypes;
-    private static AttrType attrType;
-    private static IndexInfo indexInfo = new IndexInfo();
+    private String columnDBName;
+    private String columnarFileName;
+    private int columnId;
+    private String indexMethod;
+    private String columnName;
+    private ColumnarFile columnarFile;
+    private AttrType[] attrTypes;
+    private AttrType attrType;
+    private IndexInfo indexInfo = new IndexInfo();
 
     public static void main(String argv[]) throws Exception {
-        if (argv.length != 4) {
+        if (argv.length != 5) {
             System.out.println("--- Usage of the command ---");
-            System.out.println("batchinsert COLUMNDBNAME COLUMNARFILENAME COLUMNNAME INDEXTYPE");
+            System.out.println("index COLUMNDBNAME COLUMNARFILENAME COLUMNNAME INDEXTYPE BUFFERSIZE");
         } else {
-            initFromArgs(argv);
+            Index index = new Index();
+            index.initFromArgs(argv);
         }
     }
 
-    private static void initFromArgs(String argv[]) throws Exception {
+    private void initFromArgs(String argv[]) throws Exception {
         columnDBName = argv[0];
 
         // The file does not exists
         if (!(new File(columnDBName).isFile())) {
             throw new Exception("The DB does not exists");
         }
-        SystemDefs systemDefs = new SystemDefs(columnDBName, 0, 4000, "LRU");
+        SystemDefs systemDefs = new SystemDefs(columnDBName, 0, Integer.parseInt(argv[4]), "LRU");
         columnarFileName = argv[1];
         if (getFileEntry(columnarFileName) == null)
             throw new Exception("The specified table does not exists");
@@ -72,7 +73,7 @@ public class Index {
         setupIndex();
     }
 
-    private static void setupIndex() throws GetFileEntryException, java.lang.Exception {
+    private void setupIndex() throws GetFileEntryException, java.lang.Exception {
         long count = columnarFile.getTupleCount();
 
         Scan scan = new Scan(columnarFile, (short) columnId);
@@ -103,7 +104,7 @@ public class Index {
     }
 
 
-    private static void setupBTreeIndexes(Scan scan) throws java.lang.Exception {
+    private void setupBTreeIndexes(Scan scan) throws java.lang.Exception {
         String fileName = columnarFileName + "." + columnId + ".btree";
         BTreeFile bTreeFile = new BTreeFile(fileName, attrType.getAttrType(), attrType.getSize(), 1);
         int pos = 0;
@@ -147,7 +148,7 @@ public class Index {
     }
 
 
-    private static void setupBitMapIndexes(Scan scan) throws Exception {
+    private void setupBitMapIndexes(Scan scan) throws Exception {
 
         //What type of of unique values are required
         Set uniqueClass;
@@ -198,7 +199,7 @@ public class Index {
 
     }
 
-    private static PageId getFileEntry(String fileName) throws GetFileEntryException {
+    private PageId getFileEntry(String fileName) throws GetFileEntryException {
         try {
             return SystemDefs.JavabaseDB.getFileEntry(fileName);
         } catch (Exception e) {

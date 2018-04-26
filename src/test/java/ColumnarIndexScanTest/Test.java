@@ -16,7 +16,7 @@ import java.util.PriorityQueue;
 public class Test {
     SystemDefs systemDefs;
     ColumnarFile columnarFile;
-    String relName = "Employee1";
+    String relName = "Employee";
     AttrType[] attrTypes;
     FldSpec[] fldSpecs;
     CondExpr[] condExprs;

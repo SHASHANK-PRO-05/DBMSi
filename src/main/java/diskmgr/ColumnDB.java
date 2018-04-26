@@ -22,7 +22,7 @@ public class ColumnDB implements GlobalConst {
     public void openDB(String fName)
             throws IOException, DiskMgrException {
         this.fName = fName;
-
+        SystemDefs.pCounter.initialize();
         filePointer = new RandomAccessFile(this.fName, "rw");
         PageId pageId = new PageId();
         Page apage = new Page();

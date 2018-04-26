@@ -365,6 +365,8 @@ public class BitMapFile implements GlobalConst {
                 try {
                     SystemDefs.JavabaseBM.pinPage(nextPageId, tempPage, true);
                 } catch (Exception e) {
+
+                    e.printStackTrace();
                     throw new PinPageException(null, "Not able to pin the page");
                 }
                 tempPage.setNextPage(new PageId(-1));
@@ -439,7 +441,7 @@ public class BitMapFile implements GlobalConst {
     }
 
     public void deallocatePage(PageId pageId) throws Exception {
-        SystemDefs.JavabaseDB.deallocatePage(pageId, 0);
+        SystemDefs.JavabaseBM.freePage(pageId);
     }
 
     public PageId getHeaderPageId() {

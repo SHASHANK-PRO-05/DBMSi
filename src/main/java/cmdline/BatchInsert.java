@@ -11,11 +11,11 @@ import java.util.Scanner;
 
 
 public class BatchInsert implements GlobalConst {
-    private static String dbFile;
-    private static String columnDBName;
-    private static String columnarFileName;
-    private static short numColumns;
-    private static BufferedReader bufferedReader;
+    private String dbFile;
+    private String columnDBName;
+    private String columnarFileName;
+    private short numColumns;
+    private BufferedReader bufferedReader;
 
     /**
      * The main class
@@ -24,16 +24,17 @@ public class BatchInsert implements GlobalConst {
      * @throws Exception
      */
     public static void main(String argv[]) throws Exception {
-        if (argv.length != 4) {
+        if (argv.length != 5) {
             System.out.println("--- Usage of the command ---");
-            System.out.println("batchinsert DATAFILENAME COLUMNDBNAME COLUMNARFILENAME NUMCOLUMNS");
+            System.out.println("batchinsert DATAFILENAME COLUMNDBNAME COLUMNARFILENAME NUMCOLUMNS BUFFERSIZE");
         } else {
-            initFromArgs(argv);
+            BatchInsert batchInsert = new BatchInsert();
+            batchInsert.initFromArgs(argv);
         }
     }
 
 
-    private static AttrType[] parseHeader() throws Exception {
+    private AttrType[] parseHeader() throws Exception {
         String header = bufferedReader.readLine();
         String columnsString[] = header.split("\t");
         AttrType[] attrTypes = new AttrType[columnsString.length];
@@ -62,7 +63,7 @@ public class BatchInsert implements GlobalConst {
      * @param argv parameters to run the system
      * @throws Exception
      */
-    private static void initFromArgs(String argv[])
+    private void initFromArgs(String argv[])
             throws Exception {
         String fileName = argv[0];
         File file = new File(fileName);
@@ -112,8 +113,9 @@ public class BatchInsert implements GlobalConst {
         //If it is override change the entire db
         int pageSizeRequired = 0;
         if (override)
-            pageSizeRequired = Math.max((int) (file.length() / MINIBASE_PAGESIZE) * 100, 2000);
-        int bufferSize = 4000;
+            pageSizeRequired = Math.max((int) (file.length() / MINIBASE_PAGESIZE) * 100, 200000);
+
+        int bufferSize = (argv.length == 4) ? 4000 : Integer.parseInt(argv[4]);
         SystemDefs systemDefs = new SystemDefs(columnDBName, pageSizeRequired
                 , bufferSize, "LRU" +
                 "");
@@ -130,9 +132,11 @@ public class BatchInsert implements GlobalConst {
 
         insertRecords(columnarFile, attrTypes);
         SystemDefs.JavabaseBM.flushAllPages();
+
+
     }
 
-    public static void insertRecords(ColumnarFile columnarFile
+    public void insertRecords(ColumnarFile columnarFile
             , AttrType[] attrTypes) throws Exception {
         int size = 0;
         int[] position = new int[attrTypes.length];
@@ -168,8 +172,11 @@ public class BatchInsert implements GlobalConst {
         double duration = (endTime - startTime);
         System.out.println("Time taken (Seconds)" + duration / 1000);
         System.out.println("Tuples in the table now:" + columnarFile.getColumnarHeader().getReccnt());
+
         SystemDefs.JavabaseBM.flushAllPages();
+        SystemDefs.JavabaseDB.closeDB();
         System.out.println("Write count: " + SystemDefs.pCounter.getwCounter());
         System.out.println("Read count: " + SystemDefs.pCounter.getrCounter());
+
     }
 }
