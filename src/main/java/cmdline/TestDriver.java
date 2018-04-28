@@ -7,17 +7,17 @@ import java.util.Scanner;
 
 public class TestDriver {
     static String[][] arrays = {{"BatchInsert", "sample.txt Minibase.min Employee 4"},
+            {"ColumnSortScan", "Minibase.min Employee A ASC 6"},
+            {"ColumnSortScan", "Minibase.min Employee A DSC 6"},
+            {"ColumnSortScan", "Minibase.min Employee C DSC 6"},
+            {"ColumnSortScan", "Minibase.min Employee C ASC 6"},
+            {"ColumnIndexScan", "Minibase.min Employee [ A == New_Hampshire AND C == 3 AND B == District_of_Columbia ] [ A B C D ] 40 false"},
             {"Index", "Minibase.min Employee A BITMAP"},
             {"ColumnIndexScan", "Minibase.min Employee [ ( A >= New_Hampshire OR C == 3 ) AND B == District_of_Columbia ] [ A B C D ] 40 false"},
             {"Index", "Minibase.min Employee B BTREE"},
             {"Index", "Minibase.min Employee C BITMAP"},
             {"ColumnIndexScan", "Minibase.min Employee [ ( A >= New_Hampshire OR C == 3 ) AND B == District_of_Columbia ] [ A B C D ] 40 false"},
-            {"ColumnIndexScan", "Minibase.min Employee [ A == New_Hampshire AND C == 3 AND B == District_of_Columbia ] [ A B C D ] 40 false"},
-            {"ColumnSortScan", "Minibase.min Employee A ASC 6"},
-            {"ColumnSortScan", "Minibase.min Employee A DSC 6"},
-            {"ColumnSortScan", "Minibase.min Employee C DSC 6"},
-            {"ColumnSortScan", "Minibase.min Employee C ASC 6"},
-            {"ColumnIndexScan", "Minibase.min Employee [ A == New_Hampshire AND C == 3 AND B == District_of_Columbia ] [ A B C D ] 40 false"}
+            {"ColumnIndexScan", "Minibase.min Employee [ A == New_Hampshire AND C == 3 AND B == District_of_Columbia AND D == 7 ] [ A B C D ] 40 false"},
 
     };
 
@@ -105,7 +105,7 @@ public class TestDriver {
                     break;
                 case 2:
                     Index index = new Index();
-                    System.out.println("Usage: <<DB Name>> <<Table Name>> <<ColumnName>> <<IndexType (Btree or Bitmap)>>");
+                    System.out.println("Usage: <<DB Name>> <<Table Name>> <<ColumnName>> <<IndexType (BTREE or BITMAP)>>");
                     command = scanner.nextLine();
                     commandArray = command.split(" ");
                     try {
