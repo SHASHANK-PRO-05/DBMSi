@@ -24,9 +24,9 @@ public class BatchInsert implements GlobalConst {
      * @throws Exception
      */
     public static void main(String argv[]) throws Exception {
-        if (argv.length != 5) {
+        if (argv.length != 4) {
             System.out.println("--- Usage of the command ---");
-            System.out.println("batchinsert DATAFILENAME COLUMNDBNAME COLUMNARFILENAME NUMCOLUMNS BUFFERSIZE");
+            System.out.println("batchinsert DATAFILENAME COLUMNDBNAME COLUMNARFILENAME NUMCOLUMNS");
         } else {
             BatchInsert batchInsert = new BatchInsert();
             batchInsert.initFromArgs(argv);
@@ -115,7 +115,7 @@ public class BatchInsert implements GlobalConst {
         if (override)
             pageSizeRequired = Math.max((int) (file.length() / MINIBASE_PAGESIZE) * 100, 200000);
 
-        int bufferSize = (argv.length == 4) ? 4000 : Integer.parseInt(argv[4]);
+        int bufferSize = 4000;
         SystemDefs systemDefs = new SystemDefs(columnDBName, pageSizeRequired
                 , bufferSize, "LRU" +
                 "");

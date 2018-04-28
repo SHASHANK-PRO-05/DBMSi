@@ -29,9 +29,9 @@ public class Index {
     private IndexInfo indexInfo = new IndexInfo();
 
     public static void main(String argv[]) throws Exception {
-        if (argv.length != 5) {
+        if (argv.length != 4) {
             System.out.println("--- Usage of the command ---");
-            System.out.println("index COLUMNDBNAME COLUMNARFILENAME COLUMNNAME INDEXTYPE BUFFERSIZE");
+            System.out.println("index COLUMNDBNAME COLUMNARFILENAME COLUMNNAME INDEXTYPE");
         } else {
             Index index = new Index();
             index.initFromArgs(argv);
@@ -45,7 +45,7 @@ public class Index {
         if (!(new File(columnDBName).isFile())) {
             throw new Exception("The DB does not exists");
         }
-        SystemDefs systemDefs = new SystemDefs(columnDBName, 0, Integer.parseInt(argv[4]), "LRU");
+        SystemDefs systemDefs = new SystemDefs(columnDBName, 0, 4000, "LRU");
         columnarFileName = argv[1];
         if (getFileEntry(columnarFileName) == null)
             throw new Exception("The specified table does not exists");
@@ -188,7 +188,7 @@ public class Index {
                 try {
                     new BitMapFile(indexFileName, columnarFile, columnId, integerValue);
                 } catch (Exception e) {
-                    System.out.println("Eiter Index already Exists/ Or Something is wrong");
+                    System.out.println("Either Index already Exists/ Or Something is wrong");
                     return;
                 }
                 indexInfo.setValue(integerValue);

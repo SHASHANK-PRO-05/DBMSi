@@ -111,7 +111,7 @@ public class ColumnIndexScan {
     public static Stack<String> stack;
 
     public void initFromArgs(String[] args) throws Exception {
-        SystemDefs systemDefs = new SystemDefs(args[0], 0, Integer.parseInt(args[args.length - 1]), "LRU");
+        SystemDefs systemDefs = new SystemDefs(args[0], 0, Integer.parseInt(args[args.length - 2]), "LRU");
         columnarFile = new ColumnarFile(args[1]);
         relName = args[1];
         attrTypes = columnarFile.getColumnarHeader().getColumns();
@@ -178,6 +178,10 @@ public class ColumnIndexScan {
             }
         }
         parseIterators(condExprs.toArray(new CondExpr[condExprs.size()]));
+
+        if (Boolean.parseBoolean(args[args.length - 1])) {
+            validateInteractiveIndexing();
+        }
     }
 
     public CondExpr parse(Stack<String> stack, CondExpr head) throws Exception {
@@ -209,6 +213,37 @@ public class ColumnIndexScan {
         return head;
     }
 
+    public void validateInteractiveIndexing() {
+        System.out.println("This is an interactive mode for chosing index for a query");
+        System.out.println("PS: make sure that indexing has been done by you else " +
+                "it may fail or maybe it can corrupt your database so choose accordingly");
+        for (int i = 0; i < requiredAttrTypes.length; i++) {
+            System.out.println("For column " + requiredAttrTypes[i].getAttrName() + " we choose indextype: " + indexTypes[i]);
+            System.out.println("Enter your Choice\n" +
+                    IndexType.B_Index + ") BTree Index\n" +
+                    IndexType.BitMapIndex + ") BitMap Index\n" +
+                    IndexType.ColumnScan + ") Column Scan\n" +
+                    "-1/Anything else) Don't change anything");
+            Scanner scanner = new Scanner(System.in);
+            int choice = scanner.nextInt();
+            switch (choice) {
+                case IndexType.B_Index:
+                    indexTypes[i] = new IndexType(IndexType.B_Index);
+                    break;
+                case IndexType.BitMapIndex:
+                    indexTypes[i] = new IndexType(IndexType.BitMapIndex);
+                    break;
+                case IndexType.ColumnScan:
+                    indexTypes[i] = new IndexType(IndexType.ColumnScan);
+                    break;
+                default:
+                case -1:
+                    break;
+            }
+        }
+
+    }
+
     public void parseIterators(CondExpr[] condExprs) throws Exception {
         PriorityQueue<Integer>[] priorityQueues = new PriorityQueue[requiredAttrTypes.length];
         indexTypes = new IndexType[requiredAttrTypes.length];
@@ -224,6 +259,8 @@ public class ColumnIndexScan {
                     //In equality Bitmap will get the priority
                     if (columnarFile.getColumnarHeader().getParticularTypeIndex(offset, new IndexType(IndexType.BitMapIndex)).size() != 0) {
                         priorityQueues[offset].add(IndexType.BitMapIndex);
+                    } else if (columnarFile.getColumnarHeader().getParticularTypeIndex(offset, new IndexType(IndexType.B_Index)).size() != 0) {
+                        priorityQueues[offset].add(IndexType.B_Index);
                     } else {
                         priorityQueues[offset].add(IndexType.ColumnScan);
                     }

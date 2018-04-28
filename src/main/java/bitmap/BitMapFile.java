@@ -242,6 +242,8 @@ public class BitMapFile implements GlobalConst {
                     columnarFile.getColumnarHeader().getColumns()[columnNo].getSize());
             if (val.equals(value)) {
                 bmPage.setABit(position, 1);
+            } else {
+                bmPage.setABit(position, 0);
             }
             int tempAns = bmPage.getAvailableSpace() - 1;
             bmPage.setAvailableSpace(tempAns);
@@ -252,11 +254,23 @@ public class BitMapFile implements GlobalConst {
                 bmPage.setNextPage(pageIdTemp);
                 unpinPage(pageId, true);
                 pageId = pageIdTemp;
-                pinPage(pageId, bmPage);
+                try {
+                    SystemDefs.JavabaseBM.pinPage(pageId, bmPage, true);
+                } catch (Exception e) {
+                    throw new PinPageException("Not able to pin a page");
+                }
                 bmPage.init(pageId, bmPage);
             }
 
             tuple = scan.getNext(rid);
+            if (tuple == null) {
+                while (tempAns != 0) {
+                    tempAns = tempAns - 1;
+                    position++;
+                    bmPage.setABit(position, 0);
+
+                }
+            }
             position++;
         }
         bmPage.setNextPage(new PageId(-1));
@@ -287,6 +301,8 @@ public class BitMapFile implements GlobalConst {
             int val = Convert.getIntValue(0, tuple.getTupleByteArray());
             if (val == value) {
                 bmPage.setABit(position, 1);
+            } else {
+                bmPage.setABit(position, 0);
             }
             int tempAns = bmPage.getAvailableSpace() - 1;
             bmPage.setAvailableSpace(tempAns);
@@ -297,11 +313,24 @@ public class BitMapFile implements GlobalConst {
                 bmPage.setNextPage(pageIdTemp);
                 unpinPage(pageId, true);
                 pageId = pageIdTemp;
-                pinPage(pageId, bmPage);
+                try {
+                    SystemDefs.JavabaseBM.pinPage(pageId, bmPage, true);
+                } catch (Exception e) {
+                    throw new PinPageException("Not able to pin a page");
+                }
+
+
                 bmPage.init(pageId, bmPage);
             }
 
             tuple = scan.getNext(rid);
+            if (tuple == null) {
+                while (tempAns != 0) {
+                    tempAns = tempAns - 1;
+                    position++;
+                    bmPage.setABit(position, 0);
+                }
+            }
             position++;
         }
         bmPage.setNextPage(new PageId(-1));

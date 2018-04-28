@@ -95,6 +95,7 @@ public class ColumnarIndexScan extends Iterator {
 
     public Tuple getNext() throws Exception {
         int nextPos = bitMapUtils.getNextAndPosition();
+       
         while (nextPos != -1 && columnarFile.isTupleDeletedAtPosition(nextPos)) {
             nextPos = bitMapUtils.getNextAndPosition();
         }
