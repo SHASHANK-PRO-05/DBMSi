@@ -84,13 +84,14 @@ public class ColumnSortScan {
         columnarSortTupleScan.closeScan();
         Heapfile heapfile = new Heapfile(relName + ".s" + colNum + order);
         heapfile.deleteFile();
+        SystemDefs.JavabaseBM.flushAllPages();
         double endTime = System.currentTimeMillis();
         double duration = (endTime - startTime);
         System.out.println("Time taken (Seconds)" + duration / 1000);
         System.out.println("Tuples in the table now:" + columnarFile.getTupleCount());
         System.out.println("Write count: " + SystemDefs.pCounter.getwCounter());
         System.out.println("Read count: " + SystemDefs.pCounter.getrCounter());
-        SystemDefs.JavabaseBM.flushAllPages();
+
         SystemDefs.JavabaseDB.closeDB();
     }
 
